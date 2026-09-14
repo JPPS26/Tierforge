@@ -23,8 +23,8 @@ export default function Navbar() {
           <div
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px]"
             style={{
-              background: "linear-gradient(135deg,#FF9A5A,#C6461B)",
-              boxShadow: "0 0 22px rgba(255,122,61,0.5)",
+              background: "linear-gradient(135deg,#9A7CFF,#6A46F0)",
+              boxShadow: "0 0 22px rgba(124,92,255,0.5)",
             }}
           >
             <span className="font-display text-[15px] font-extrabold text-[#0A0A0D]">T</span>
@@ -50,7 +50,7 @@ export default function Navbar() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search tier lists, players, games…"
-            className="w-full rounded-[11px] border border-border bg-surface py-2.5 pl-9 pr-3.5 text-[13.5px] text-text outline-none focus:border-[rgba(255,122,61,0.5)]"
+            className="w-full rounded-[11px] border border-border bg-surface py-2.5 pl-9 pr-3.5 text-[13.5px] text-text outline-none focus:border-[rgba(124,92,255,0.5)]"
           />
         </div>
 

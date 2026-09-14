@@ -22,7 +22,7 @@ function ItemChip({ item, onDragStart, onDragEnd, dragging }) {
       onDragEnd={onDragEnd}
       className="flex h-16 w-16 flex-shrink-0 cursor-grab select-none items-center justify-center rounded-[10px] border border-border p-1 text-center text-[10.5px] font-semibold leading-tight"
       style={{
-        background: `linear-gradient(150deg, ${colorFor(item.name)}55, #271E17)`,
+        background: `linear-gradient(150deg, ${colorFor(item.name)}55, #191922)`,
         opacity: dragging ? 0.35 : 1,
       }}
     >
@@ -77,7 +77,7 @@ function TierRow({ tier, items, onDrop, onDragOver, isDragOver, onRename, onReco
         onDrop={(e) => onDrop(e, tier.id)}
         onDragOver={(e) => onDragOver(e, tier.id)}
         className={`flex min-h-[84px] flex-1 flex-wrap items-center gap-2 rounded-r-xl border p-2 ${
-          isDragOver ? "border-[rgba(255,122,61,0.5)] bg-[rgba(255,122,61,0.08)]" : "border-border bg-surface"
+          isDragOver ? "border-[rgba(124,92,255,0.5)] bg-[rgba(124,92,255,0.08)]" : "border-border bg-surface"
         }`}
       >
         {items.length === 0 && <span className="px-2 text-[12.5px] text-mutedDim">Drop items here</span>}
@@ -209,8 +209,8 @@ export default function Builder() {
       {saveMsg && <p className="mb-4 text-[13px] text-teal">{saveMsg}</p>}
 
       {aiOpen && (
-        <div className="mb-6 flex flex-wrap items-center gap-2.5 rounded-lg border border-[rgba(255,122,61,0.35)] bg-surface p-4.5">
-          <Wand2 size={18} className="flex-shrink-0 text-[#FFB37D]" />
+        <div className="mb-6 flex flex-wrap items-center gap-2.5 rounded-2xl border border-[rgba(124,92,255,0.35)] bg-surface p-4.5">
+          <Wand2 size={18} className="flex-shrink-0 text-[#B6A5FF]" />
           <input
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
@@ -246,7 +246,7 @@ export default function Builder() {
         </button>
       </div>
 
-      <div onDrop={handleBenchDrop} onDragOver={(e) => e.preventDefault()} className="rounded-lg border border-border bg-surface p-4">
+      <div onDrop={handleBenchDrop} onDragOver={(e) => e.preventDefault()} className="rounded-2xl border border-border bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[13.5px] font-semibold text-muted">Item bench — drag into a tier</span>
         </div>

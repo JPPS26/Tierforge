@@ -30,7 +30,7 @@ export default function Explore() {
             onClick={() => setTab(t)}
             className={`rounded-[10px] border px-4 py-2 text-[13.5px] font-semibold ${
               tab === t
-                ? "border-[rgba(255,122,61,0.5)] bg-accentSoft text-[#FFB37D]"
+                ? "border-[rgba(124,92,255,0.5)] bg-accentSoft text-[#B6A5FF]"
                 : "border-border text-muted"
             }`}
           >
