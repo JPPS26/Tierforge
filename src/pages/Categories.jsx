@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext";
 import { getActiveCategories } from "../services/db";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 import { PrimaryButton } from "../components/UI";
 import {
   Trophy,
@@ -92,8 +92,8 @@ export default function Categories() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Carrega estritamente as categorias que têm Tier Lists criadas (> 0)
+  // Sincronização em tempo real ao segundo das categorias ativas
+  useRealtimeDb(() => {
     const active = getActiveCategories();
     setActiveCategories(active);
     setLoading(false);

@@ -36,8 +36,8 @@ import {
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
-import { useLanguage } from "../context/LanguageContext";
 import { getTierLists, getActiveCategories, getGlobalStats } from "../services/db";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 
 const CATEGORY_ICONS = {
   gaming: Gamepad2,
@@ -303,8 +303,8 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({ totalTierLists: 0, totalCreators: 0, totalVotes: 0 });
 
-  useEffect(() => {
-    // Carregamento de dados 100% reais da base de dados
+  // Sincronização ao segundo em tempo real com a base de dados
+  useRealtimeDb(() => {
     getTierLists({ tab: "Trending" }).then((lists) => {
       setTrendingLists(lists.slice(0, 4));
     });

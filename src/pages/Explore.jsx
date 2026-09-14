@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
 import { getTierLists, getActiveCategories } from "../services/db";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 import { PrimaryButton } from "../components/UI";
 import {
   Sparkles,
@@ -120,19 +121,15 @@ export default function Explore() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // REGRA ESTRITA: Só carrega categorias que têm pelo menos 1 Tier List criada
-    setCategories(getActiveCategories());
-  }, []);
-
-  useEffect(() => {
     const urlCat = searchParams.get("category") || "All";
     const urlSub = searchParams.get("sub") || "";
     setCat(urlCat);
     setSelectedSub(urlSub);
   }, [searchParams]);
 
-  useEffect(() => {
-    setLoading(true);
+  // Sincronização ao segundo em tempo real com a base de dados
+  useRealtimeDb(() => {
+    setCategories(getActiveCategories());
     getTierLists({
       category: cat,
       tab,

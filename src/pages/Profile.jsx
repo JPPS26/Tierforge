@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 import { Avatar, Badge, EmptyState, PrimaryButton, GhostButton } from "../components/UI";
 import TierListCard from "../components/TierListCard";
 import ProfileEditModal from "../components/ProfileEditModal";
@@ -130,8 +131,8 @@ export default function Profile() {
     }
   }, [paramHandle, user, isOwnProfile, navigate]);
 
-  useEffect(() => {
-    setLoading(true);
+  // Sincronização ao segundo em tempo real do perfil, listas e métricas
+  useRealtimeDb(() => {
     loadProfile();
   }, [loadProfile]);
 

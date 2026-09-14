@@ -46,6 +46,7 @@ import {
 import { checkContentSafety } from "../services/safetyFilter";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 import { Avatar, Badge, PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import ShareModal from "../components/ShareModal";
 import ExportModal from "../components/ExportModal";
@@ -109,20 +110,26 @@ export default function TierListView() {
     description: "",
   });
 
+  // Incrementa visualização única na montagem da página
   useEffect(() => {
+    if (id) {
+      incrementViews(id);
+    }
+  }, [id]);
+
+  // Sincronização em tempo real ao segundo da Tier List, votos, comentários e remixes
+  useRealtimeDb(() => {
     async function loadData() {
       if (!id) return;
-      setLoading(true);
       try {
         const data = await getTierListById(id, user?.uid);
         setTierList(data);
         if (data && !data.isPrivateForbidden) {
-          incrementViews(id);
           const comms = getCommentsForTierList(id);
           setComments(comms);
           if (user?.uid) {
-            const initialVote = getUserVoteForList(id, user.uid);
-            setUserVote(initialVote);
+            const currentVote = getUserVoteForList(id, user.uid);
+            setUserVote(currentVote);
           } else {
             setUserVote(0);
           }
@@ -136,7 +143,7 @@ export default function TierListView() {
           }
         }
       } catch (err) {
-        console.error("Error loading tier list:", err);
+        console.error("Error loading tier list in realtime:", err);
       } finally {
         setLoading(false);
       }

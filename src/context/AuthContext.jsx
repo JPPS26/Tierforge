@@ -13,6 +13,7 @@ import {
   getAllUsers,
   updateUserProfile as dbUpdateUserProfile,
   deleteUserAccountAndData,
+  subscribeToDbSync,
 } from "../services/db";
 
 const AuthContext = createContext(null);
@@ -101,6 +102,36 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
   }, []);
+
+  // Sincronização ao segundo do perfil do utilizador autenticado com a base de dados
+  useEffect(() => {
+    if (!user) return;
+
+    const refreshProfile = () => {
+      const fresh = getUserByUid(user.uid);
+      if (fresh) {
+        setProfile((prev) => {
+          // Apenas atualiza se houver alguma diferença real
+          if (JSON.stringify(prev) !== JSON.stringify(fresh)) {
+            return fresh;
+          }
+          return prev;
+        });
+      }
+    };
+
+    const unsubscribe = subscribeToDbSync(refreshProfile);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshProfile();
+      }
+    }, 1000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [user]);
 
   async function loginWithGoogle() {
     const cred = await signInWithPopup(auth, googleProvider);

@@ -1,9 +1,7 @@
 // Serviço de Integração com a API Pública de Categorias & Taxonomia
 // Fornece um catálogo rico por domínios e pesquisa em tempo real na API da Wikimedia/Wikipedia,
 // permitindo obter capas oficiais, descrições verificadas e subcategorias automáticas para qualquer tema.
-
-const CACHE_EXPIRY_MS = 1000 * 60 * 30; // 30 minutos de cache em memória
-const memoryCache = new Map();
+// Sem retenção de caches locais: todas as consultas refletem o estado mais recente.
 
 // Mapeamento de domínios para ícones e cores temáticas
 export const DOMAIN_THEMES = {
@@ -345,14 +343,6 @@ export async function searchApiCategories(query, lang = "pt") {
   if (!query || query.trim().length < 2) return [];
 
   const cleanQuery = query.trim();
-  const cacheKey = `search_${lang}_${cleanQuery.toLowerCase()}`;
-
-  if (memoryCache.has(cacheKey)) {
-    const cached = memoryCache.get(cacheKey);
-    if (Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
-      return cached.data;
-    }
-  }
 
   const endpoint = `https://${lang === "pt-BR" ? "pt" : lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=prefixsearch&gpssearch=${encodeURIComponent(
     cleanQuery
@@ -397,7 +387,6 @@ export async function searchApiCategories(query, lang = "pt") {
       })
       .filter((c) => c.slug.length > 1);
 
-    memoryCache.set(cacheKey, { data: results, timestamp: Date.now() });
     return results;
   } catch (error) {
     console.warn("Erro ao pesquisar categorias na API:", error);
@@ -413,14 +402,6 @@ export async function searchApiCategories(query, lang = "pt") {
 export async function fetchCategoryDetailsFromApi(topicName, lang = "pt") {
   if (!topicName || !topicName.trim()) return null;
   const cleanName = topicName.trim();
-  const cacheKey = `details_${lang}_${cleanName.toLowerCase()}`;
-
-  if (memoryCache.has(cacheKey)) {
-    const cached = memoryCache.get(cacheKey);
-    if (Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
-      return cached.data;
-    }
-  }
 
   try {
     // 1. Procurar a página principal para resumo e imagem
@@ -482,7 +463,6 @@ export async function fetchCategoryDetailsFromApi(topicName, lang = "pt") {
       source: "api",
     };
 
-    memoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
     return result;
   } catch (err) {
     console.warn("Erro ao obter detalhes da categoria na API:", err);

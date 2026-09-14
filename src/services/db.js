@@ -73,7 +73,7 @@ if (typeof window !== "undefined") {
   purgeSeedData();
 }
 
-// Helper de persistência segura com fallback
+// Helper de persistência segura com fallback sem retenção de caches obsoletos
 function getStored(key, initialFallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -94,9 +94,90 @@ function getStored(key, initialFallback) {
   }
 }
 
-function setStored(key, value) {
+// Barramento de Sincronização em Tempo Real (Local + Cross-Tab BroadcastChannel)
+let dbBroadcastChannel = null;
+try {
+  if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+    dbBroadcastChannel = new BroadcastChannel("tierforge_realtime_db");
+  }
+} catch (err) {
+  console.warn("BroadcastChannel not available:", err);
+}
+
+/**
+ * Dispara uma notificação de sincronização imediata para todas as abas e componentes
+ */
+export function notifyDbChange(detail = {}) {
+  const payload = {
+    timestamp: Date.now(),
+    ...detail,
+  };
+
+  // 1. Notifica a janela atual instantaneamente (< 1ms)
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("tierforge_db_sync", { detail: payload }));
+    // Dispara compatibilidade para componentes legados de notificações se relevante
+    if (detail.key === STORAGE_KEY_NOTIFICATIONS) {
+      window.dispatchEvent(new CustomEvent("tierforge_notifications_updated", { detail: payload }));
+    }
+  }
+
+  // 2. Notifica todas as outras abas/janelas do navegador via BroadcastChannel
+  if (dbBroadcastChannel) {
+    try {
+      dbBroadcastChannel.postMessage(payload);
+    } catch {
+      // Ignora erro de postMessage
+    }
+  }
+}
+
+/**
+ * Regista um ouvinte para alterações na base de dados em tempo real
+ * @param {Function} callback Função chamada quando houver qualquer alteração na base de dados
+ * @returns {Function} Função de limpeza (unsubscribe)
+ */
+export function subscribeToDbSync(callback) {
+  if (typeof window === "undefined" || typeof callback !== "function") {
+    return () => {};
+  }
+
+  const handleCustomEvent = (e) => {
+    callback(e.detail || {});
+  };
+
+  const handleBroadcastMessage = (e) => {
+    callback(e.data || {});
+  };
+
+  const handleStorageEvent = (e) => {
+    if (e.key && (e.key.startsWith("tierforge_") || e.key.startsWith("tierworld_"))) {
+      callback({ key: e.key, fromStorage: true });
+    }
+  };
+
+  window.addEventListener("tierforge_db_sync", handleCustomEvent);
+  window.addEventListener("storage", handleStorageEvent);
+
+  if (dbBroadcastChannel) {
+    dbBroadcastChannel.addEventListener("message", handleBroadcastMessage);
+  }
+
+  return () => {
+    window.removeEventListener("tierforge_db_sync", handleCustomEvent);
+    window.removeEventListener("storage", handleStorageEvent);
+    if (dbBroadcastChannel) {
+      dbBroadcastChannel.removeEventListener("message", handleBroadcastMessage);
+    }
+  };
+}
+
+function setStored(key, value, skipNotify = false) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    if (!skipNotify) {
+      notifyDbChange({ key });
+    }
   } catch (e) {
     console.warn(`Could not save ${key} to storage`, e);
   }

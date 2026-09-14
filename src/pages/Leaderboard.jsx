@@ -18,8 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { Avatar, EmptyState, PrimaryButton } from "../components/UI";
-import { useLanguage } from "../context/LanguageContext";
 import { getLeaderboard } from "../services/db";
+import useRealtimeDb from "../hooks/useRealtimeDb";
 
 function getPatentBadge(badge) {
   if (badge === "Criador de Elite") {
@@ -98,8 +98,8 @@ export default function Leaderboard() {
   const [filterTier, setFilterTier] = useState("all");
   const [sortBy, setSortBy] = useState("xp");
 
-  useEffect(() => {
-    // Calcula a classificação dos criadores em tempo real a partir dos dados da base de dados
+  // Sincronização ao segundo em tempo real da classificação de criadores
+  useRealtimeDb(() => {
     const ranked = getLeaderboard();
     setCreators(ranked);
     setLoading(false);
