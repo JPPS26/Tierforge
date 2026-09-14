@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
+import { useLanguage } from "../context/LanguageContext";
 import { getTierLists, getActiveCategories, getGlobalStats } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 

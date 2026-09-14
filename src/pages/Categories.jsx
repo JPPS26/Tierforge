@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 import { getActiveCategories } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 import { PrimaryButton } from "../components/UI";

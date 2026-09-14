@@ -74,3 +74,4 @@ export function useRealtimeDb(loadFn, deps = []) {
 }
 
 export default useRealtimeDb;
+

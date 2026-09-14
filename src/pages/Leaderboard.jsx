@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { Avatar, EmptyState, PrimaryButton } from "../components/UI";
+import { useLanguage } from "../context/LanguageContext";
 import { getLeaderboard } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 
