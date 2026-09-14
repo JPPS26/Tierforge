@@ -11,7 +11,7 @@ export const SUPPORTED_LANGUAGES = [
 export const translations = {
   pt: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Explorar",
       categories: "Categorias",
       leaderboard: "Classificação",
@@ -226,7 +226,7 @@ export const translations = {
       editProfile: "Editar Perfil",
       handle: "ID de Utilizador (#handle)",
       handlePlaceholder: "ex: joaogaming",
-      handleHelp: "Identificador público único partilhável (ex: #tierforgejoao)",
+      handleHelp: "Identificador público único partilhável (ex: #tierworldjoao)",
       handleAvailable: "ID disponível ✓",
       handleTaken: "Este ID já está a ser utilizado por outro utilizador",
       handleInvalid: "Mínimo 3 caracteres alfanuméricos e _",
@@ -255,7 +255,7 @@ export const translations = {
       linkCopied: "Link do perfil copiado! ✓",
     },
     login: {
-      title: "Bem-vindo ao TierForge",
+      title: "Bem-vindo ao TierWorld",
       subtitle: "Inicia sessão com a tua conta Google para criares, votares e obteres o teu ID único.",
       googleBtn: "Continuar com o Google",
       signingIn: "A iniciar sessão…",
@@ -263,7 +263,7 @@ export const translations = {
       errorGeneral: "Ocorreu um erro ao autenticar. Por favor, tenta novamente.",
     },
     footer: {
-      tagline: "TierForge — Plataforma moderna de criação e debate de rankings com dados 100% reais.",
+      tagline: "TierWorld — Plataforma moderna de criação e debate de rankings com dados 100% reais.",
       rights: "Todos os direitos reservados.",
       language: "Idioma:",
     },
@@ -271,7 +271,7 @@ export const translations = {
 
   "pt-BR": {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Explorar",
       categories: "Categorias",
       leaderboard: "Classificação",
@@ -467,7 +467,7 @@ export const translations = {
       editProfile: "Editar Perfil",
       handle: "ID de Usuário (#handle)",
       handlePlaceholder: "ex: joaogaming",
-      handleHelp: "Identificador público único compartilhável (ex: #tierforgejoao)",
+      handleHelp: "Identificador público único compartilhável (ex: #tierworldjoao)",
       handleAvailable: "ID disponível ✓",
       handleTaken: "Este ID já está em uso por outro usuário",
       handleInvalid: "Mínimo 3 caracteres alfanuméricos e _",
@@ -484,7 +484,7 @@ export const translations = {
       userNotFound: "Usuário não encontrado",
     },
     login: {
-      title: "Bem-vindo ao TierForge",
+      title: "Bem-vindo ao TierWorld",
       subtitle: "Entre com sua conta Google para criar, votar e garantir seu ID exclusivo.",
       googleBtn: "Continuar com o Google",
       signingIn: "Entrando…",
@@ -492,7 +492,7 @@ export const translations = {
       errorGeneral: "Ocorreu um erro ao autenticar. Por favor, tente novamente.",
     },
     footer: {
-      tagline: "TierForge — Plataforma moderna de criação e debate de rankings com dados 100% reais.",
+      tagline: "TierWorld — Plataforma moderna de criação e debate de rankings com dados 100% reais.",
       rights: "Todos os direitos reservados.",
       language: "Idioma:",
     },
@@ -500,7 +500,7 @@ export const translations = {
 
   en: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Explore",
       categories: "Categories",
       leaderboard: "Leaderboard",
@@ -696,7 +696,7 @@ export const translations = {
       editProfile: "Edit Profile",
       handle: "User ID (#handle)",
       handlePlaceholder: "e.g., joaogaming",
-      handleHelp: "Unique shareable handle (e.g., #tierforgejoao)",
+      handleHelp: "Unique shareable handle (e.g., #tierworldjoao)",
       handleAvailable: "ID available ✓",
       handleTaken: "This ID is already in use",
       handleInvalid: "Minimum 3 alphanumeric characters and _",
@@ -713,7 +713,7 @@ export const translations = {
       userNotFound: "User not found",
     },
     login: {
-      title: "Welcome to TierForge",
+      title: "Welcome to TierWorld",
       subtitle: "Sign in with Google to create, vote, and claim your unique #handle.",
       googleBtn: "Continue with Google",
       signingIn: "Signing in…",
@@ -721,7 +721,7 @@ export const translations = {
       errorGeneral: "An error occurred during authentication. Please try again.",
     },
     footer: {
-      tagline: "TierForge — Modern tier list platform powered by 100% authentic database metrics.",
+      tagline: "TierWorld — Modern tier list platform powered by 100% authentic database metrics.",
       rights: "All rights reserved.",
       language: "Language:",
     },
@@ -729,7 +729,7 @@ export const translations = {
 
   es: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Explorar",
       categories: "Categorías",
       leaderboard: "Clasificación",
@@ -925,7 +925,7 @@ export const translations = {
       editProfile: "Editar Perfil",
       handle: "ID de Usuario (#handle)",
       handlePlaceholder: "ej: joaogaming",
-      handleHelp: "Identificador público único compartible (ej: #tierforgejoao)",
+      handleHelp: "Identificador público único compartible (ej: #tierworldjoao)",
       handleAvailable: "ID disponible ✓",
       handleTaken: "Este ID ya está en uso por otro usuario",
       handleInvalid: "Mínimo 3 caracteres alfanuméricos y _",
@@ -942,7 +942,7 @@ export const translations = {
       userNotFound: "Usuario no encontrado",
     },
     login: {
-      title: "Bienvenido a TierForge",
+      title: "Bienvenido a TierWorld",
       subtitle: "Inicia sesión con Google para crear, votar y obtener tu ID exclusivo.",
       googleBtn: "Continuar con Google",
       signingIn: "Iniciando sesión…",
@@ -950,7 +950,7 @@ export const translations = {
       errorGeneral: "Ocurrió un error al autenticar. Por favor, inténtalo de nuevo.",
     },
     footer: {
-      tagline: "TierForge — Plataforma moderna de rankings con datos 100% reales.",
+      tagline: "TierWorld — Plataforma moderna de rankings con datos 100% reales.",
       rights: "Todos los derechos reservados.",
       language: "Idioma:",
     },
@@ -958,7 +958,7 @@ export const translations = {
 
   fr: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Explorer",
       categories: "Catégories",
       leaderboard: "Classement",
@@ -1154,7 +1154,7 @@ export const translations = {
       editProfile: "Modifier le Profil",
       handle: "ID Utilisateur (#handle)",
       handlePlaceholder: "ex : joaogaming",
-      handleHelp: "Identifiant public unique partageable (ex : #tierforgejoao)",
+      handleHelp: "Identifiant public unique partageable (ex : #tierworldjoao)",
       handleAvailable: "ID disponible ✓",
       handleTaken: "Cet ID est déjà utilisé par un autre utilisateur",
       handleInvalid: "Minimum 3 caractères alphanumériques et _",
@@ -1171,7 +1171,7 @@ export const translations = {
       userNotFound: "Utilisateur introuvable",
     },
     login: {
-      title: "Bienvenue sur TierForge",
+      title: "Bienvenue sur TierWorld",
       subtitle: "Connectez-vous avec Google pour créer, voter et obtenir votre ID unique.",
       googleBtn: "Continuer avec Google",
       signingIn: "Connexion…",
@@ -1179,7 +1179,7 @@ export const translations = {
       errorGeneral: "Une erreur est survenue lors de la connexion. Veuillez réessayer.",
     },
     footer: {
-      tagline: "TierForge — Plateforme moderne de classement avec données 100% réelles.",
+      tagline: "TierWorld — Plateforme moderne de classement avec données 100% réelles.",
       rights: "Tous droits réservés.",
       language: "Langue :",
     },
@@ -1187,7 +1187,7 @@ export const translations = {
 
   de: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Entdecken",
       categories: "Kategorien",
       leaderboard: "Bestenliste",
@@ -1383,7 +1383,7 @@ export const translations = {
       editProfile: "Profil bearbeiten",
       handle: "Benutzer-ID (#handle)",
       handlePlaceholder: "z.B. joaogaming",
-      handleHelp: "Eindeutige teilbare Kennung (z.B. #tierforgejoao)",
+      handleHelp: "Eindeutige teilbare Kennung (z.B. #tierworldjoao)",
       handleAvailable: "ID verfügbar ✓",
       handleTaken: "Diese ID wird bereits verwendet",
       handleInvalid: "Mindestens 3 alphanumerische Zeichen und _",
@@ -1400,7 +1400,7 @@ export const translations = {
       userNotFound: "Benutzer nicht gefunden",
     },
     login: {
-      title: "Willkommen bei TierForge",
+      title: "Willkommen bei TierWorld",
       subtitle: "Melde dich mit Google an, um Tier Lists zu erstellen und deine eindeutige ID zu sichern.",
       googleBtn: "Mit Google fortfahren",
       signingIn: "Anmeldung läuft…",
@@ -1408,7 +1408,7 @@ export const translations = {
       errorGeneral: "Authentifizierungsfehler aufgetreten. Bitte erneut versuchen.",
     },
     footer: {
-      tagline: "TierForge — Die moderne Plattform für Rankings mit 100% echten Datenbankdaten.",
+      tagline: "TierWorld — Die moderne Plattform für Rankings mit 100% echten Datenbankdaten.",
       rights: "Alle Rechte vorbehalten.",
       language: "Sprache:",
     },
@@ -1416,7 +1416,7 @@ export const translations = {
 
   it: {
     nav: {
-      brand: "TierForge",
+      brand: "TierWorld",
       explore: "Esplora",
       categories: "Categorie",
       leaderboard: "Classifica",
@@ -1612,7 +1612,7 @@ export const translations = {
       editProfile: "Modifica Profilo",
       handle: "ID Utente (#handle)",
       handlePlaceholder: "es: joaogaming",
-      handleHelp: "Identificatore pubblico unico condivisibile (es: #tierforgejoao)",
+      handleHelp: "Identificatore pubblico unico condivisibile (es: #tierworldjoao)",
       handleAvailable: "ID disponibile ✓",
       handleTaken: "Questo ID è già in uso da un altro utente",
       handleInvalid: "Minimo 3 caratteri alfanumerici e _",
@@ -1629,7 +1629,7 @@ export const translations = {
       userNotFound: "Utente non trovato",
     },
     login: {
-      title: "Benvenuto su TierForge",
+      title: "Benvenuto su TierWorld",
       subtitle: "Accedi con Google per creare, votare e ottenere il tuo ID unico.",
       googleBtn: "Continua con Google",
       signingIn: "Accesso in corso…",
@@ -1637,7 +1637,7 @@ export const translations = {
       errorGeneral: "Si è verificato un errore durante l'accesso. Riprova.",
     },
     footer: {
-      tagline: "TierForge — Piattaforma moderna per tier list con dati al 100% reali.",
+      tagline: "TierWorld — Piattaforma moderna per tier list con dati al 100% reali.",
       rights: "Tutti i diritti riservati.",
       language: "Lingua:",
     },

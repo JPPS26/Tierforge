@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Crown,
   Plus,
@@ -35,6 +35,7 @@ export default function Profile() {
   const { handle: paramHandle } = useParams();
   const { user, profile: authProfile } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const [targetUser, setTargetUser] = useState(null);
   const [lists, setLists] = useState([]);
@@ -60,6 +61,17 @@ export default function Profile() {
       let foundUser = null;
       if (paramHandle) {
         foundUser = getUserByHandle(paramHandle) || getUserByUid(paramHandle);
+        // Fallback: se não encontrou pelo handle da URL mas o utilizador autenticado existe,
+        // verifica se é o utilizador atual cujo handle foi alterado
+        if (!foundUser && user) {
+          const myProfile = getUserByUid(user.uid);
+          if (myProfile) {
+            foundUser = myProfile;
+            if (foundUser.handle && foundUser.handle !== paramHandle) {
+              navigate(`/profile/${foundUser.handle}`, { replace: true });
+            }
+          }
+        }
       } else if (user) {
         foundUser = getUserByUid(user.uid);
       }
@@ -79,7 +91,7 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [paramHandle, user, isOwnProfile]);
+  }, [paramHandle, user, isOwnProfile, navigate]);
 
   useEffect(() => {
     setLoading(true);
@@ -120,8 +132,8 @@ export default function Profile() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${targetUser.displayName} (@${targetUser.handle}) — TierForge`,
-          text: `Confere as tier lists e rankings de ${targetUser.displayName} no TierForge!`,
+          title: `${targetUser.displayName} (@${targetUser.handle}) — TierWorld`,
+          text: `Confere as tier lists e rankings de ${targetUser.displayName} no TierWorld!`,
           url: profileUrl,
         });
         return;
@@ -443,6 +455,9 @@ export default function Profile() {
         onClose={() => setEditModalOpen(false)}
         onSaveSuccess={(updated) => {
           setTargetUser((prev) => ({ ...prev, ...updated }));
+          if (updated && updated.handle) {
+            navigate(`/profile/${updated.handle}`, { replace: true });
+          }
           loadProfile();
         }}
       />
@@ -453,7 +468,7 @@ export default function Profile() {
         onClose={() => setShareModalOpen(false)}
         title={`Perfil de ${targetUser.displayName} (#${targetUser.handle})`}
         url={`${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`}
-        description={`Confere as tier lists criadas por ${targetUser.displayName} no TierForge.`}
+        description={`Confere as tier lists criadas por ${targetUser.displayName} no TierWorld.`}
       />
 
       {/* Modal de Seguidores e A Seguir (Com lista real e botões diretos de seguir) */}

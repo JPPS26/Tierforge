@@ -358,7 +358,7 @@ export default function Categories() {
           <EmptyState
             icon={Layers}
             title="Ainda não existem categorias com Tier Lists criadas"
-            body="No TierForge, uma categoria só surge no Explorar quando a comunidade publica pelo menos uma Tier List sobre ela. Sê o primeiro a estrear uma categoria!"
+            body="No TierWorld, uma categoria só surge no Explorar quando a comunidade publica pelo menos uma Tier List sobre ela. Sê o primeiro a estrear uma categoria!"
             actionLabel="Criar a primeira Tier List"
             onAction={() => (window.location.href = "/create")}
           />

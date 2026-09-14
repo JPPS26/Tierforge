@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { GhostButton } from "../components/UI";
 import { AlertCircle } from "lucide-react";
+import GoogleIcon from "../components/GoogleIcon";
 
 export default function Login() {
   const { loginWithGoogle } = useAuth();
@@ -55,9 +56,17 @@ export default function Login() {
         </div>
       )}
 
-      <GhostButton onClick={handleGoogle} disabled={busy} className="py-3">
-        {busy ? t("login.signingIn") : t("login.googleBtn")}
-      </GhostButton>
+      <button
+        type="button"
+        onClick={handleGoogle}
+        disabled={busy}
+        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 py-3.5 px-6 font-semibold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-[0.98] disabled:opacity-50 shadow-sm"
+      >
+        <GoogleIcon size={20} className="flex-shrink-0" />
+        <span className="text-[14.5px]">
+          {busy ? t("login.signingIn") : t("login.googleBtn")}
+        </span>
+      </button>
     </div>
   );
 }

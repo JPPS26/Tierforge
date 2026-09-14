@@ -664,7 +664,7 @@ export default function TierListView() {
                 setAuthModalConfig({
                   isOpen: true,
                   title: "Inicia sessão para comentar",
-                  description: "Precisas de ter conta para publicar comentários e participar nos debates do TierForge.",
+                  description: "Precisas de ter conta para publicar comentários e participar nos debates do TierWorld.",
                 })
               }
             >
@@ -1116,7 +1116,7 @@ export default function TierListView() {
         onClose={() => setShareOpen(false)}
         title={tierList.title}
         url={window.location.href}
-        description={tierList.description || "Classificação completa no TierForge"}
+        description={tierList.description || "Classificação completa no TierWorld"}
       />
 
       {/* Modal de Exportação Social (Feed 16:9 & Stories 9:16) */}

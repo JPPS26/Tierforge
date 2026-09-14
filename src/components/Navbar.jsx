@@ -18,6 +18,7 @@ import { Avatar, PrimaryButton, GhostButton, Badge } from "./UI";
 import LanguageSelector from "./LanguageSelector";
 import ProfileEditModal from "./ProfileEditModal";
 import NotificationsDropdown from "./NotificationsDropdown";
+import TierWorldLogo from "./TierWorldLogo";
 import { searchOmni } from "../services/db";
 
 export default function Navbar() {
@@ -83,19 +84,9 @@ export default function Navbar() {
     <>
       <div className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-md">
         <div className="mx-auto flex h-[68px] max-w-[1240px] items-center gap-4 sm:gap-6 px-4 sm:px-6">
-          {/* Logótipo */}
-          <Link to="/" className="flex flex-shrink-0 items-center gap-2.5 group">
-            <div
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] shadow-glow transition-transform group-hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, #9A7CFF 0%, #6A46F0 100%)",
-              }}
-            >
-              <span className="font-display text-[17px] font-black text-[#0A0A0D]">T</span>
-            </div>
-            <span className="font-display text-[20px] font-black tracking-tight text-white">
-              {t("nav.brand")}
-            </span>
+          {/* Logótipo Oficial TierWorld */}
+          <Link to="/" className="flex flex-shrink-0 items-center gap-2 group">
+            <TierWorldLogo size={36} showText={true} />
           </Link>
 
           {/* Links de Navegação */}

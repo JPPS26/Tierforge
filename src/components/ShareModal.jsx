@@ -10,7 +10,7 @@ export default function ShareModal({ isOpen, onClose, title, url, description = 
   if (!isOpen) return null;
 
   const targetUrl = url || window.location.href;
-  const shareText = encodeURIComponent(`${title ? title + " — " : ""}TierForge: ${description || ""}`);
+  const shareText = encodeURIComponent(`${title ? title + " — " : ""}TierWorld: ${description || ""}`);
   const shareUrl = encodeURIComponent(targetUrl);
 
   function handleCopy() {

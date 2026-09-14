@@ -724,7 +724,7 @@ export default function Builder() {
     setSaveMsg("");
     try {
       const creatorName =
-        profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Criador TierForge";
+        profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Criador TierWorld";
       const creatorHandle = profile?.handle || (user ? `user_${user.uid.slice(0, 6)}` : "anon");
       const creatorAvatar = profile?.avatar || user?.photoURL || "";
 
@@ -1616,7 +1616,7 @@ export default function Builder() {
           onClose={() => setShareModalOpen(false)}
           title={title || t("builder.defaultTitle")}
           url={`${window.location.origin}/tier-list/${savedId}`}
-          description={`Classificação por ${profile?.displayName || "Criador TierForge"}`}
+          description={`Classificação por ${profile?.displayName || "Criador TierWorld"}`}
         />
       )}
 

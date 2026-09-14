@@ -11,7 +11,7 @@ import Login from "./pages/Login";
 import Builder from "./pages/Builder";
 import TierListView from "./pages/TierListView";
 import { useLanguage } from "./context/LanguageContext";
-import LanguageSelector from "./components/LanguageSelector";
+import InSiteNotificationToast from "./components/InSiteNotificationToast";
 
 export default function App() {
   const { t } = useLanguage();
@@ -61,24 +61,23 @@ export default function App() {
         </Routes>
       </div>
 
-      {/* Rodapé Premium Multilingue */}
+      {/* Rodapé Premium TierWorld */}
       <footer className="border-t border-border bg-surface/50 px-4 sm:px-6 py-8 mt-16 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 text-[13px] text-mutedDim">
           <div className="flex items-center gap-2">
-            <span className="font-display font-black text-white">TierForge</span>
+            <span className="font-display font-black text-white">TierWorld</span>
             <span>—</span>
             <span>{t("footer.tagline")}</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] font-semibold text-muted">{t("footer.language")}</span>
-              <LanguageSelector compact />
-            </div>
             <span className="text-[12px]">© {new Date().getFullYear()} {t("footer.rights")}</span>
           </div>
         </div>
       </footer>
+
+      {/* Notificações no Próprio Site (Toasts Flutuantes) */}
+      <InSiteNotificationToast />
     </div>
   );
 }

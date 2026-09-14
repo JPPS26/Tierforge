@@ -1195,8 +1195,8 @@ export async function incrementViews(id) {
       createNotification({
         recipientUid: target.ownerId,
         senderUid: "system",
-        senderName: "TierForge",
-        senderHandle: "tierforge",
+        senderName: "TierWorld",
+        actorName: "TierWorld",
         senderAvatar: "",
         type: "view_milestone",
         tierListId: target.id,

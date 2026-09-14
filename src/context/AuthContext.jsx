@@ -22,14 +22,14 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Gera um handle único automático para novos utilizadores (ex: tierforgeplayer1)
+  // Gera um handle único automático para novos utilizadores (ex: tierworldplayer1)
   function generateDefaultHandle(users) {
     let num = users.length + 1;
-    let candidate = `tierforgeplayer${num}`;
+    let candidate = `tierworldplayer${num}`;
     const taken = new Set(users.map((u) => (u.handle || "").toLowerCase()));
     while (taken.has(candidate)) {
       num++;
-      candidate = `tierforgeplayer${num}`;
+      candidate = `tierworldplayer${num}`;
     }
     return candidate;
   }

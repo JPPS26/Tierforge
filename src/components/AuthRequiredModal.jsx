@@ -8,7 +8,7 @@ export default function AuthRequiredModal({
   isOpen,
   onClose,
   title = "Inicia Sessão para Continuar",
-  description = "Para manter a comunidade do TierForge autêntica e segura, precisas de iniciar sessão para interagir.",
+  description = "Para manter a comunidade do TierWorld autêntica e segura, precisas de iniciar sessão para interagir.",
   onSuccess,
 }) {
   const { loginWithGoogle } = useAuth();
