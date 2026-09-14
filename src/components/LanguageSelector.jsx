@@ -3,7 +3,7 @@ import { ChevronDown, Check, Globe } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import CountryFlag from "./CountryFlag";
 
-export default function LanguageSelector({ compact = false }) {
+export default function LanguageSelector({ compact = false, direction = "down" }) {
   const { language, setLanguage, languages, currentLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -24,17 +24,32 @@ export default function LanguageSelector({ compact = false }) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`flex items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-[13px] font-medium text-text transition-colors hover:border-borderStrong hover:bg-surface2 ${
-          compact ? "px-2 py-1 text-[12px]" : ""
+          compact ? "px-2.5 py-1 text-[12px]" : ""
         }`}
         aria-label="Selecionar idioma"
       >
         <CountryFlag code={currentLanguage.code} size={18} />
         {!compact && <span className="hidden sm:inline font-display">{currentLanguage.label}</span>}
-        <ChevronDown size={13} className={`text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={13}
+          className={`text-muted transition-transform duration-200 ${
+            direction === "up"
+              ? open
+                ? "rotate-0"
+                : "-rotate-180"
+              : open
+              ? "rotate-180"
+              : ""
+          }`}
+        />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[180px] overflow-hidden rounded-2xl border border-borderStrong bg-[#12131A] p-1.5 shadow-2xl backdrop-blur-xl animate-fadeIn">
+        <div
+          className={`absolute right-0 z-50 min-w-[190px] overflow-hidden rounded-2xl border border-borderStrong bg-[#12131A] p-1.5 shadow-2xl backdrop-blur-xl animate-fadeIn ${
+            direction === "up" ? "bottom-[calc(100%+6px)]" : "top-[calc(100%+6px)]"
+          }`}
+        >
           <div className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-mutedDim flex items-center gap-1.5">
             <Globe size={11} /> Idioma / Language
           </div>

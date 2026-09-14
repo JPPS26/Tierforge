@@ -19,7 +19,6 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Avatar, PrimaryButton, Badge } from "./UI";
-import LanguageSelector from "./LanguageSelector";
 import ProfileEditModal from "./ProfileEditModal";
 import NotificationsDropdown from "./NotificationsDropdown";
 import TierWorldLogo from "./TierWorldLogo";
@@ -291,9 +290,6 @@ export default function Navbar() {
             >
               <Search size={16} />
             </button>
-
-            {/* Seletor de Idioma */}
-            <LanguageSelector />
 
             {/* Notificações no Próprio Site */}
             {user && <NotificationsDropdown />}

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import TierWorldLogo from "./TierWorldLogo";
+import LanguageSelector from "./LanguageSelector";
 import {
   Compass,
   Layers,
@@ -154,7 +155,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Linha Inferior com Copyright e Badges */}
+        {/* Linha Inferior com Copyright, Seletor de Idioma e Badges */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/80 pt-6 sm:flex-row text-[12.5px] text-mutedDim">
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold text-white">TierWorld</span>
@@ -162,7 +163,15 @@ export default function Footer() {
             <span>© {currentYear} {t("footer.rights") || "Todos os direitos reservados."}</span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            {/* Seletor de Idioma */}
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-medium text-mutedDim flex items-center gap-1">
+                <Globe size={13} /> {t("footer.language") || "Idioma:"}
+              </span>
+              <LanguageSelector compact direction="up" />
+            </div>
+
             <span className="rounded-lg border border-border bg-surface px-2.5 py-1 font-mono text-[11px] text-muted">
               tierworld.netlify.app
             </span>
