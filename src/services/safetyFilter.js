@@ -109,3 +109,4 @@ export function extractMentions(text) {
   const handles = matches.map((m) => m.slice(1).toLowerCase());
   return Array.from(new Set(handles));
 }
+

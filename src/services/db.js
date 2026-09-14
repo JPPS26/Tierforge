@@ -260,6 +260,17 @@ export function toggleFollowUser(currentUid, targetUid) {
   } else {
     following.add(targetUid);
     followers.add(currentUid);
+
+    // Notificação de novo seguidor
+    createNotification({
+      recipientUid: targetUid,
+      senderUid: currentUid,
+      senderName: currentUser.displayName || "Um criador",
+      senderHandle: currentUser.handle || "",
+      senderAvatar: currentUser.avatar || "",
+      type: "new_follower",
+      text: "começou a seguir o teu perfil",
+    });
   }
 
   currentUser.following = Array.from(following);
@@ -704,7 +715,23 @@ export async function createTierList(uid, {
   if (parentTemplateId) {
     const parentIndex = existing.findIndex((l) => l.id === parentTemplateId);
     if (parentIndex !== -1) {
-      existing[parentIndex].remixCount = (existing[parentIndex].remixCount || 0) + 1;
+      const parent = existing[parentIndex];
+      parent.remixCount = (parent.remixCount || 0) + 1;
+
+      // Notificação para o autor do template original
+      if (parent.ownerId && parent.ownerId !== uid && parent.ownerId !== "anon") {
+        createNotification({
+          recipientUid: parent.ownerId,
+          senderUid: uid,
+          senderName: creatorName,
+          senderHandle: creatorHandle,
+          senderAvatar: creatorAvatar,
+          type: "remix",
+          tierListId: newId,
+          tierListTitle: parent.title,
+          text: "criou uma versão da tua Tier List",
+        });
+      }
     }
   }
 
@@ -1018,6 +1045,28 @@ export async function voteTierList(tierListId, userId = "anonymous", direction =
   if (target) {
     target.votes = Math.max(0, (target.votes || 0) + delta);
     setStored(STORAGE_KEY_TIERLISTS, stored);
+
+    // Notificação de gosto na Tier List (se for voto positivo e de outro utilizador)
+    if (
+      direction === 1 &&
+      listVotes[userId] === 1 &&
+      target.ownerId &&
+      target.ownerId !== userId &&
+      target.ownerId !== "anon"
+    ) {
+      const voter = getUserByUid(userId);
+      createNotification({
+        recipientUid: target.ownerId,
+        senderUid: userId,
+        senderName: voter?.displayName || "Um criador",
+        senderHandle: voter?.handle || "",
+        senderAvatar: voter?.avatar || "",
+        type: "list_like",
+        tierListId,
+        tierListTitle: target.title,
+        text: "gostou da tua Tier List",
+      });
+    }
   }
 
   return {
@@ -1031,7 +1080,7 @@ export function getUserVoteForList(tierListId, userId = "anonymous") {
   return voteStore[tierListId]?.[userId] || 0;
 }
 
-// Incrementar contagem de visualizações
+// Incrementar contagem de visualizações com marcos festivos
 export async function incrementViews(id) {
   const sessionKey = `viewed_${id}`;
   if (sessionStorage.getItem(sessionKey)) return; // Evita contagem infinita por recarregamento da página
@@ -1040,8 +1089,29 @@ export async function incrementViews(id) {
   const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   const target = stored.find((l) => l.id === id);
   if (target) {
-    target.views = (target.views || 0) + 1;
+    const newViews = (target.views || 0) + 1;
+    target.views = newViews;
     setStored(STORAGE_KEY_TIERLISTS, stored);
+
+    // Marcos de visualizações para evitar spam individual
+    const VIEW_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+    if (
+      target.ownerId &&
+      target.ownerId !== "anon" &&
+      VIEW_MILESTONES.includes(newViews)
+    ) {
+      createNotification({
+        recipientUid: target.ownerId,
+        senderUid: "system",
+        senderName: "TierForge",
+        senderHandle: "tierforge",
+        senderAvatar: "",
+        type: "view_milestone",
+        tierListId: target.id,
+        tierListTitle: target.title,
+        text: `atingiu o marco de ${newViews} visualizações! 🎉`,
+      });
+    }
   }
 }
 
@@ -1392,6 +1462,25 @@ export function reactToComment(tierListId, commentId, replyId = null, uid, react
     } else {
       target.likes.push(uid);
       target.dislikes = target.dislikes.filter((u) => u !== uid);
+
+      // Notificação de gosto no comentário (se for utilizador diferente)
+      if (target.userUid && target.userUid !== uid && target.userUid !== "anon") {
+        const voter = getUserByUid(uid);
+        const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+        const tl = stored.find((l) => l.id === tierListId);
+        createNotification({
+          recipientUid: target.userUid,
+          senderUid: uid,
+          senderName: voter?.displayName || "Um utilizador",
+          senderHandle: voter?.handle || "",
+          senderAvatar: voter?.avatar || "",
+          type: "comment_like",
+          tierListId,
+          tierListTitle: tl?.title || "Tier List",
+          commentId: target.id,
+          text: "gostou do teu comentário",
+        });
+      }
     }
   } else if (reactionType === "dislike") {
     if (target.dislikes.includes(uid)) {
@@ -1413,7 +1502,76 @@ export function reactToComment(tierListId, commentId, replyId = null, uid, react
 }
 
 // -------------------------------------------------------------
-// SISTEMA DE NOTIFICAÇÕES
+// PREFERÊNCIAS E SILENCIAMENTO DE NOTIFICAÇÕES (MUTE & SNOOZE)
+// -------------------------------------------------------------
+export function getNotificationSettings(uid) {
+  if (!uid) return null;
+  const defaultSettings = {
+    mutedUntil: null,
+    mutedForever: false,
+    soundEnabled: true,
+    categories: {
+      comments: true,
+      replies: true,
+      mentions: true,
+      likes: true,
+      followers: true,
+      remixes: true,
+      views: true,
+    },
+  };
+  return getStored(`tierforge_notif_settings_${uid}`, defaultSettings);
+}
+
+export function updateNotificationSettings(uid, updates = {}) {
+  if (!uid) return null;
+  const current = getNotificationSettings(uid);
+  const merged = {
+    ...current,
+    ...updates,
+    categories: {
+      ...current.categories,
+      ...(updates.categories || {}),
+    },
+  };
+  setStored(`tierforge_notif_settings_${uid}`, merged);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("tierforge_notifications_updated", {
+        detail: { recipientUid: uid },
+      })
+    );
+  }
+  return merged;
+}
+
+export function setNotificationMute(uid, { durationMs = null, forever = false }) {
+  if (!uid) return null;
+  const updates = {
+    mutedForever: Boolean(forever),
+    mutedUntil: forever ? null : durationMs ? Date.now() + durationMs : null,
+  };
+  return updateNotificationSettings(uid, updates);
+}
+
+export function unmuteNotifications(uid) {
+  return updateNotificationSettings(uid, {
+    mutedForever: false,
+    mutedUntil: null,
+  });
+}
+
+export function isUserMuted(uid) {
+  if (!uid) return false;
+  const settings = getNotificationSettings(uid);
+  if (!settings) return false;
+  if (settings.mutedForever) return true;
+  if (settings.mutedUntil && settings.mutedUntil > Date.now()) return true;
+  return false;
+}
+
+// -------------------------------------------------------------
+// SISTEMA DE NOTIFICAÇÕES COM ANTI-SPAM E AGRUPAMENTO (BUNDLING)
 // -------------------------------------------------------------
 export function createNotification({
   recipientUid,
@@ -1427,9 +1585,80 @@ export function createNotification({
   commentId,
   text,
 }) {
-  if (!recipientUid || recipientUid === senderUid) return;
+  if (!recipientUid || recipientUid === senderUid) return null;
+
+  // 1. Verifica se o destinatário tem notificações silenciadas
+  if (isUserMuted(recipientUid)) return null;
+
+  // 2. Verifica as preferências de categoria do utilizador
+  const settings = getNotificationSettings(recipientUid);
+  if (settings?.categories) {
+    const catMap = {
+      comment: "comments",
+      reply: "replies",
+      mention: "mentions",
+      list_like: "likes",
+      comment_like: "likes",
+      new_follower: "followers",
+      remix: "remixes",
+      view_milestone: "views",
+    };
+    const categoryKey = catMap[type];
+    if (categoryKey && settings.categories[categoryKey] === false) {
+      return null;
+    }
+  }
 
   const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+
+  // 3. Controlo Anti-Spam: Throttling de 10 minutos para likes repetidos do mesmo utilizador
+  if (type === "list_like" || type === "comment_like") {
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    const duplicate = notifs.find(
+      (n) =>
+        n.recipientUid === recipientUid &&
+        n.senderUid === senderUid &&
+        n.type === type &&
+        n.tierListId === tierListId &&
+        n.commentId === commentId &&
+        new Date(n.createdAt).getTime() > tenMinutesAgo
+    );
+    if (duplicate) {
+      return null;
+    }
+
+    // 4. Agrupamento Inteligente (Notification Bundling):
+    // Se já existe uma notificação não lida de like neste item, agrupa com contagem!
+    const existingLikeNotifIndex = notifs.findIndex(
+      (n) =>
+        n.recipientUid === recipientUid &&
+        n.type === type &&
+        n.tierListId === tierListId &&
+        n.commentId === commentId &&
+        !n.read
+    );
+
+    if (existingLikeNotifIndex !== -1) {
+      const existing = notifs[existingLikeNotifIndex];
+      const count = (existing.bundledCount || 1) + 1;
+      existing.bundledCount = count;
+      existing.senderName = `${senderName}`;
+      existing.text = `e mais ${count - 1} ${count - 1 === 1 ? "pessoa gostaram" : "pessoas gostaram"} ${
+        type === "list_like" ? "da tua Tier List" : "do teu comentário"
+      }`;
+      existing.createdAt = new Date().toISOString();
+      setStored(STORAGE_KEY_NOTIFICATIONS, notifs);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("tierforge_notifications_updated", {
+            detail: { recipientUid, newNotification: false },
+          })
+        );
+      }
+      return existing;
+    }
+  }
+
   const newNotif = {
     id: `n-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
     recipientUid,
@@ -1437,8 +1666,8 @@ export function createNotification({
     senderName: senderName || "Utilizador",
     senderHandle: senderHandle || "",
     senderAvatar: senderAvatar || "",
-    type: type || "comment", // 'comment' | 'reply' | 'mention'
-    tierListId,
+    type: type || "comment",
+    tierListId: tierListId || null,
     tierListTitle: tierListTitle || "Tier List",
     commentId: commentId || null,
     text: text || "interagiu contigo",
@@ -1453,12 +1682,22 @@ export function createNotification({
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("tierforge_notifications_updated", {
-        detail: { recipientUid },
+        detail: { recipientUid, newNotification: true, notif: newNotif },
       })
     );
   }
 
   return newNotif;
+}
+
+export function deleteNotification(notifId) {
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  const filtered = notifs.filter((n) => n.id !== notifId);
+  setStored(STORAGE_KEY_NOTIFICATIONS, filtered);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("tierforge_notifications_updated"));
+  }
+  return true;
 }
 
 export function getUserNotifications(uid) {
