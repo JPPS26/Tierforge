@@ -1,16 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import {
-  getActiveCategories,
-  getPopularCategories,
-  saveCategoryWithApiData,
-} from "../services/db";
-import {
-  searchApiCategories,
-  fetchCategoryDetailsFromApi,
-} from "../services/categoriesApi";
-import { EmptyState, PrimaryButton } from "../components/UI";
+import { getActiveCategories } from "../services/db";
+import { PrimaryButton } from "../components/UI";
 import {
   Trophy,
   Gamepad2,
@@ -33,12 +25,10 @@ import {
   GraduationCap,
   Layers,
   ArrowRight,
-  Loader2,
   Compass,
   Info,
+  CheckCircle2,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import AuthRequiredModal from "../components/AuthRequiredModal";
 
 const CATEGORY_ICONS = {
   gaming: Gamepad2,
@@ -86,17 +76,6 @@ const CATEGORY_COLORS = {
   geek: "#6366F1",
 };
 
-const QUICK_SUGGESTIONS = [
-  "Futebol",
-  "Gaming",
-  "Cinema",
-  "Anime",
-  "Música",
-  "Tecnologia",
-  "Fórmula 1",
-  "Séries",
-];
-
 function getCatVisuals(cat) {
   const key = (cat.id || cat.slug || "").toLowerCase();
   const IconComponent = CATEGORY_ICONS[key] || CATEGORY_ICONS[cat.icon] || Layers;
@@ -106,159 +85,50 @@ function getCatVisuals(cat) {
 
 export default function Categories() {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Categorias ativas com Tier Lists criadas (REGRA ESTRITA)
+  // Categorias ativas com Tier Lists criadas (REGRA ESTRITA: apenas categorias com listas criadas)
   const [activeCategories, setActiveCategories] = useState([]);
-  const [popularCategories, setPopularCategories] = useState([]);
-
-  // Pesquisa local e API
   const [searchQuery, setSearchQuery] = useState("");
-  const [apiResults, setApiResults] = useState([]);
-  const [isSearchingApi, setIsSearchingApi] = useState(false);
-  const [apiSearchError, setApiSearchError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Modal de Autenticação para Ações Protegidas
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalConfig, setAuthModalConfig] = useState({
-    title: "Inicia sessão para continuar",
-    description: "Para criar ou adicionar categorias precisas de ter uma conta.",
-  });
-
-  // Modal de Detalhes / Adicionar da API
-  const [selectedApiTopic, setSelectedApiTopic] = useState(null);
-  const [topicLoading, setTopicLoading] = useState(false);
-  const [importing, setImporting] = useState(false);
-
-  const searchTimeoutRef = useRef(null);
-
-  const loadActiveData = () => {
-    // REGRA ESTRITA: Só carrega categorias com Tier Lists criadas (> 0)
+  useEffect(() => {
+    // Carrega estritamente as categorias que têm Tier Lists criadas (> 0)
     const active = getActiveCategories();
     setActiveCategories(active);
-    setPopularCategories(getPopularCategories());
-  };
-
-  useEffect(() => {
-    loadActiveData();
+    setLoading(false);
   }, []);
 
-  // Pesquisa dinâmica na API quando o utilizador digita
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    const query = searchQuery.trim();
-    if (query.length < 2) {
-      setApiResults([]);
-      setIsSearchingApi(false);
-      setApiSearchError("");
-      return;
-    }
-
-    searchTimeoutRef.current = setTimeout(async () => {
-      setIsSearchingApi(true);
-      setApiSearchError("");
-      try {
-        const results = await searchApiCategories(query);
-        setApiResults(results);
-      } catch (err) {
-        console.warn("Erro ao pesquisar na API de Categorias:", err);
-        setApiSearchError("Não foi possível carregar sugestões da API.");
-      } finally {
-        setIsSearchingApi(false);
-      }
-    }, 350);
-
-    return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    };
-  }, [searchQuery]);
-
-  // Filtragem das categorias ativas existentes
-  const filteredActive = searchQuery.trim()
-    ? activeCategories.filter((c) => {
-        const q = searchQuery.toLowerCase().trim();
-        return (
-          (c.name || "").toLowerCase().includes(q) ||
-          (c.description || "").toLowerCase().includes(q) ||
-          (c.subcategories || []).some((sub) =>
-            (typeof sub === "string" ? sub : sub.name || "").toLowerCase().includes(q)
-          )
-        );
-      })
-    : activeCategories;
-
-  // Ação ao clicar num resultado da API
-  const handleInspectApiTopic = async (topic) => {
-    setTopicLoading(true);
-    setSelectedApiTopic(topic);
-    try {
-      const detailed = await fetchCategoryDetailsFromApi(topic.name);
-      if (detailed) {
-        setSelectedApiTopic({
-          ...topic,
-          ...detailed,
-        });
-      }
-    } catch (err) {
-      console.warn("Erro ao obter detalhes adicionais do tema:", err);
-    } finally {
-      setTopicLoading(false);
-    }
-  };
-
-  // Criar Tier List neste tema da API
-  const handleCreateTierListInTopic = async (topic) => {
-    if (!user) {
-      setAuthModalConfig({
-        title: "Inicia sessão para criar Tier Lists",
-        description: `Para criares uma Tier List sobre "${topic.name}", inicia sessão com a tua conta.`,
-      });
-      setAuthModalOpen(true);
-      return;
-    }
-
-    setImporting(true);
-    try {
-      await saveCategoryWithApiData({
-        name: topic.name,
-        slug: topic.slug,
-        description: topic.description,
-        imageUrl: topic.imageUrl,
-        subcategories: topic.subcategories || [],
-        color: topic.color || "#7C5CFF",
-        icon: topic.icon || "Sparkles",
-      });
-
-      navigate(`/create?category=${encodeURIComponent(topic.slug)}&title=${encodeURIComponent(topic.name)}`);
-    } catch (err) {
-      console.warn("Erro ao preparar categoria:", err);
-      navigate(`/create?category=${encodeURIComponent(topic.slug)}`);
-    } finally {
-      setImporting(false);
-      setSelectedApiTopic(null);
-    }
-  };
+  // Filtragem local exclusivamente das categorias ativas existentes
+  const filteredActive = useMemo(() => {
+    if (!searchQuery.trim()) return activeCategories;
+    const q = searchQuery.toLowerCase().trim();
+    return activeCategories.filter(
+      (c) =>
+        (c.name || "").toLowerCase().includes(q) ||
+        (c.description || "").toLowerCase().includes(q) ||
+        (c.subcategories || []).some((sub) =>
+          (typeof sub === "string" ? sub : sub.name || "").toLowerCase().includes(q)
+        )
+    );
+  }, [activeCategories, searchQuery]);
 
   const totalTierListsCount = activeCategories.reduce((acc, c) => acc + (c.count || 0), 0);
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-28 pt-10">
-      {/* Cabeçalho da Página */}
+      {/* Cabeçalho Principal */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent/10 border border-accent/30 text-[#B6A5FF] font-bold text-[12px] mb-3 shadow-sm">
-            <Compass size={13} className="text-accent" />
-            <span>Taxonomia & Descoberta Global</span>
+            <Layers size={13} className="text-accent" />
+            <span>Comunidades & Categorias Ativas</span>
           </div>
           <h1 className="font-display text-[32px] sm:text-[44px] font-black text-white tracking-tight leading-tight">
             Categorias & Temas
           </h1>
           <p className="mt-2 text-[14.5px] text-muted max-w-2xl leading-relaxed">
-            Navega pelas comunidades temáticas ativas com listas criadas pela comunidade, ou pesquisa qualquer tópico na nossa taxonomia aberta para inaugurar um novo nicho.
+            Aqui encontras exclusivamente as categorias criadas pela comunidade através de Tier Lists publicadas. Cada nova categoria surge aqui automaticamente assim que um membro publica uma lista sobre o tema.
           </p>
         </div>
 
@@ -283,7 +153,7 @@ export default function Categories() {
             <div className="font-display text-[22px] font-black text-white">
               {activeCategories.length}
             </div>
-            <span className="text-[12px] font-medium text-mutedDim">Com rankings comunitários</span>
+            <span className="text-[12px] font-medium text-mutedDim">Criadas através de Tier Lists</span>
           </div>
         </div>
 
@@ -293,166 +163,56 @@ export default function Categories() {
             <Trophy size={24} />
           </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Listas Catalogadas</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Tier Lists Publicadas</span>
             <div className="font-display text-[22px] font-black text-white">
               {totalTierListsCount}
             </div>
-            <span className="text-[12px] font-medium text-mutedDim">Distribuídas por temas</span>
+            <span className="text-[12px] font-medium text-mutedDim">Distribuídas nestas categorias</span>
           </div>
         </div>
 
-        {/* Card 3: Taxonomia Aberta */}
+        {/* Card 3: Como Estrear uma Categoria */}
         <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-300 shadow-sm shrink-0">
             <Sparkles size={24} />
           </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">API & Auto-Tagging</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Inaugurar Novo Nicho</span>
             <div className="font-display text-[16px] font-bold text-white mt-0.5">
-              Catálogo Infinito
+              Criar ao Publicar
             </div>
-            <span className="text-[12px] font-medium text-mutedDim">Pesquisa qualquer assunto</span>
+            <span className="text-[12px] font-medium text-mutedDim">Define a categoria no Criador</span>
           </div>
         </div>
       </div>
 
-      {/* Barra de Pesquisa Híbrida */}
-      <div className="mb-10 max-w-3xl">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mutedDim pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Pesquisar categoria ativa ou explorar na API (ex: Futebol, Rock, RPGs, Cinema)..."
-            className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-12 pr-10 py-3.5 text-[14px] text-white placeholder-mutedDim focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20 focus:outline-none transition-all shadow-lg backdrop-blur-md"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setApiResults([]);
-              }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
-
-        {/* Sugestões Rápidas de Pesquisa */}
-        {!searchQuery && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[12px] font-bold text-mutedDim flex items-center gap-1">
-              <span>Sugestões:</span>
-            </span>
-            {QUICK_SUGGESTIONS.map((sug) => (
+      {/* Barra de Pesquisa de Categorias Ativas */}
+      {activeCategories.length > 0 && (
+        <div className="mb-8 max-w-2xl">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mutedDim pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Pesquisar entre as categorias ativas da comunidade..."
+              className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-12 pr-10 py-3.5 text-[14px] text-white placeholder-mutedDim focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20 focus:outline-none transition-all shadow-lg backdrop-blur-md"
+            />
+            {searchQuery && (
               <button
-                key={sug}
                 type="button"
-                onClick={() => setSearchQuery(sug)}
-                className="rounded-xl border border-white/[0.06] bg-surface/50 px-2.5 py-1 text-[11.5px] font-semibold text-muted hover:border-accent/40 hover:text-white hover:bg-surface2 transition-all"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+                title="Limpar pesquisa"
               >
-                {sug}
+                <X size={18} />
               </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Resultados da Pesquisa na API de Categorias */}
-      {searchQuery.trim().length >= 2 && (
-        <div className="mb-12 rounded-[28px] border border-accent/30 bg-gradient-to-br from-accent/10 via-[#141224]/90 to-[#0F0E17]/95 p-6 backdrop-blur-xl shadow-2xl animate-fade-in">
-          <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-accent/20">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/40">
-                <Sparkles size={16} />
-              </div>
-              <div>
-                <h2 className="font-display text-[17px] font-bold text-white">
-                  Resultados da API de Categorias & Taxonomia
-                </h2>
-                <p className="text-[12px] text-muted">Sugestões enriquecidas para estrear novos rankings no TierWorld</p>
-              </div>
-            </div>
-            {isSearchingApi && (
-              <div className="flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent">
-                <Loader2 size={13} className="animate-spin" />
-                <span>A consultar API…</span>
-              </div>
             )}
           </div>
-
-          {apiResults.length === 0 && !isSearchingApi ? (
-            <div className="py-6 text-center">
-              <p className="text-[13.5px] text-muted max-w-md mx-auto">
-                Nenhuma sugestão adicional encontrada na API para "{searchQuery}". Podes criar uma Tier List diretamente com este tema!
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate(`/create?title=${encodeURIComponent(searchQuery)}`)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[12.5px] font-bold text-black hover:opacity-90 shadow-glow"
-              >
-                <Plus size={14} />
-                <span>Criar Tier List com "{searchQuery}"</span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {apiResults.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-white/[0.08] bg-[#10101A]/90 p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:border-accent/60 hover:shadow-glow group"
-                >
-                  <div>
-                    {item.imageUrl ? (
-                      <div className="w-full h-32 rounded-xl overflow-hidden mb-3.5 bg-surface2 border border-white/5">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-32 rounded-xl mb-3.5 bg-surface2/80 border border-white/5 flex items-center justify-center text-accent">
-                        <Sparkles size={28} />
-                      </div>
-                    )}
-                    <h3 className="font-display font-bold text-white text-[15.5px] group-hover:text-accent transition-colors line-clamp-1">
-                      {item.name}
-                    </h3>
-                    <p className="text-[12px] text-mutedDim line-clamp-2 mt-1 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleInspectApiTopic(item)}
-                      className="flex-1 py-1.5 px-3 rounded-xl bg-surface2/80 hover:bg-surface border border-white/10 text-[12px] font-bold text-white hover:text-accent transition-colors text-center"
-                    >
-                      Ver Detalhes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCreateTierListInTopic(item)}
-                      className="py-1.5 px-3 rounded-xl bg-accent text-black text-[12px] font-black hover:opacity-90 transition-opacity shadow-sm"
-                      title="Criar Tier List nesta categoria"
-                    >
-                      + Criar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Secção Principal: Categorias Ativas com Tier Lists Criadas */}
+      {/* Secção Principal: Grelha de Categorias Criadas pela Comunidade */}
       <div>
         <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
@@ -461,7 +221,7 @@ export default function Categories() {
             </div>
             <div>
               <h2 className="font-display text-[22px] font-black text-white tracking-tight">
-                {searchQuery ? "Categorias Ativas Encontradas" : "Categorias Ativas da Comunidade"}
+                {searchQuery ? "Categorias Encontradas" : "Categorias Criadas por Tier Lists"}
               </h2>
             </div>
           </div>
@@ -471,14 +231,29 @@ export default function Categories() {
           </span>
         </div>
 
-        {activeCategories.length === 0 ? (
-          <EmptyState
-            icon={Layers}
-            title="Ainda não existem categorias com Tier Lists criadas"
-            body="No TierWorld, uma categoria só surge no Explorar quando a comunidade publica pelo menos uma Tier List sobre ela. Sê o primeiro a estrear uma categoria!"
-            actionLabel="Criar a primeira Tier List"
-            onAction={() => (window.location.href = "/create")}
-          />
+        {loading ? (
+          <div className="py-20 text-center text-muted text-sm">
+            A carregar categorias criadas pela comunidade…
+          </div>
+        ) : activeCategories.length === 0 ? (
+          <div className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] p-10 sm:p-14 text-center shadow-xl backdrop-blur-xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent shadow-inner">
+              <Layers size={26} />
+            </div>
+            <h3 className="font-display text-[20px] font-bold text-white">
+              Ainda não existem categorias com Tier Lists criadas
+            </h3>
+            <p className="mt-2 text-[14px] text-muted max-w-md mx-auto leading-relaxed">
+              No TierWorld, as categorias surgem aqui automaticamente quando a comunidade publica a primeira Tier List sobre o tema. Sê o primeiro a inaugurar uma categoria!
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Link to="/create">
+                <PrimaryButton icon={Plus}>
+                  {t("home.createBtn") || "Criar a primeira Tier List"}
+                </PrimaryButton>
+              </Link>
+            </div>
+          </div>
         ) : filteredActive.length === 0 ? (
           <div className="p-12 text-center rounded-3xl border border-white/[0.08] bg-[#141420]/60 backdrop-blur-md">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-surface2 text-mutedDim">
@@ -488,26 +263,22 @@ export default function Categories() {
               Nenhuma categoria ativa encontrada para "{searchQuery}"
             </p>
             <p className="text-[13px] text-mutedDim mb-6 max-w-md mx-auto leading-relaxed">
-              Esta categoria ainda não tem Tier Lists criadas pela comunidade. Podes estreá-la e publicar a primeira lista agora mesmo!
+              Esta categoria ainda não tem Tier Lists criadas pela comunidade. Para inaugurá-la, publica uma nova Tier List sobre este tema!
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                if (!user) {
-                  setAuthModalConfig({
-                    title: "Inicia sessão para criar Tier Lists",
-                    description: `Para criares a primeira Tier List sobre "${searchQuery}", inicia sessão com a tua conta.`,
-                  });
-                  setAuthModalOpen(true);
-                  return;
-                }
-                navigate(`/create?title=${encodeURIComponent(searchQuery)}`);
-              }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-black text-[13px] font-bold hover:opacity-90 shadow-glow"
-            >
-              <Plus size={15} />
-              <span>Estrear Categoria "{searchQuery}"</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="rounded-xl border border-white/10 bg-surface px-4 py-2 text-[13px] font-bold text-white hover:bg-surface2 transition-all"
+              >
+                Limpar Pesquisa
+              </button>
+              <Link to={`/create?category=${encodeURIComponent(searchQuery)}`}>
+                <PrimaryButton icon={Plus}>
+                  <span>Inaugurar Categoria "{searchQuery}"</span>
+                </PrimaryButton>
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -581,15 +352,15 @@ export default function Categories() {
                         {t(`categories.${c.id}`) || c.name}
                       </h3>
                       <p className="mt-1.5 text-[13px] text-muted leading-relaxed line-clamp-2">
-                        {c.description || "Comunidade ativa com rankings livres e votações abertas."}
+                        {c.description || "Comunidade temática ativa com rankings livres e votações abertas."}
                       </p>
                     </div>
 
-                    {/* Subcategorias Chips */}
+                    {/* Subcategorias Chips (se existirem na categoria) */}
                     {c.subcategories && c.subcategories.length > 0 && (
                       <div className="mt-4 pt-3.5 border-t border-white/[0.06]">
                         <div className="text-[11.5px] font-bold text-mutedDim mb-2">
-                          Subcategorias populares:
+                          Subcategorias disponíveis:
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {c.subcategories.slice(0, 5).map((sub) => {
@@ -638,116 +409,57 @@ export default function Categories() {
         )}
       </div>
 
-      {/* Modal de Detalhes da API */}
-      {selectedApiTopic && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fade-in"
-          onClick={() => setSelectedApiTopic(null)}
-        >
-          <div
-            className="w-full max-w-[520px] rounded-3xl border border-white/15 bg-[#12131F] overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {selectedApiTopic.imageUrl && (
-              <div className="w-full h-48 relative bg-surface2">
-                <img
-                  src={selectedApiTopic.imageUrl}
-                  alt={selectedApiTopic.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#12131F] via-transparent to-black/40" />
-                <button
-                  onClick={() => setSelectedApiTopic(null)}
-                  className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-black/60 text-white hover:bg-black transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-
-            <div className="p-6">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="font-display font-black text-[22px] text-white">
-                  {selectedApiTopic.name}
-                </h3>
-                {!selectedApiTopic.imageUrl && (
-                  <button
-                    onClick={() => setSelectedApiTopic(null)}
-                    className="p-1 rounded-lg text-mutedDim hover:text-white"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-              </div>
-
-              <p className="text-[13px] text-muted leading-relaxed mb-4">
-                {selectedApiTopic.description}
+      {/* Painel Informativo: Como Funcionam as Categorias */}
+      <div className="mt-14 relative overflow-hidden rounded-[26px] border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E14] p-6 sm:p-8 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-5 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-accent">
+              <Info size={20} />
+            </div>
+            <div>
+              <h3 className="font-display text-[17px] font-bold text-white">
+                Como são Criadas as Categorias no TierWorld?
+              </h3>
+              <p className="text-[12.5px] text-muted font-normal">
+                Estrutura 100% orgânica orientada pela atividade real da comunidade.
               </p>
-
-              {topicLoading && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-accent mb-4">
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>A carregar metadados da API…</span>
-                </div>
-              )}
-
-              {selectedApiTopic.subcategories && selectedApiTopic.subcategories.length > 0 && (
-                <div className="mb-5">
-                  <div className="text-[11.5px] font-bold text-mutedDim mb-2">
-                    Subcategorias sugeridas pela taxonomia:
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedApiTopic.subcategories.map((sub) => (
-                      <span
-                        key={sub}
-                        className="text-[11px] font-semibold px-2.5 py-1 rounded-xl bg-surface border border-white/10 text-muted"
-                      >
-                        {sub}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/[0.08]">
-                <button
-                  type="button"
-                  onClick={() => setSelectedApiTopic(null)}
-                  className="px-4 py-2 rounded-xl text-[12.5px] font-bold text-muted hover:text-white transition-colors"
-                >
-                  Fechar
-                </button>
-                <button
-                  type="button"
-                  disabled={importing}
-                  onClick={() => handleCreateTierListInTopic(selectedApiTopic)}
-                  className="px-5 py-2.5 rounded-xl bg-accent text-black font-black text-[12.5px] hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-2 transition-opacity"
-                >
-                  {importing ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>A preparar…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={15} />
-                      <span>Criar Tier List neste Tema</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#00E5A3]/30 bg-[#00E5A3]/10 px-3 py-1 text-[11px] font-bold text-[#00E5A3] shrink-0 self-start sm:self-auto">
+            <CheckCircle2 size={13} />
+            <span>Sem Categorias Vazias</span>
+          </div>
         </div>
-      )}
 
-      {/* Modal de Autenticação */}
-      <AuthRequiredModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        title={authModalConfig.title}
-        description={authModalConfig.description}
-      />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-white/[0.06] bg-surface/50 p-4">
+            <div className="font-display text-[16px] font-bold text-white mb-1">
+              1. Criação no Criador de Tier Lists
+            </div>
+            <p className="text-[12px] text-mutedDim leading-relaxed">
+              Ao criar uma Tier List, escolhes ou pesquisas qualquer categoria e subcategoria na taxonomia aberta.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.06] bg-surface/50 p-4">
+            <div className="font-display text-[16px] font-bold text-white mb-1">
+              2. Inauguração Automática
+            </div>
+            <p className="text-[12px] text-mutedDim leading-relaxed">
+              Assim que a lista é publicada, a categoria é ativada imediatamente e passa a ser exibida nesta página.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.06] bg-surface/50 p-4">
+            <div className="font-display text-[16px] font-bold text-white mb-1">
+              3. Biblioteca Sempre Relevante
+            </div>
+            <p className="text-[12px] text-mutedDim leading-relaxed">
+              Todas as categorias visíveis têm rankings reais e ativos para explorar, votar e debater com outros membros.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
