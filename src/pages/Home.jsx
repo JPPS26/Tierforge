@@ -20,12 +20,6 @@ import { useLanguage } from "../context/LanguageContext";
 import { getTierLists, getCategories, getGlobalStats } from "../services/db";
 
 function LiveHeroTierList({ t }) {
-  const rows = [
-    { t: "S", items: ["Cristiano Ronaldo", "Lionel Messi", "Kylian Mbappé"], color: "#FF3B5C" },
-    { t: "A", items: ["Jude Bellingham", "Erling Haaland", "Vinícius Jr."], color: "#FF9F43" },
-    { t: "B", items: ["Kevin De Bruyne", "Luka Modrić", "Rodri"], color: "#FFD23F" },
-  ];
-
   return (
     <div
       className="w-full max-w-[480px] rounded-[26px] border border-borderStrong p-5 shadow-2xl backdrop-blur-md transition-all hover:shadow-glow"
@@ -36,16 +30,21 @@ function LiveHeroTierList({ t }) {
       }}
     >
       <div className="mb-4 flex items-center justify-between">
-        <span className="font-display text-[14px] font-bold text-text">
-          {t("home.livePreviewTitle")}
+        <span className="font-display text-[14px] font-bold text-white flex items-center gap-2">
+          <Sparkles size={14} className="text-accent" />
+          <span>A Tua Tier List</span>
         </span>
-        <span className="flex items-center gap-1.5 rounded-full border border-[rgba(49,216,168,0.35)] bg-[rgba(49,216,168,0.15)] px-2.5 py-1 text-[11.5px] font-bold text-teal">
-          <Activity size={12} className="animate-pulse" /> {t("home.liveBadge")}
+        <span className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accentSoft px-2.5 py-1 text-[11px] font-bold text-accent">
+          Começa do Zero
         </span>
       </div>
 
       <div className="flex flex-col gap-2">
-        {rows.map((r) => (
+        {[
+          { t: "S", color: "#FF3B5C", label: "O Melhor de Sempre" },
+          { t: "A", color: "#FF9F43", label: "Excelente" },
+          { t: "B", color: "#FFD23F", label: "Bom / Regular" },
+        ].map((r) => (
           <div key={r.t} className="flex h-12 overflow-hidden rounded-xl border border-border">
             <div
               className="flex w-12 items-center justify-center font-display text-[16px] font-black text-[#0A0A0D]"
@@ -53,30 +52,21 @@ function LiveHeroTierList({ t }) {
             >
               {r.t}
             </div>
-            <div className="flex flex-1 items-center gap-2 bg-surface2/80 px-2.5 overflow-x-auto">
-              {r.items.map((it) => (
-                <div
-                  key={it}
-                  className="flex h-8 items-center justify-center rounded-lg border border-border px-2.5 text-[11px] font-bold text-text whitespace-nowrap shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${colorFor(it)}45, #191922)`,
-                  }}
-                >
-                  {it}
-                </div>
-              ))}
+            <div className="flex flex-1 items-center justify-between bg-surface2/80 px-3.5 text-xs text-mutedDim">
+              <span className="font-medium text-muted">{r.label}</span>
+              <span className="text-[11px] text-mutedDim border border-dashed border-border px-2 py-0.5 rounded-lg">
+                Arrasta aqui
+              </span>
             </div>
           </div>
         ))}
       </div>
 
       <div className="mt-4 flex items-center justify-between text-[12px] text-mutedDim border-t border-border pt-3">
-        <span className="font-semibold text-muted">Rankings da Comunidade</span>
-        <span className="flex gap-3">
-          <span className="flex items-center gap-1 text-teal font-bold">
-            <Heart size={12} /> 100% Real
-          </span>
-        </span>
+        <span className="font-semibold text-muted">100% Personalizável</span>
+        <Link to="/create" className="text-accent font-bold hover:underline flex items-center gap-1">
+          <span>Criar do Zero</span> →
+        </Link>
       </div>
     </div>
   );

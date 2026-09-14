@@ -27,6 +27,48 @@ const STORAGE_KEY_CATEGORIES = "tierforge_real_categories";
 const STORAGE_KEY_COMMENTS = "tierforge_real_comments";
 const STORAGE_KEY_USER_VOTES = "tierforge_antiabuse_votes";
 
+// IDs de listas e utilizadores de teste anteriores a purgar totalmente
+const SEED_TIERLIST_IDS = new Set([
+  "tl-football-goat-2026",
+  "tl-rpg-masterpieces",
+  "tl-cinema-nolan",
+  "tl-tvshows-goats",
+]);
+const SEED_USER_UIDS = new Set([
+  "user-rodrigo",
+  "user-alexandre",
+  "user-beatriz",
+  "user-marco",
+]);
+
+function purgeSeedData() {
+  try {
+    const rawLists = localStorage.getItem(STORAGE_KEY_TIERLISTS);
+    if (rawLists) {
+      const parsed = JSON.parse(rawLists);
+      const cleanLists = parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id));
+      if (cleanLists.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(cleanLists));
+      }
+    }
+
+    const rawUsers = localStorage.getItem(STORAGE_KEY_USERS);
+    if (rawUsers) {
+      const parsedUsers = JSON.parse(rawUsers);
+      const cleanUsers = parsedUsers.filter((u) => !SEED_USER_UIDS.has(u.uid));
+      if (cleanUsers.length !== parsedUsers.length) {
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(cleanUsers));
+      }
+    }
+  } catch (e) {
+    console.warn("Notice during seed cleanup:", e);
+  }
+}
+
+if (typeof window !== "undefined") {
+  purgeSeedData();
+}
+
 // Helper de persistência segura com fallback
 function getStored(key, initialFallback) {
   try {
@@ -35,7 +77,14 @@ function getStored(key, initialFallback) {
       localStorage.setItem(key, JSON.stringify(initialFallback));
       return initialFallback;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (key === STORAGE_KEY_TIERLISTS) {
+      return parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id));
+    }
+    if (key === STORAGE_KEY_USERS) {
+      return parsed.filter((u) => !SEED_USER_UIDS.has(u.uid));
+    }
+    return parsed;
   } catch {
     return initialFallback;
   }
@@ -60,7 +109,8 @@ function isFirebaseConfigured() {
 // GESTÃO DE UTILIZADORES E PERFIS
 // -------------------------------------------------------------
 export function getAllUsers() {
-  return getStored(STORAGE_KEY_USERS, SEED_USERS);
+  const users = getStored(STORAGE_KEY_USERS, SEED_USERS);
+  return users.filter((u) => !SEED_USER_UIDS.has(u.uid));
 }
 
 export function getUserByUid(uid) {
