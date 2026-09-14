@@ -101,6 +101,7 @@ export default function TierListView() {
     if (!commentText.trim()) return;
 
     const newComment = addCommentToTierList(id, {
+      userUid: user?.uid || null,
       userName: profile?.displayName || user?.displayName || "Visitante",
       userAvatar: profile?.avatar || user?.photoURL || "",
       text: commentText.trim(),

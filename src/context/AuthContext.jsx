@@ -3,6 +3,8 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut,
+  deleteUser,
+  reauthenticateWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../firebase";
@@ -10,6 +12,7 @@ import {
   getUserByUid,
   getAllUsers,
   updateUserProfile as dbUpdateUserProfile,
+  deleteUserAccountAndData,
 } from "../services/db";
 
 const AuthContext = createContext(null);
@@ -121,6 +124,46 @@ export function AuthProvider({ children }) {
     return updated;
   }
 
+  // Eliminar permanentemente a conta e dados do utilizador
+  async function deleteAccount() {
+    if (!user) return false;
+    const currentUid = user.uid;
+
+    // 1. Elimina todos os dados da base de dados local e Firestore
+    await deleteUserAccountAndData(currentUid);
+
+    // 2. Elimina a conta de autenticação no Firebase
+    try {
+      if (user.delete) {
+        await deleteUser(user);
+      }
+    } catch (err) {
+      if (err.code === "auth/requires-recent-login") {
+        try {
+          await reauthenticateWithPopup(user, googleProvider);
+          await deleteUser(user);
+        } catch (reauthErr) {
+          console.warn("Could not reauthenticate for deletion:", reauthErr);
+        }
+      } else {
+        console.warn("Notice deleting auth user:", err);
+      }
+    }
+
+    // 3. Termina a sessão
+    try {
+      if (auth) {
+        await signOut(auth);
+      }
+    } catch (e) {
+      console.warn("Sign out notice on deletion:", e);
+    }
+
+    setUser(null);
+    setProfile(null);
+    return true;
+  }
+
   const value = {
     user,
     profile,
@@ -128,6 +171,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     logout,
     updateProfile,
+    deleteAccount,
     ensureUserDoc,
   };
 

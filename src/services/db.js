@@ -885,6 +885,92 @@ export async function deleteTierList(id, uid) {
   return true;
 }
 
+// Eliminar permanentemente a conta e todos os dados associados a um utilizador
+export async function deleteUserAccountAndData(uid) {
+  if (!uid) return false;
+
+  // 1. Obter todas as tier lists
+  const storedLists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const userLists = storedLists.filter((l) => l.ownerId === uid);
+  const userListIds = new Set(userLists.map((l) => l.id));
+
+  // 2. Apagar comentários e votos associados às tier lists do utilizador
+  const allComments = getStored(STORAGE_KEY_COMMENTS, {});
+  const allVotes = getStored(STORAGE_KEY_USER_VOTES, {});
+
+  // Remove entradas diretas das listas do utilizador
+  userListIds.forEach((listId) => {
+    delete allComments[listId];
+    delete allVotes[listId];
+  });
+
+  // 3. Remover votos que este utilizador fez nas listas de OUTROS criadores e reajustar saldo
+  // e remover comentários que este utilizador fez nas listas de outros criadores
+  const remainingLists = storedLists.filter((l) => l.ownerId !== uid);
+
+  remainingLists.forEach((l) => {
+    // Votos do utilizador nesta lista
+    if (allVotes[l.id] && allVotes[l.id][uid] !== undefined) {
+      const userVote = allVotes[l.id][uid];
+      l.votes = (l.votes || 0) - userVote;
+      delete allVotes[l.id][uid];
+    }
+
+    // Comentários do utilizador nesta lista
+    if (allComments[l.id]) {
+      const beforeCount = allComments[l.id].length;
+      allComments[l.id] = allComments[l.id].filter((c) => c.userUid !== uid);
+      if (allComments[l.id].length !== beforeCount) {
+        l.commentsCount = Math.max(0, (l.commentsCount || 0) - (beforeCount - allComments[l.id].length));
+      }
+    }
+  });
+
+  // Guardar listas, comentários e votos atualizados
+  setStored(STORAGE_KEY_TIERLISTS, remainingLists);
+  setStored(STORAGE_KEY_COMMENTS, allComments);
+  setStored(STORAGE_KEY_USER_VOTES, allVotes);
+
+  // 4. Remover IDs das listas criadas deste navegador
+  const myCreatedLists = getStored("tierforge_created_lists", []);
+  const cleanCreatedLists = myCreatedLists.filter((id) => !userListIds.has(id));
+  setStored("tierforge_created_lists", cleanCreatedLists);
+
+  // 5. Remover utilizador de STORAGE_KEY_USERS e das relações de seguidores/seguindo
+  const allUsers = getStored(STORAGE_KEY_USERS, SEED_USERS);
+  const updatedUsers = allUsers
+    .filter((u) => u.uid !== uid)
+    .map((u) => ({
+      ...u,
+      followers: (u.followers || []).filter((f) => f !== uid),
+      following: (u.following || []).filter((f) => f !== uid),
+    }));
+  setStored(STORAGE_KEY_USERS, updatedUsers);
+
+  // 6. Apagar documentos do Firestore (se configurado)
+  if (isFirebaseConfigured()) {
+    try {
+      // Apagar utilizador
+      const userRef = doc(db, "users", uid);
+      await deleteDoc(userRef);
+
+      // Apagar cada tier list do utilizador no Firestore
+      for (const listId of userListIds) {
+        try {
+          const listRef = doc(db, "tierlists", listId);
+          await deleteDoc(listRef);
+        } catch (e) {
+          console.warn("Could not delete tierlist from Firestore:", listId, e);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not delete user document from Firestore:", e);
+    }
+  }
+
+  return true;
+}
+
 // Obter tier lists criadas por um utilizador (com filtro de privadas)
 export async function getUserTierLists(uid, isOwner = false) {
   if (!uid) return [];
@@ -1000,12 +1086,13 @@ export function getCommentsForTierList(tierListId) {
   return all[tierListId] || [];
 }
 
-export function addCommentToTierList(tierListId, { userName, userAvatar, text }) {
+export function addCommentToTierList(tierListId, { userName, userAvatar, text, userUid }) {
   const all = getStored(STORAGE_KEY_COMMENTS, {});
   const listComments = all[tierListId] || [];
 
   const newComment = {
     id: `c-${Date.now()}`,
+    userUid: userUid || null,
     userName: userName || "Utilizador",
     userAvatar: userAvatar || "",
     text,

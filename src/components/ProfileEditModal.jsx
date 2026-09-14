@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { checkHandleAvailable } from "../services/db";
 import { Avatar, PrimaryButton, GhostButton } from "./UI";
+import DeleteAccountModal from "./DeleteAccountModal";
 
 export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
   const { user, profile, updateProfile } = useAuth();
@@ -17,6 +18,7 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
   const [handleStatus, setHandleStatus] = useState({ checked: true, available: true });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -250,6 +252,28 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
             </div>
           </div>
 
+          {/* Zona de Perigo: Eliminar Conta e Dados */}
+          <div className="mt-1 rounded-2xl border border-red-500/25 bg-red-500/5 p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[12.5px] font-bold text-red-400">
+                  Zona de Perigo
+                </div>
+                <div className="text-[11.5px] text-mutedDim">
+                  Eliminar permanentemente a tua conta e todos os teus dados.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[12px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors flex-shrink-0"
+              >
+                <Trash2 size={13} />
+                <span>Eliminar Conta</span>
+              </button>
+            </div>
+          </div>
+
           {/* Ações */}
           <div className="mt-2 flex justify-end gap-2.5 border-t border-border pt-4">
             <GhostButton small onClick={onClose} disabled={saving}>
@@ -265,6 +289,11 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
           </div>
         </form>
       </div>
+
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
     </div>
   );
 }
