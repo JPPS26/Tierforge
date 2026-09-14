@@ -13,6 +13,7 @@ import TierListView from "./pages/TierListView";
 import { useLanguage } from "./context/LanguageContext";
 import InSiteNotificationToast from "./components/InSiteNotificationToast";
 import Footer from "./components/Footer";
+import BackToTop from "./components/BackToTop";
 
 export default function App() {
   const { t } = useLanguage();
@@ -67,6 +68,9 @@ export default function App() {
 
       {/* Notificações no Próprio Site (Toasts Flutuantes) */}
       <InSiteNotificationToast />
+
+      {/* Botão Flutuante de Voltar para Cima */}
+      <BackToTop />
     </div>
   );
 }
