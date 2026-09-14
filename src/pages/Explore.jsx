@@ -59,10 +59,11 @@ export default function Explore() {
       .finally(() => setLoading(false));
   }, [tab, cat, selectedSub, queryText]);
 
+  const activeCategories = categories.filter((c) => (c.count || 0) > 0);
   const activeCatObj = categories.find((c) => c.id === cat || c.slug === cat);
 
   const filteredPillCategories = categorySearchQuery.trim()
-    ? categories.filter(
+    ? activeCategories.filter(
         (c) =>
           c.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
           (c.subcategories || []).some((sub) =>
@@ -71,7 +72,7 @@ export default function Explore() {
               .includes(categorySearchQuery.toLowerCase())
           )
       )
-    : categories;
+    : activeCategories;
 
   const tabs = [
     { key: "Trending", label: t("explore.tabTrending") },
@@ -141,78 +142,67 @@ export default function Explore() {
         </div>
       </div>
 
-      {/* Secção de Descoberta de Categorias com Pesquisa em Tempo Real */}
-      <div className="mb-8 rounded-3xl border border-border bg-surface/40 p-5 backdrop-blur-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-accent" />
-            <span className="font-display text-sm font-bold text-white">
-              Explorar Categorias
-            </span>
-          </div>
-
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-mutedDim" />
-            <input
-              type="text"
-              value={categorySearchQuery}
-              onChange={(e) => setCategorySearchQuery(e.target.value)}
-              placeholder="Pesquisar categoria…"
-              className="w-full rounded-xl border border-border bg-[#0a0b0e] pl-8 pr-3 py-1.5 text-xs text-white placeholder-mutedDim focus:border-accent focus:outline-none"
-            />
-            {categorySearchQuery && (
-              <button
-                onClick={() => setCategorySearchQuery("")}
-                className="absolute right-2.5 top-2 text-mutedDim hover:text-white"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Pílulas de Categorias Populares / Todas */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => handleSelectCategory("All")}
-            className={`rounded-2xl border px-3.5 py-1.5 text-[12px] font-bold transition-all ${
-              cat === "All"
-                ? "border-accent bg-accent text-black shadow-glow"
-                : "border-border bg-surface text-mutedDim hover:text-white"
-            }`}
-          >
-            {t("explore.allCategories")}
-          </button>
-
-          {/* Categorias Populares (se não houver pesquisa ativa) */}
-          {!categorySearchQuery && popularCategories.length > 0 && (
-            <div className="flex items-center gap-1.5 pl-1 pr-2 border-r border-border/70 my-0.5">
-              <Flame size={13} className="text-accent" />
-              <span className="text-[11px] font-black uppercase text-accent tracking-wider">
-                Populares:
+      {/* Secção de Descoberta de Categorias (Apenas exibida quando existem categorias com listas) */}
+      {activeCategories.length > 0 && (
+        <div className="mb-8 rounded-3xl border border-border bg-surface/40 p-5 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-accent" />
+              <span className="font-display text-sm font-bold text-white">
+                Explorar Categorias
               </span>
             </div>
-          )}
 
-          {(!categorySearchQuery && popularCategories.length > 0
-            ? popularCategories
-            : filteredPillCategories
-          ).map((c) => {
-            const isSelected = cat === c.id || cat === c.slug;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleSelectCategory(c.id)}
-                className={`rounded-2xl border px-3.5 py-1.5 text-[12px] font-bold transition-all flex items-center gap-1.5 ${
-                  isSelected
-                    ? "border-accent bg-accent text-black shadow-glow"
-                    : "border-border bg-surface text-mutedDim hover:border-accent/40 hover:text-white"
-                }`}
-              >
-                <span>{c.name}</span>
-                {c.count > 0 && (
+            {activeCategories.length > 4 && (
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-mutedDim" />
+                <input
+                  type="text"
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  placeholder="Pesquisar categoria…"
+                  className="w-full rounded-xl border border-border bg-[#0a0b0e] pl-8 pr-3 py-1.5 text-xs text-white placeholder-mutedDim focus:border-accent focus:outline-none"
+                />
+                {categorySearchQuery && (
+                  <button
+                    onClick={() => setCategorySearchQuery("")}
+                    className="absolute right-2.5 top-2 text-mutedDim hover:text-white"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Pílulas de Categorias com Listas Reais */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleSelectCategory("All")}
+              className={`rounded-2xl border px-3.5 py-1.5 text-[12px] font-bold transition-all ${
+                cat === "All"
+                  ? "border-accent bg-accent text-black shadow-glow"
+                  : "border-border bg-surface text-mutedDim hover:text-white"
+              }`}
+            >
+              {t("explore.allCategories")}
+            </button>
+
+            {filteredPillCategories.map((c) => {
+              const isSelected = cat === c.id || cat === c.slug;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleSelectCategory(c.id)}
+                  className={`rounded-2xl border px-3.5 py-1.5 text-[12px] font-bold transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? "border-accent bg-accent text-black shadow-glow"
+                      : "border-border bg-surface text-mutedDim hover:border-accent/40 hover:text-white"
+                  }`}
+                >
+                  <span>{c.name}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       isSelected ? "bg-black/25 text-black" : "bg-surface2 text-mutedDim"
@@ -220,52 +210,52 @@ export default function Explore() {
                   >
                     {c.count}
                   </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Subcategorias quando uma categoria está selecionada */}
-        {activeCatObj?.subcategories?.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-border/60">
-            <div className="text-[11px] font-bold text-mutedDim mb-2">
-              Filtrar por subcategoria de {activeCatObj.name}:
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleSelectSubcategory("")}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors ${
-                  !selectedSub
-                    ? "bg-white/15 text-white border border-white/20"
-                    : "bg-surface text-mutedDim hover:text-white"
-                }`}
-              >
-                Todas as subcategorias
-              </button>
-              {activeCatObj.subcategories.map((sub) => {
-                const subName = typeof sub === "string" ? sub : sub.name;
-                const isSubActive = selectedSub === subName;
-                return (
-                  <button
-                    key={subName}
-                    type="button"
-                    onClick={() => handleSelectSubcategory(subName)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
-                      isSubActive
-                        ? "bg-accentSoft text-accent border border-accent/40 font-bold"
-                        : "bg-surface text-mutedDim hover:text-white border border-border/50"
-                    }`}
-                  >
-                    {subName}
-                  </button>
-                );
-              })}
-            </div>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Subcategorias quando uma categoria está selecionada */}
+          {activeCatObj?.subcategories?.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border/60">
+              <div className="text-[11px] font-bold text-mutedDim mb-2">
+                Filtrar por subcategoria de {activeCatObj.name}:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSubcategory("")}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors ${
+                    !selectedSub
+                      ? "bg-white/15 text-white border border-white/20"
+                      : "bg-surface text-mutedDim hover:text-white"
+                  }`}
+                >
+                  Todas as subcategorias
+                </button>
+                {activeCatObj.subcategories.map((sub) => {
+                  const subName = typeof sub === "string" ? sub : sub.name;
+                  const isSubActive = selectedSub === subName;
+                  return (
+                    <button
+                      key={subName}
+                      type="button"
+                      onClick={() => handleSelectSubcategory(subName)}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
+                        isSubActive
+                          ? "bg-accentSoft text-accent border border-accent/40 font-bold"
+                          : "bg-surface text-mutedDim hover:text-white border border-border/50"
+                      }`}
+                    >
+                      {subName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Lista de Resultados Reais */}
       {loading ? (

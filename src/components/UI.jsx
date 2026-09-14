@@ -135,7 +135,7 @@ export function GhostButton({
   );
 }
 
-export function EmptyState({ icon: Icon, title, body, cta, className = "" }) {
+export function EmptyState({ icon: Icon, title, body, cta, actionLabel, onAction, className = "" }) {
   return (
     <div
       className={`flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border/80 bg-surface/40 p-8 sm:p-12 text-center backdrop-blur-sm ${className}`}
@@ -151,7 +151,19 @@ export function EmptyState({ icon: Icon, title, body, cta, className = "" }) {
           {body}
         </div>
       )}
-      {cta && <div className="mt-2">{cta}</div>}
+      {(cta || actionLabel) && (
+        <div className="mt-2">
+          {cta || (
+            <button
+              type="button"
+              onClick={onAction}
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-black hover:opacity-90 transition-all shadow-glow"
+            >
+              <span>{actionLabel}</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

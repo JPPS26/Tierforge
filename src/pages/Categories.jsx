@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import {
   getCategories,
+  getActiveCategories,
   getPopularCategories,
   searchCategories,
   createCustomCategory,
 } from "../services/db";
+import { EmptyState } from "../components/UI";
 import {
   Trophy,
   Gamepad2,
@@ -67,7 +69,9 @@ export default function Categories() {
   const [formLoading, setFormLoading] = useState(false);
 
   const loadAll = () => {
-    setCategories(getCategories());
+    // Apenas categorias com listas reais contam para a navegação pública
+    const active = getActiveCategories();
+    setCategories(active);
     setPopularCategories(getPopularCategories());
   };
 
@@ -76,7 +80,16 @@ export default function Categories() {
   }, []);
 
   const filteredCategories = searchQuery.trim()
-    ? searchCategories(searchQuery)
+    ? categories.filter((c) => {
+        const q = searchQuery.toLowerCase().trim();
+        return (
+          (c.name || "").toLowerCase().includes(q) ||
+          (c.description || "").toLowerCase().includes(q) ||
+          (c.subcategories || []).some((sub) =>
+            (typeof sub === "string" ? sub : sub.name || "").toLowerCase().includes(q)
+          )
+        );
+      })
     : categories;
 
   const handleCreateCategory = async (e) => {
@@ -132,172 +145,180 @@ export default function Categories() {
         </button>
       </div>
 
-      {/* Barra de Pesquisa de Categorias em Tempo Real */}
-      <div className="relative mb-10 max-w-xl">
-        <Search className="absolute left-4 top-3.5 w-5 h-5 text-mutedDim" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("categories.searchPlaceholder")}
-          className="w-full rounded-2xl border border-border bg-surface pl-12 pr-10 py-3 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-colors shadow-sm"
+      {categories.length === 0 ? (
+        <EmptyState
+          icon={Layers}
+          title="Ainda não existem categorias com Tier Lists criadas"
+          body="À medida que a comunidade criar e publicar Tier Lists, as categorias ativas surgirão aqui automaticamente organizadas por temas e popularidade."
+          actionLabel="Criar a primeira Tier List"
+          onAction={() => (window.location.href = "/create")}
         />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3.5 top-3.5 text-mutedDim hover:text-white"
-          >
-            <X size={18} />
-          </button>
-        )}
-      </div>
-
-      {/* Secção de Categorias Populares (Baseadas Estritamente em Dados Reais) */}
-      {!searchQuery && (
-        <div className="mb-12">
-          <div className="flex items-center gap-2 mb-4">
-            <Flame className="w-5 h-5 text-accent" />
-            <h2 className="font-display text-[20px] font-black text-white">
-              {t("categories.popular")}
-            </h2>
-          </div>
-
-          {popularCategories.length === 0 ? (
-            <div className="p-6 rounded-3xl border border-dashed border-border bg-surface/40 text-center text-mutedDim text-sm">
-              {t("categories.noPopular")}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {popularCategories.map((c) => {
-                const Icon = ICON_MAP[c.id] || Sparkles;
-                return (
-                  <Link
-                    key={c.id}
-                    to={`/explore?category=${c.id}`}
-                    className="p-4 rounded-2xl border border-border/80 bg-surface/70 hover:border-accent hover:bg-surface2 transition-all group text-center flex flex-col items-center justify-center"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-accentSoft text-accent flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                      <Icon size={20} />
-                    </div>
-                    <span className="font-bold text-xs text-white group-hover:text-accent truncate w-full">
-                      {c.name}
-                    </span>
-                    <span className="text-[11px] text-mutedDim mt-0.5">
-                      {t("categories.listsCount", { count: c.count || c.tierListsCount || 0 })}
-                    </span>
-                  </Link>
-                );
-              })}
+      ) : (
+        <>
+          {/* Barra de Pesquisa de Categorias em Tempo Real */}
+          {categories.length > 4 && (
+            <div className="relative mb-10 max-w-xl">
+              <Search className="absolute left-4 top-3.5 w-5 h-5 text-mutedDim" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("categories.searchPlaceholder")}
+                className="w-full rounded-2xl border border-border bg-surface pl-12 pr-10 py-3 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-colors shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 top-3.5 text-mutedDim hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Todas as Categorias */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-[22px] font-black text-white flex items-center gap-2">
-            <Layers className="w-5 h-5 text-accent" />
-            <span>{searchQuery ? "Resultados da Pesquisa" : t("categories.all")}</span>
-          </h2>
-          <span className="text-xs font-semibold text-mutedDim">
-            {filteredCategories.length} categorias disponíveis
-          </span>
-        </div>
+          {/* Secção de Categorias Populares */}
+          {!searchQuery && popularCategories.length > 0 && (
+            <div className="mb-12">
+              <div className="flex items-center gap-2 mb-4">
+                <Flame className="w-5 h-5 text-accent" />
+                <h2 className="font-display text-[20px] font-black text-white">
+                  {t("categories.popular")}
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {popularCategories.map((c) => {
+                  const Icon = ICON_MAP[c.id] || Sparkles;
+                  return (
+                    <Link
+                      key={c.id}
+                      to={`/explore?category=${c.id}`}
+                      className="p-4 rounded-2xl border border-border/80 bg-surface/70 hover:border-accent hover:bg-surface2 transition-all group text-center flex flex-col items-center justify-center"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-accentSoft text-accent flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <Icon size={20} />
+                      </div>
+                      <span className="font-bold text-xs text-white group-hover:text-accent truncate w-full">
+                        {c.name}
+                      </span>
+                      <span className="text-[11px] text-mutedDim mt-0.5">
+                        {t("categories.listsCount", { count: c.count || c.tierListsCount || 0 })}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-        {filteredCategories.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl border border-border bg-surface/30">
-            <p className="text-white font-bold mb-2 text-base">
-              Nenhuma categoria encontrada para "{searchQuery}"
-            </p>
-            <p className="text-xs text-mutedDim mb-5">
-              Não encontraste o que procuravas? Podes criar uma nova categoria imediatamente!
-            </p>
-            <button
-              onClick={() => {
-                setNewCatName(searchQuery);
-                setShowCreateModal(true);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-black text-xs font-bold hover:opacity-90"
-            >
-              <Plus size={14} />
-              <span>Criar Categoria "{searchQuery}"</span>
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-5">
-            {filteredCategories.map((c) => {
-              const Icon = ICON_MAP[c.id] || Sparkles;
-              return (
-                <div
-                  key={c.id}
-                  className="rounded-3xl border border-border p-6 transition-all duration-200 hover:-translate-y-1 hover:border-accent hover:bg-surface2/60 hover:shadow-glow flex flex-col justify-between"
-                  style={{ background: "linear-gradient(160deg, #13131A 0%, #181824 100%)" }}
+          {/* Todas as Categorias Ativas */}
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-[22px] font-black text-white flex items-center gap-2">
+                <Layers className="w-5 h-5 text-accent" />
+                <span>{searchQuery ? "Resultados da Pesquisa" : t("categories.all")}</span>
+              </h2>
+              <span className="text-xs font-semibold text-mutedDim">
+                {filteredCategories.length} {filteredCategories.length === 1 ? "categoria ativa" : "categorias ativas"}
+              </span>
+            </div>
+
+            {filteredCategories.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl border border-border bg-surface/30">
+                <p className="text-white font-bold mb-2 text-base">
+                  Nenhuma categoria encontrada para "{searchQuery}"
+                </p>
+                <p className="text-xs text-mutedDim mb-5">
+                  Não encontraste o que procuravas? Podes criar uma nova categoria imediatamente!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewCatName(searchQuery);
+                    setShowCreateModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-black text-xs font-bold hover:opacity-90"
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
-                        <Icon size={24} />
-                      </div>
-                      <Link
-                        to={`/explore?category=${c.id}`}
-                        className="text-xs font-bold px-3 py-1 rounded-full bg-surface border border-border text-accent hover:bg-accent hover:text-black transition-colors"
-                      >
-                        Ver Tier Lists →
-                      </Link>
-                    </div>
+                  <Plus size={14} />
+                  <span>Criar Categoria "{searchQuery}"</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-5">
+                {filteredCategories.map((c) => {
+                  const Icon = ICON_MAP[c.id] || Sparkles;
+                  return (
+                    <div
+                      key={c.id}
+                      className="rounded-3xl border border-border p-6 transition-all duration-200 hover:-translate-y-1 hover:border-accent hover:bg-surface2/60 hover:shadow-glow flex flex-col justify-between"
+                      style={{ background: "linear-gradient(160deg, #13131A 0%, #181824 100%)" }}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
+                            <Icon size={24} />
+                          </div>
+                          <Link
+                            to={`/explore?category=${c.id}`}
+                            className="text-xs font-bold px-3 py-1 rounded-full bg-surface border border-border text-accent hover:bg-accent hover:text-black transition-colors"
+                          >
+                            Ver Tier Lists →
+                          </Link>
+                        </div>
 
-                    <h3 className="mb-1.5 font-display text-[20px] font-bold text-white">
-                      {c.name}
-                    </h3>
-                    <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
-                      {c.description}
-                    </p>
-                  </div>
-
-                  {/* Subcategorias Chips */}
-                  {c.subcategories && c.subcategories.length > 0 && (
-                    <div className="pt-3 border-t border-border/60">
-                      <div className="text-[11px] font-bold text-mutedDim mb-2">
-                        Subcategorias:
+                        <h3 className="mb-1.5 font-display text-[20px] font-bold text-white">
+                          {c.name}
+                        </h3>
+                        <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
+                          {c.description}
+                        </p>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {c.subcategories.slice(0, 5).map((sub) => {
-                          const subName = typeof sub === "string" ? sub : sub.name;
-                          return (
-                            <Link
-                              key={subName}
-                              to={`/explore?category=${c.id}&sub=${encodeURIComponent(subName)}`}
-                              className="text-[11px] px-2 py-0.5 rounded-lg bg-surface/80 border border-border/80 text-mutedDim hover:text-accent hover:border-accent/50 transition-colors"
-                            >
-                              {subName}
-                            </Link>
-                          );
-                        })}
-                        {c.subcategories.length > 5 && (
-                          <span className="text-[10px] text-mutedDim px-1 self-center">
-                            +{c.subcategories.length - 5}
+
+                      {/* Subcategorias Chips */}
+                      {c.subcategories && c.subcategories.length > 0 && (
+                        <div className="pt-3 border-t border-border/60">
+                          <div className="text-[11px] font-bold text-mutedDim mb-2">
+                            Subcategorias:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {c.subcategories.slice(0, 5).map((sub) => {
+                              const subName = typeof sub === "string" ? sub : sub.name;
+                              return (
+                                <Link
+                                  key={subName}
+                                  to={`/explore?category=${c.id}&sub=${encodeURIComponent(subName)}`}
+                                  className="text-[11px] px-2 py-0.5 rounded-lg bg-surface/80 border border-border/80 text-mutedDim hover:text-accent hover:border-accent/50 transition-colors"
+                                >
+                                  {subName}
+                                </Link>
+                              );
+                            })}
+                            {c.subcategories.length > 5 && (
+                              <span className="text-[10px] text-mutedDim px-1 self-center">
+                                +{c.subcategories.length - 5}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[12px] font-semibold text-mutedDim">
+                        <span>{t("categories.listsCount", { count: c.count || 0 })}</span>
+                        {c.isCustom && (
+                          <span className="text-[10px] uppercase font-bold text-accent">
+                            Comunidade
                           </span>
                         )}
                       </div>
                     </div>
-                  )}
-
-                  <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[12px] font-semibold text-mutedDim">
-                    <span>{t("categories.listsCount", { count: c.count || 0 })}</span>
-                    {c.isCustom && (
-                      <span className="text-[10px] uppercase font-bold text-accent">
-                        Comunidade
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Modal de Criação de Categoria */}
       {showCreateModal && (

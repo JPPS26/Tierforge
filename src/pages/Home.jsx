@@ -197,30 +197,43 @@ export default function Home() {
         )}
       </section>
 
-      {/* Categorias (Contagens Reais) */}
+      {/* Categorias (Apenas as que têm Tier Lists Reais) */}
       <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-16">
         <SectionHeader
           icon={SlidersHorizontal}
           title={t("home.categoriesTitle")}
           to="/categories"
-          seeAllText={t("home.seeAll")}
+          seeAllText={categories.filter((c) => c.count > 0).length > 0 ? t("home.seeAll") : null}
         />
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-          {categories.slice(0, 10).map((c) => (
-            <Link
-              key={c.id}
-              to={`/explore?category=${c.id}`}
-              className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-all hover:border-accent hover:bg-surface2 hover:-translate-y-0.5 shadow-sm"
-            >
-              <div className="font-display text-[15px] font-bold text-text group-hover:text-accent transition-colors">
-                {t(`categories.${c.id}`) || c.name}
-              </div>
-              <div className="text-[12px] font-semibold text-mutedDim">
-                {t("home.listsCount", { count: c.count })}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {categories.filter((c) => c.count > 0).length === 0 ? (
+          <EmptyState
+            icon={SlidersHorizontal}
+            title="Ainda não existem categorias com listas"
+            body="As categorias surgirão aqui automaticamente assim que os criadores publicarem as primeiras Tier Lists."
+            actionLabel={t("home.createBtn")}
+            onAction={() => (window.location.href = "/create")}
+          />
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+            {categories
+              .filter((c) => c.count > 0)
+              .slice(0, 10)
+              .map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/explore?category=${c.id}`}
+                  className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-all hover:border-accent hover:bg-surface2 hover:-translate-y-0.5 shadow-sm"
+                >
+                  <div className="font-display text-[15px] font-bold text-text group-hover:text-accent transition-colors">
+                    {t(`categories.${c.id}`) || c.name}
+                  </div>
+                  <div className="text-[12px] font-semibold text-mutedDim">
+                    {t("home.listsCount", { count: c.count })}
+                  </div>
+                </Link>
+              ))}
+          </div>
+        )}
       </section>
 
       {/* Funcionalidades Principais */}

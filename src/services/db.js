@@ -442,6 +442,11 @@ export function getCategories() {
   });
 }
 
+// Retorna exclusivamente categorias que tenham pelo menos 1 Tier List criada
+export function getActiveCategories() {
+  return getCategories().filter((c) => (c.count || 0) > 0);
+}
+
 // Categorias populares calculadas estritamente com base na atividade real de listas e votos
 export function getPopularCategories(limit = 6) {
   const categories = getCategories();
