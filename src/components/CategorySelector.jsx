@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
-  Plus,
   Check,
   ChevronDown,
   Sparkles,
-  Info,
   X,
   Tag,
   Gamepad2,
@@ -23,14 +21,15 @@ import {
   Dumbbell,
   Briefcase,
   GraduationCap,
+  Loader2,
 } from "lucide-react";
+import { getCategories, saveCategoryWithApiData } from "../services/db";
 import {
-  getCategories,
-  searchCategories,
-  createCustomCategory,
-} from "../services/db";
+  searchApiCategories,
+  fetchCategoryDetailsFromApi,
+  getApiCatalog,
+} from "../services/categoriesApi";
 import { useLanguage } from "../context/LanguageContext";
-import { useAuth } from "../context/AuthContext";
 
 const ICON_COMPONENTS = {
   Gamepad2,
@@ -59,18 +58,14 @@ export default function CategorySelector({
   onSelectSubcategory,
 }) {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Formulário de nova categoria
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatDesc, setNewCatDesc] = useState("");
-  const [newCatSubs, setNewCatSubs] = useState("");
-  const [formError, setFormError] = useState("");
-  const [formLoading, setFormLoading] = useState(false);
+  // Resultados da API em tempo real
+  const [apiSuggestions, setApiSuggestions] = useState([]);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   const reloadCategories = () => {
     setCategories(getCategories());
@@ -80,88 +75,107 @@ export default function CategorySelector({
     reloadCategories();
   }, []);
 
-  const filteredCategories = searchQuery.trim()
-    ? searchCategories(searchQuery)
-    : categories;
+  // Procura na API se o utilizador escrever algo novo
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setApiSuggestions([]);
+      setIsSearchingApi(false);
+      return;
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearchingApi(true);
+      try {
+        const results = await searchApiCategories(q);
+        // Exclui os que já existem localmente
+        const existingSlugs = new Set(categories.map((c) => c.slug || c.id));
+        const filtered = results.filter((r) => !existingSlugs.has(r.slug));
+        setApiSuggestions(filtered.slice(0, 4));
+      } catch (e) {
+        console.warn("Erro ao pesquisar sugestões da API:", e);
+      } finally {
+        setIsSearchingApi(false);
+      }
+    }, 350);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery, categories]);
 
   const activeCategoryObj = categories.find(
     (c) =>
       c.id === selectedCategory ||
       c.slug === selectedCategory ||
-      c.name.toLowerCase() === (selectedCategory || "").toLowerCase()
+      (c.name && c.name.toLowerCase() === (selectedCategory || "").toLowerCase())
   );
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    setFormLoading(true);
+  const filteredCategories = searchQuery.trim()
+    ? categories.filter((c) => {
+        const q = searchQuery.toLowerCase().trim();
+        return (
+          (c.name || "").toLowerCase().includes(q) ||
+          (c.slug || "").toLowerCase().includes(q) ||
+          (c.subcategories || []).some((sub) =>
+            (typeof sub === "string" ? sub : sub.name || "").toLowerCase().includes(q)
+          )
+        );
+      })
+    : categories;
 
+  const handleSelectApiCategory = async (apiCat) => {
     try {
-      const subcategoriesArr = newCatSubs
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      const created = await createCustomCategory({
-        name: newCatName,
-        description: newCatDesc,
-        subcategories: subcategoriesArr,
-        createdBy: user?.uid || null,
+      const detailed = await fetchCategoryDetailsFromApi(apiCat.name);
+      const saved = await saveCategoryWithApiData({
+        ...apiCat,
+        ...(detailed || {}),
       });
-
       reloadCategories();
-      onSelectCategory(created.id);
-      if (subcategoriesArr.length > 0) {
-        onSelectSubcategory(subcategoriesArr[0]);
+      onSelectCategory(saved.slug || saved.id);
+      if (saved.subcategories && saved.subcategories.length > 0) {
+        onSelectSubcategory(saved.subcategories[0]);
       }
-      setShowCreateModal(false);
-      setNewCatName("");
-      setNewCatDesc("");
-      setNewCatSubs("");
-    } catch (err) {
-      setFormError(err.message || "Erro ao criar categoria.");
-    } finally {
-      setFormLoading(false);
+      setSearchQuery("");
+      setApiSuggestions([]);
+    } catch (e) {
+      onSelectCategory(apiCat.slug);
     }
   };
 
   return (
     <div className="rounded-3xl border border-border bg-surface/70 p-5 shadow-lg backdrop-blur-md">
-      {/* Cabeçalho com Dica Categoria vs Tema */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Cabeçalho */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <label className="text-[12px] font-bold uppercase tracking-wider text-mutedDim flex items-center gap-1.5">
-            <span>Categoria & Tema</span>
+            <span>Categoria & Taxonomia</span>
           </label>
           <p className="text-xs text-mutedDim mt-0.5">
-            {t("categories.categoryVsThemeHelp")}
+            Escolhe uma categoria ou pesquisa qualquer tema na nossa API pública.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-accent/40 bg-accentSoft text-accent font-bold text-xs hover:bg-accent hover:text-black transition-all"
-        >
-          <Plus size={14} />
-          <span>{t("categories.proposeNew")}</span>
-        </button>
       </div>
 
-      {/* Barra de Pesquisa de Categorias */}
+      {/* Barra de Pesquisa */}
       <div className="relative mb-3">
         <Search className="absolute left-3.5 top-3 w-4 h-4 text-mutedDim" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("categories.searchPlaceholder")}
-          className="w-full rounded-2xl border border-border bg-[#0e0f14] pl-10 pr-4 py-2.5 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-colors"
+          placeholder="Pesquisar categoria ou tema da API (ex: Fórmula 1, Rock, Marvel)..."
+          className="w-full rounded-2xl border border-border bg-[#0e0f14] pl-10 pr-10 py-2.5 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-colors"
         />
         {searchQuery && (
           <button
             type="button"
-            onClick={() => setSearchQuery("")}
+            onClick={() => {
+              setSearchQuery("");
+              setApiSuggestions([]);
+            }}
             className="absolute right-3.5 top-3 text-mutedDim hover:text-white"
           >
             <X size={16} />
@@ -169,13 +183,50 @@ export default function CategorySelector({
         )}
       </div>
 
-      {/* Pílulas de Categorias */}
+      {/* Sugestões da API se o utilizador estiver a pesquisar */}
+      {apiSuggestions.length > 0 && (
+        <div className="mb-4 p-3 rounded-2xl bg-accentSoft/20 border border-accent/30 animate-fade-in">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-accent mb-2">
+            <Sparkles size={13} />
+            <span>Sugerido da API Pública de Categorias:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {apiSuggestions.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleSelectApiCategory(item)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-accent/40 text-xs font-bold text-white hover:bg-accent hover:text-black transition-all shadow-sm group"
+              >
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="w-4 h-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <Sparkles size={13} className="text-accent group-hover:text-black" />
+                )}
+                <span>{item.name}</span>
+                <span className="text-[10px] text-accent group-hover:text-black/80 font-normal">
+                  + Adicionar
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pílulas de Categorias Disponíveis */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {(isExpanded || searchQuery ? filteredCategories : filteredCategories.slice(0, 8)).map(
+        {(isExpanded || searchQuery ? filteredCategories : filteredCategories.slice(0, 10)).map(
           (cat) => {
             const isSelected =
               activeCategoryObj?.id === cat.id ||
-              activeCategoryObj?.slug === cat.slug;
+              activeCategoryObj?.slug === cat.slug ||
+              (activeCategoryObj?.name &&
+                cat.name &&
+                activeCategoryObj.name.toLowerCase() === cat.name.toLowerCase());
             const Icon = ICON_COMPONENTS[cat.icon] || Tag;
 
             return (
@@ -183,7 +234,7 @@ export default function CategorySelector({
                 key={cat.id}
                 type="button"
                 onClick={() => {
-                  onSelectCategory(cat.id);
+                  onSelectCategory(cat.slug || cat.id);
                   onSelectSubcategory("");
                 }}
                 className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all ${
@@ -209,7 +260,7 @@ export default function CategorySelector({
           }
         )}
 
-        {!searchQuery && filteredCategories.length > 8 && (
+        {!searchQuery && filteredCategories.length > 10 && (
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -218,7 +269,7 @@ export default function CategorySelector({
             <span>
               {isExpanded
                 ? "Mostrar menos"
-                : `+${filteredCategories.length - 8} mais categorias`}
+                : `+${filteredCategories.length - 10} mais categorias`}
             </span>
             <ChevronDown
               size={14}
@@ -228,7 +279,7 @@ export default function CategorySelector({
         )}
       </div>
 
-      {/* Subcategorias Disponíveis da Categoria Selecionada */}
+      {/* Subcategorias da Categoria Selecionada */}
       {activeCategoryObj?.subcategories?.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/60">
           <div className="text-[11px] font-bold text-mutedDim mb-2 flex items-center gap-1.5">
@@ -269,103 +320,6 @@ export default function CategorySelector({
           </div>
         </div>
       )}
-
-      {/* Modal de Criação de Categoria Personalizada */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="w-full max-w-[480px] rounded-3xl border border-border bg-[#12131a] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-accent" />
-                <h3 className="font-display font-black text-lg text-white">
-                  {t("categories.newCatTitle")}
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="rounded-xl p-1.5 text-mutedDim hover:bg-surface2 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCategory} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1.5">
-                  {t("categories.newCatName")} *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder={t("categories.newCatNamePlaceholder")}
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1.5">
-                  {t("categories.newCatDesc")}
-                </label>
-                <input
-                  type="text"
-                  value={newCatDesc}
-                  onChange={(e) => setNewCatDesc(e.target.value)}
-                  placeholder={t("categories.newCatDescPlaceholder")}
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1.5">
-                  {t("categories.newCatSub")}
-                </label>
-                <input
-                  type="text"
-                  value={newCatSubs}
-                  onChange={(e) => setNewCatSubs(e.target.value)}
-                  placeholder={t("categories.newCatSubPlaceholder")}
-                  className="w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none"
-                />
-                <p className="text-[11px] text-mutedDim mt-1">
-                  Exemplo: Escreve "Sushi, Ramen, Izakaya" separadas por vírgula.
-                </p>
-              </div>
-
-              {formError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted hover:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="px-5 py-2 rounded-xl bg-accent text-black font-bold text-xs hover:opacity-90 transition-opacity shadow-glow disabled:opacity-50"
-                >
-                  {formLoading ? "A criar…" : t("categories.saveCategory")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

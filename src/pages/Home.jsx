@@ -17,7 +17,7 @@ import {
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierLists, getCategories, getGlobalStats } from "../services/db";
+import { getTierLists, getActiveCategories, getGlobalStats } from "../services/db";
 
 function LiveHeroTierList({ t }) {
   return (
@@ -99,7 +99,7 @@ export default function Home() {
     getTierLists({ tab: "Trending" }).then((lists) => {
       setTrendingLists(lists.slice(0, 4));
     });
-    setCategories(getCategories());
+    setCategories(getActiveCategories());
     setStats(getGlobalStats());
   }, []);
 

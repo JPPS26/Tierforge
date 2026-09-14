@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierLists, getCategories, getPopularCategories } from "../services/db";
+import { getTierLists, getActiveCategories, getPopularCategories } from "../services/db";
 import { EmptyState } from "../components/UI";
 import { Sparkles, Search, Flame, X, Filter } from "lucide-react";
 
@@ -25,7 +25,8 @@ export default function Explore() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCategories(getCategories());
+    // REGRA ESTRITA: Só carrega categorias que têm pelo menos 1 Tier List criada
+    setCategories(getActiveCategories());
     setPopularCategories(getPopularCategories());
   }, []);
 

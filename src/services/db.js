@@ -20,6 +20,7 @@ import {
 import { db } from "../firebase";
 import { REAL_ITEMS, SEED_TIERLISTS, SEED_USERS } from "../data/realCatalog";
 import { BASE_CATEGORIES } from "../data/categoriesData";
+import { getApiCatalog, slugifyCategory } from "./categoriesApi";
 import { searchWikimediaEntities } from "./wikipediaApi";
 import { checkContentSafety, extractMentions } from "./safetyFilter";
 
@@ -427,10 +428,11 @@ export function slugify(text) {
 }
 
 export function getCategories() {
-  const stored = getStored(STORAGE_KEY_CATEGORIES, BASE_CATEGORIES);
+  const baseCatalog = getApiCatalog();
+  const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
   const existingIds = new Set(stored.map((c) => c.id || c.slug));
   const merged = [...stored];
-  for (const baseCat of BASE_CATEGORIES) {
+  for (const baseCat of baseCatalog) {
     if (!existingIds.has(baseCat.id) && !existingIds.has(baseCat.slug)) {
       merged.push(baseCat);
       existingIds.add(baseCat.id);
@@ -472,6 +474,7 @@ export function getGuestClientId() {
 }
 
 // Categorias populares calculadas estritamente com base na atividade real de listas e votos
+// REGRA ESTRITA: Só aparecem categorias que tenham pelo menos 1 Tier List criada
 export function getPopularCategories(limit = 6) {
   const categories = getCategories();
   const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
@@ -500,12 +503,7 @@ export function getPopularCategories(limit = 6) {
     .filter((c) => c.tierListsCount > 0) // REGRA ESTRITA: só é popular se houver listas reais criadas
     .sort((a, b) => b.popularityScore - a.popularityScore);
 
-  if (populated.length > 0) {
-    return populated.slice(0, limit);
-  }
-
-  // Fallback elegante para categorias principais quando ainda não há listas na plataforma
-  return categories.slice(0, limit);
+  return populated.slice(0, limit);
 }
 
 export function searchCategories(queryText) {
@@ -564,6 +562,7 @@ export async function createCustomCategory({
   description = "",
   icon = "Sparkles",
   color = "#7C5CFF",
+  imageUrl = null,
   subcategories = [],
   createdBy = null,
 }) {
@@ -579,6 +578,7 @@ export async function createCustomCategory({
     description: description.trim() || `Tier Lists e rankings da comunidade sobre ${validation.name}.`,
     icon,
     color,
+    imageUrl,
     subcategories: Array.isArray(subcategories)
       ? subcategories.filter(Boolean)
       : [],
@@ -589,7 +589,7 @@ export async function createCustomCategory({
     count: 0,
   };
 
-  const stored = getStored(STORAGE_KEY_CATEGORIES, BASE_CATEGORIES);
+  const stored = getStored(STORAGE_KEY_CATEGORIES, getApiCatalog());
   stored.push(newCategory);
   setStored(STORAGE_KEY_CATEGORIES, stored);
 
@@ -606,6 +606,48 @@ export async function createCustomCategory({
   }
 
   return newCategory;
+}
+
+export async function saveCategoryWithApiData(categoryData) {
+  if (!categoryData || !categoryData.name) return null;
+  const slug = categoryData.slug || slugifyCategory(categoryData.name);
+  const baseCatalog = getApiCatalog();
+  const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
+
+  const existingIdx = stored.findIndex((c) => c.id === slug || c.slug === slug);
+  const enriched = {
+    id: slug,
+    slug,
+    name: categoryData.name,
+    description: categoryData.description || `Tier Lists e rankings sobre ${categoryData.name}.`,
+    imageUrl: categoryData.imageUrl || null,
+    subcategories: Array.isArray(categoryData.subcategories) ? categoryData.subcategories : [],
+    color: categoryData.color || "#7C5CFF",
+    icon: categoryData.icon || "Sparkles",
+    domain: categoryData.domain || "general",
+    isActive: true,
+    isCustom: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (existingIdx >= 0) {
+    stored[existingIdx] = { ...stored[existingIdx], ...enriched };
+  } else {
+    stored.push(enriched);
+  }
+
+  setStored(STORAGE_KEY_CATEGORIES, stored);
+
+  if (isFirebaseConfigured()) {
+    try {
+      const ref = doc(db, "categories", slug);
+      await setDoc(ref, enriched, { merge: true });
+    } catch (e) {
+      console.warn("Notice saving category to Firestore:", e);
+    }
+  }
+
+  return enriched;
 }
 
 // -------------------------------------------------------------

@@ -29,11 +29,13 @@ import {
   createTierList,
   searchCatalog,
   getCategories,
+  saveCategoryWithApiData,
   getTierListById,
   updateTierList,
   deleteTierList,
   canEditTierList,
 } from "../services/db";
+import { searchApiCategories, fetchCategoryDetailsFromApi } from "../services/categoriesApi";
 import ShareModal from "../components/ShareModal";
 import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
@@ -328,6 +330,46 @@ export default function Builder() {
   const categories = getCategories();
   const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [catSearchQuery, setCatSearchQuery] = useState("");
+  const [catApiSuggestions, setCatApiSuggestions] = useState([]);
+  const [catSearchingApi, setCatSearchingApi] = useState(false);
+
+  // Inicialização a partir de query params (?category=... &title=...)
+  useEffect(() => {
+    if (editId || remixId) return;
+    const initialCategory = searchParams.get("category");
+    const initialTitle = searchParams.get("title");
+    if (initialCategory) {
+      setCategory(initialCategory);
+      setManualCategoryOverride(true);
+    }
+    if (initialTitle) {
+      setTitle(initialTitle);
+    }
+  }, [searchParams, editId, remixId]);
+
+  // Pesquisa na API de Categorias no Builder
+  useEffect(() => {
+    const q = catSearchQuery.trim();
+    if (q.length < 2) {
+      setCatApiSuggestions([]);
+      setCatSearchingApi(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setCatSearchingApi(true);
+      try {
+        const results = await searchApiCategories(q);
+        const existingSlugs = new Set(categories.map((c) => c.slug || c.id));
+        setCatApiSuggestions(results.filter((r) => !existingSlugs.has(r.slug)).slice(0, 3));
+      } catch (e) {
+        console.warn("Erro ao pesquisar sugestões da API:", e);
+      } finally {
+        setCatSearchingApi(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [catSearchQuery, categories]);
 
   // Carregar Dados se for Modo de Edição
   useEffect(() => {
@@ -837,39 +879,119 @@ export default function Builder() {
                 </button>
               </div>
 
-              {/* Dropdown discreto para alterar se o utilizador quiser */}
+              {/* Dropdown com Pesquisa e API de Categorias */}
               {showCategoryDropdown && (
-                <div className="absolute top-full left-0 mt-2 z-40 w-60 max-h-64 overflow-y-auto rounded-2xl border border-border bg-[#12131a] p-2 shadow-2xl animate-fade-in">
-                  <div className="text-[11px] font-bold text-mutedDim px-2.5 py-1 mb-1 border-b border-border/50">
-                    Definir categoria:
-                  </div>
-                  {categories.map((c) => (
+                <div className="absolute top-full left-0 mt-2 z-40 w-72 max-h-80 overflow-y-auto rounded-2xl border border-border bg-[#12131a] p-3 shadow-2xl animate-fade-in">
+                  <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/50">
+                    <span className="text-[11px] font-bold text-mutedDim">
+                      Definir categoria:
+                    </span>
                     <button
-                      key={c.id}
                       type="button"
-                      onClick={() => {
-                        setCategory(c.id);
-                        setManualCategoryOverride(true);
-                        setShowCategoryDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
-                        category === c.id
-                          ? "bg-accent text-black font-bold"
-                          : "text-muted hover:bg-surface2 hover:text-white"
-                      }`}
+                      onClick={() => setShowCategoryDropdown(false)}
+                      className="text-mutedDim hover:text-white p-0.5"
                     >
-                      <span>{c.name}</span>
-                      {category === c.id && <span>✓</span>}
+                      <X size={13} />
                     </button>
-                  ))}
+                  </div>
+
+                  {/* Input de Pesquisa */}
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-mutedDim" />
+                    <input
+                      type="text"
+                      value={catSearchQuery}
+                      onChange={(e) => setCatSearchQuery(e.target.value)}
+                      placeholder="Pesquisar ou tema da API…"
+                      className="w-full rounded-xl border border-border bg-[#0a0b0e] pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-mutedDim focus:border-accent focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Sugestões da API */}
+                  {catApiSuggestions.length > 0 && (
+                    <div className="mb-2 p-2 rounded-xl bg-accentSoft/20 border border-accent/30">
+                      <div className="text-[10px] font-bold text-accent mb-1 flex items-center gap-1">
+                        <Sparkles size={11} />
+                        <span>Sugerido da API Pública:</span>
+                      </div>
+                      <div className="space-y-1">
+                        {catApiSuggestions.map((apiCat) => (
+                          <button
+                            key={apiCat.id}
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const detailed = await fetchCategoryDetailsFromApi(apiCat.name);
+                                const saved = await saveCategoryWithApiData({
+                                  ...apiCat,
+                                  ...(detailed || {}),
+                                });
+                                setCategory(saved.slug || saved.id);
+                                if (saved.subcategories && saved.subcategories.length > 0) {
+                                  setSubcategory(saved.subcategories[0]);
+                                }
+                              } catch {
+                                setCategory(apiCat.slug);
+                              }
+                              setManualCategoryOverride(true);
+                              setShowCategoryDropdown(false);
+                              setCatSearchQuery("");
+                              setCatApiSuggestions([]);
+                            }}
+                            className="w-full text-left px-2 py-1 rounded-lg text-[11px] font-semibold text-white hover:bg-accent hover:text-black flex items-center justify-between transition-colors"
+                          >
+                            <span className="truncate">{apiCat.name}</span>
+                            <span className="text-[9px] text-accent group-hover:text-black font-normal ml-1">
+                              + Selecionar
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista de Categorias Existentes */}
+                  <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                    {categories
+                      .filter((c) =>
+                        catSearchQuery.trim()
+                          ? (c.name || "").toLowerCase().includes(catSearchQuery.toLowerCase()) ||
+                            (c.slug || "").toLowerCase().includes(catSearchQuery.toLowerCase())
+                          : true
+                      )
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setCategory(c.slug || c.id);
+                            setManualCategoryOverride(true);
+                            setShowCategoryDropdown(false);
+                            setCatSearchQuery("");
+                            setCatApiSuggestions([]);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+                            category === c.id || category === c.slug
+                              ? "bg-accent text-black font-bold"
+                              : "text-muted hover:bg-surface2 hover:text-white"
+                          }`}
+                        >
+                          <span className="truncate">{c.name}</span>
+                          {(category === c.id || category === c.slug) && <span>✓</span>}
+                        </button>
+                      ))}
+                  </div>
+
                   {manualCategoryOverride && (
                     <button
                       type="button"
                       onClick={() => {
                         setManualCategoryOverride(false);
                         setShowCategoryDropdown(false);
+                        setCatSearchQuery("");
+                        setCatApiSuggestions([]);
                       }}
-                      className="w-full text-center mt-1.5 pt-1.5 border-t border-border/50 text-[11px] text-accent font-bold hover:underline"
+                      className="w-full text-center mt-2 pt-1.5 border-t border-border/50 text-[11px] text-accent font-bold hover:underline"
                     >
                       ↺ Voltar a Deteção Automática
                     </button>
