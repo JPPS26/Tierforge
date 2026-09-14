@@ -216,7 +216,7 @@ export default function Home() {
           seeAllText={t("home.seeAll")}
         />
         <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-          {categories.map((c) => (
+          {categories.slice(0, 10).map((c) => (
             <Link
               key={c.id}
               to={`/explore?category=${c.id}`}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Crown,
@@ -8,17 +8,20 @@ import {
   UserPlus,
   UserCheck,
   Lock,
+  Calendar,
   Layers,
   Heart,
   Eye,
   ArrowLeft,
+  Check,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { Avatar, Badge, EmptyState, PrimaryButton, GhostButton, SecondaryButton } from "../components/UI";
+import { Avatar, Badge, EmptyState, PrimaryButton, GhostButton } from "../components/UI";
 import TierListCard from "../components/TierListCard";
 import ProfileEditModal from "../components/ProfileEditModal";
 import ShareModal from "../components/ShareModal";
+import FollowersModal from "../components/FollowersModal";
 import {
   getUserByHandle,
   getUserByUid,
@@ -38,6 +41,9 @@ export default function Profile() {
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followersModalTab, setFollowersModalTab] = useState("followers");
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
 
   // Determina se o utilizador está a ver o seu próprio perfil
@@ -46,42 +52,47 @@ export default function Profile() {
     (authProfile && authProfile.handle?.toLowerCase() === paramHandle.toLowerCase()) ||
     (user && user.uid === paramHandle);
 
-  useEffect(() => {
-    async function loadProfile() {
-      setLoading(true);
-      try {
-        let foundUser = null;
-        if (paramHandle) {
-          foundUser = getUserByHandle(paramHandle) || getUserByUid(paramHandle);
-        } else if (user) {
-          foundUser = getUserByUid(user.uid);
-        }
-
-        setTargetUser(foundUser);
-
-        if (foundUser) {
-          const userLists = await getUserTierLists(foundUser.uid, isOwnProfile);
-          setLists(userLists);
-
-          // Verifica se o utilizador atual já segue este perfil
-          if (user && foundUser.followers) {
-            setIsFollowing(foundUser.followers.includes(user.uid));
-          }
-        }
-      } catch (e) {
-        console.error("Error loading profile:", e);
-      } finally {
-        setLoading(false);
+  const loadProfile = useCallback(async () => {
+    try {
+      let foundUser = null;
+      if (paramHandle) {
+        foundUser = getUserByHandle(paramHandle) || getUserByUid(paramHandle);
+      } else if (user) {
+        foundUser = getUserByUid(user.uid);
       }
-    }
 
+      setTargetUser(foundUser);
+
+      if (foundUser) {
+        const userLists = await getUserTierLists(foundUser.uid, isOwnProfile);
+        setLists(userLists);
+
+        if (user && foundUser.followers) {
+          setIsFollowing(foundUser.followers.includes(user.uid));
+        }
+      }
+    } catch (e) {
+      console.error("Error loading profile:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [paramHandle, user, isOwnProfile]);
+
+  useEffect(() => {
+    setLoading(true);
     loadProfile();
-  }, [paramHandle, user, authProfile, isOwnProfile]);
+  }, [loadProfile]);
 
   function handleFollowToggle() {
-    if (!user || !targetUser || isOwnProfile) return;
+    if (!user) {
+      alert("Inicia sessão para seguir criadores.");
+      return;
+    }
+    if (!targetUser || isOwnProfile) return;
+
     const nowFollowing = toggleFollowUser(user.uid, targetUser.uid);
     setIsFollowing(nowFollowing);
+
     // Atualiza contagem local de seguidores
     setTargetUser((prev) => {
       if (!prev) return prev;
@@ -98,6 +109,32 @@ export default function Profile() {
       };
     });
   }
+
+  const handleShareProfile = async () => {
+    if (!targetUser) return;
+    const profileUrl = `${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${targetUser.displayName} (@${targetUser.handle}) — TierForge`,
+          text: `Confere as tier lists e rankings de ${targetUser.displayName} no TierForge!`,
+          url: profileUrl,
+        });
+        return;
+      } catch {
+        // Se utilizador cancelou a partilha nativa, não faz fallback para cópia
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (e) {
+      setShareModalOpen(true);
+    }
+  };
 
   if (loading) {
     return (
@@ -127,6 +164,16 @@ export default function Profile() {
   const publicLists = lists.filter((l) => l.visibility !== "private");
   const privateLists = lists.filter((l) => l.visibility === "private");
 
+  const totalReceivedVotes = lists.reduce((acc, l) => acc + (l.votes || 0), 0);
+  const totalReceivedViews = lists.reduce((acc, l) => acc + (l.views || 0), 0);
+
+  const formattedJoinDate = targetUser.createdAt
+    ? new Date(targetUser.createdAt).toLocaleDateString("pt-PT", {
+        month: "long",
+        year: "numeric",
+      })
+    : "Janeiro de 2026";
+
   return (
     <div className="mx-auto max-w-[1080px] px-4 sm:px-6 pb-28 pt-10">
       {/* Cabeçalho do Perfil */}
@@ -149,17 +196,23 @@ export default function Profile() {
 
           {/* ID Único (#handle) */}
           {handleDisplay && (
-            <div className="mb-3 text-[14px] font-bold text-accent tracking-wide">
+            <div className="mb-2 text-[14px] font-bold text-accent tracking-wide">
               {handleDisplay}
             </div>
           )}
+
+          {/* Data de Entrada */}
+          <div className="mb-3 text-[12px] font-medium text-mutedDim flex items-center gap-1.5">
+            <Calendar size={13} className="text-accent" />
+            <span>{t("profile.memberSince", { date: formattedJoinDate })}</span>
+          </div>
 
           <p className="mb-4 max-w-xl text-[14px] leading-relaxed text-muted">
             {targetUser.bio || t("profile.bioPlaceholder")}
           </p>
 
-          {/* Métricas Reais do Criador */}
-          <div className="flex flex-wrap gap-7">
+          {/* Métricas Reais do Criador (Clicáveis para abrir listas de seguidores/seguidos) */}
+          <div className="flex flex-wrap items-center gap-6 sm:gap-8">
             <div>
               <div className="font-display text-[20px] font-black text-white">
                 {lists.length}
@@ -169,24 +222,61 @@ export default function Profile() {
               </div>
             </div>
 
-            <div>
-              <div className="font-display text-[20px] font-black text-white">
+            {/* Seguidores (Clicável para ver lista de quem segue) */}
+            <button
+              type="button"
+              onClick={() => {
+                setFollowersModalTab("followers");
+                setFollowersModalOpen(true);
+              }}
+              className="text-left group cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <div className="font-display text-[20px] font-black text-white group-hover:text-accent transition-colors">
                 {targetUser.followersCount ?? targetUser.followers?.length ?? 0}
               </div>
-              <div className="text-[12px] font-semibold text-mutedDim">
+              <div className="text-[12px] font-semibold text-mutedDim underline decoration-dotted decoration-mutedDim/60 group-hover:text-accent">
                 {t("profile.followers")}
               </div>
-            </div>
+            </button>
 
-            <div>
-              <div className="font-display text-[20px] font-black text-white">
+            {/* A Seguir (Clicável para ver quem esta pessoa segue) */}
+            <button
+              type="button"
+              onClick={() => {
+                setFollowersModalTab("following");
+                setFollowersModalOpen(true);
+              }}
+              className="text-left group cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <div className="font-display text-[20px] font-black text-white group-hover:text-accent transition-colors">
                 {targetUser.followingCount ?? targetUser.following?.length ?? 0}
               </div>
-              <div className="text-[12px] font-semibold text-mutedDim">
+              <div className="text-[12px] font-semibold text-mutedDim underline decoration-dotted decoration-mutedDim/60 group-hover:text-accent">
                 {t("profile.following")}
+              </div>
+            </button>
+
+            {/* Votos Reais Recebidos */}
+            <div>
+              <div className="font-display text-[20px] font-black text-white">
+                {totalReceivedVotes}
+              </div>
+              <div className="text-[12px] font-semibold text-mutedDim">
+                {t("profile.votesReceived")}
               </div>
             </div>
 
+            {/* Visualizações Reais */}
+            <div>
+              <div className="font-display text-[20px] font-black text-white">
+                {totalReceivedViews}
+              </div>
+              <div className="text-[12px] font-semibold text-mutedDim">
+                {t("profile.viewsReceived")}
+              </div>
+            </div>
+
+            {/* Creator XP */}
             <div>
               <div className="font-display text-[20px] font-black text-accent">
                 {targetUser.creatorXp ?? 0}
@@ -200,13 +290,23 @@ export default function Profile() {
 
         {/* Ações: Seguir / Editar / Partilhar */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Botão Partilhar Perfil */}
           <button
             type="button"
-            onClick={() => setShareModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[13px] font-bold text-text hover:bg-surface2 hover:border-borderStrong transition-colors"
+            onClick={handleShareProfile}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 hover:border-accent/40 transition-colors"
           >
-            <Share2 size={14} className="text-accent" />
-            <span className="hidden sm:inline">{t("profile.shareProfile")}</span>
+            {copiedLink ? (
+              <>
+                <Check size={14} className="text-accent stroke-[3]" />
+                <span className="text-accent">{t("profile.linkCopied")}</span>
+              </>
+            ) : (
+              <>
+                <Share2 size={14} className="text-accent" />
+                <span>{t("profile.shareProfile")}</span>
+              </>
+            )}
           </button>
 
           {isOwnProfile ? (
@@ -230,8 +330,8 @@ export default function Profile() {
               onClick={handleFollowToggle}
               className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-bold transition-all shadow-sm ${
                 isFollowing
-                  ? "border border-accent bg-accentSoft text-[#B6A5FF]"
-                  : "bg-accent text-white hover:bg-accent/90"
+                  ? "border border-border bg-surface text-muted hover:text-red-400 hover:border-red-500/40"
+                  : "bg-accent text-black hover:opacity-90 shadow-glow"
               }`}
             >
               {isFollowing ? <UserCheck size={15} /> : <UserPlus size={15} />}
@@ -250,15 +350,15 @@ export default function Profile() {
               : tabKey === "Private"
               ? `Privadas (${privateLists.length})`
               : t("profile.tabFavorites");
+
           return (
             <button
               key={tabKey}
-              type="button"
               onClick={() => setTab(tabKey)}
-              className={`border-b-2 pb-3 text-[14px] font-bold transition-colors ${
+              className={`pb-3 text-[14px] font-bold transition-colors ${
                 tab === tabKey
-                  ? "border-accent text-white"
-                  : "border-transparent text-mutedDim hover:text-text"
+                  ? "border-b-2 border-accent text-white"
+                  : "text-muted hover:text-white"
               }`}
             >
               {label}
@@ -273,13 +373,8 @@ export default function Profile() {
           <EmptyState
             title={t("profile.emptyCreatedTitle")}
             body={t("profile.emptyCreatedDesc")}
-            cta={
-              isOwnProfile ? (
-                <Link to="/create" className="mt-2 inline-block">
-                  <PrimaryButton icon={Plus}>{t("profile.emptyCreatedCta")}</PrimaryButton>
-                </Link>
-              ) : null
-            }
+            actionLabel={t("profile.emptyCreatedCta")}
+            onAction={() => (window.location.href = "/create")}
           />
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
@@ -317,7 +412,10 @@ export default function Profile() {
       <ProfileEditModal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
-        onSaveSuccess={(updated) => setTargetUser((prev) => ({ ...prev, ...updated }))}
+        onSaveSuccess={(updated) => {
+          setTargetUser((prev) => ({ ...prev, ...updated }));
+          loadProfile();
+        }}
       />
 
       {/* Modal de Partilha do Perfil */}
@@ -325,8 +423,17 @@ export default function Profile() {
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
         title={`Perfil de ${targetUser.displayName} (#${targetUser.handle})`}
-        url={window.location.href}
+        url={`${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`}
         description={`Confere as tier lists criadas por ${targetUser.displayName} no TierForge.`}
+      />
+
+      {/* Modal de Seguidores e A Seguir (Com lista real e botões diretos de seguir) */}
+      <FollowersModal
+        isOpen={followersModalOpen}
+        onClose={() => setFollowersModalOpen(false)}
+        targetUser={targetUser}
+        initialTab={followersModalTab}
+        onFollowChange={loadProfile}
       />
     </div>
   );

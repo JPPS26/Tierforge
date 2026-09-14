@@ -24,6 +24,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { createTierList, searchCatalog, getCategories } from "../services/db";
 import ShareModal from "../components/ShareModal";
+import CategorySelector from "../components/CategorySelector";
 
 const DEFAULT_TIERS = [
   { id: "t1", label: "S", color: "#FF3B5C" },
@@ -239,7 +240,8 @@ export default function Builder() {
   const [tiers, setTiers] = useState(DEFAULT_TIERS);
   const [placements, setPlacements] = useState({});
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("football");
+  const [category, setCategory] = useState("gaming");
+  const [subcategory, setSubcategory] = useState("");
   const [visibility, setVisibility] = useState("public"); // "public" | "unlisted" | "private"
   const [displayMode, setDisplayMode] = useState("both"); // "both" | "image" | "text"
 
@@ -478,6 +480,7 @@ export default function Builder() {
       const result = await createTierList(user?.uid || null, {
         title: title.trim() || t("builder.defaultTitle"),
         category,
+        subcategory,
         visibility,
         language,
         tiers,
@@ -500,33 +503,20 @@ export default function Builder() {
 
   return (
     <div className="mx-auto max-w-[1140px] px-4 sm:px-6 pb-28 pt-8">
-      {/* Barra de Título, Categoria e Visibilidade */}
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
+      {/* Barra de Título, Tema e Visibilidade */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
         <div className="flex-1 min-w-[280px]">
+          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-accent">
+            Tema / Título da Tier List
+          </div>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={t("builder.titlePlaceholder")}
-            className="w-full border-none bg-transparent font-display text-[26px] sm:text-[34px] font-black text-white outline-none placeholder:text-mutedDim focus:placeholder:text-transparent"
+            placeholder="Ex: Melhores jogadores do FC Porto, Melhores jogos da PS5, Melhores carros JDM…"
+            className="w-full border-none bg-transparent font-display text-[24px] sm:text-[32px] font-black text-white outline-none placeholder:text-mutedDim focus:placeholder:text-transparent"
           />
 
           <div className="mt-3 flex flex-wrap items-center gap-4">
-            {/* Seletor de Categoria */}
-            <div className="flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-muted">{t("builder.categoryLabel")}</span>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="rounded-xl border border-border bg-surface2 px-3 py-1.5 text-[13px] font-semibold text-text outline-none focus:border-accent"
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {t(`categories.${cat.id}`) || cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Seletor de Visibilidade (Pública / Não Listada / Privada) */}
             <div className="flex items-center gap-2">
               <span className="text-[12.5px] font-bold text-muted">{t("builder.visibilityLabel")}</span>
@@ -595,6 +585,16 @@ export default function Builder() {
             {saving ? t("builder.publishing") : t("builder.publish")}
           </PrimaryButton>
         </div>
+      </div>
+
+      {/* Seletor Dinâmico de Categoria & Subcategoria com Pesquisa e Moderação */}
+      <div className="mb-6">
+        <CategorySelector
+          selectedCategory={category}
+          selectedSubcategory={subcategory}
+          onSelectCategory={setCategory}
+          onSelectSubcategory={setSubcategory}
+        />
       </div>
 
       {/* Mensagem de confirmação ao publicar */}

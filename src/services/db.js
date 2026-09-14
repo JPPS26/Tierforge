@@ -14,9 +14,11 @@ import {
   updateDoc,
   where,
   increment,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { REAL_ITEMS, SEED_TIERLISTS, REAL_CATEGORIES, SEED_USERS } from "../data/realCatalog";
+import { REAL_ITEMS, SEED_TIERLISTS, SEED_USERS } from "../data/realCatalog";
+import { BASE_CATEGORIES } from "../data/categoriesData";
 import { searchWikimediaEntities } from "./wikipediaApi";
 
 const STORAGE_KEY_TIERLISTS = "tierforge_real_tierlists";
@@ -214,6 +216,68 @@ export function toggleFollowUser(currentUid, targetUid) {
   return !isFollowing;
 }
 
+export function getUserFollowers(targetUid, currentUid = null) {
+  if (!targetUid) return [];
+  const users = getAllUsers();
+  const targetUser = users.find((u) => u.uid === targetUid);
+  if (!targetUser) return [];
+
+  const followerIds = new Set(targetUser.followers || []);
+  const currentUser = currentUid ? users.find((u) => u.uid === currentUid) : null;
+  const currentFollowingIds = new Set(currentUser?.following || []);
+
+  const result = [];
+  for (const u of users) {
+    if (followerIds.has(u.uid)) {
+      result.push({
+        uid: u.uid,
+        handle: u.handle || `user_${u.uid.slice(0, 6)}`,
+        displayName: u.displayName || "Utilizador",
+        avatar: u.avatar || "",
+        bio: u.bio || "",
+        badges: u.badges || [],
+        creatorXp: u.creatorXp || 0,
+        followersCount: u.followers?.length || 0,
+        followingCount: u.following?.length || 0,
+        isFollowing: currentFollowingIds.has(u.uid),
+        isSelf: currentUid === u.uid,
+      });
+    }
+  }
+  return result;
+}
+
+export function getUserFollowing(targetUid, currentUid = null) {
+  if (!targetUid) return [];
+  const users = getAllUsers();
+  const targetUser = users.find((u) => u.uid === targetUid);
+  if (!targetUser) return [];
+
+  const followingIds = new Set(targetUser.following || []);
+  const currentUser = currentUid ? users.find((u) => u.uid === currentUid) : null;
+  const currentFollowingIds = new Set(currentUser?.following || []);
+
+  const result = [];
+  for (const u of users) {
+    if (followingIds.has(u.uid)) {
+      result.push({
+        uid: u.uid,
+        handle: u.handle || `user_${u.uid.slice(0, 6)}`,
+        displayName: u.displayName || "Utilizador",
+        avatar: u.avatar || "",
+        bio: u.bio || "",
+        badges: u.badges || [],
+        creatorXp: u.creatorXp || 0,
+        followersCount: u.followers?.length || 0,
+        followingCount: u.following?.length || 0,
+        isFollowing: currentFollowingIds.has(u.uid),
+        isSelf: currentUid === u.uid,
+      });
+    }
+  }
+  return result;
+}
+
 // -------------------------------------------------------------
 // ESTATÍSTICAS GLOBAIS REAIS (CÁLCULO ESTRITO)
 // -------------------------------------------------------------
@@ -287,20 +351,177 @@ export function getLeaderboard() {
 // -------------------------------------------------------------
 // SISTEMA DE CATEGORIAS DINÂMICAS E ESCALÁVEIS
 // -------------------------------------------------------------
+export function slugify(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function getCategories() {
-  const categories = getStored(STORAGE_KEY_CATEGORIES, REAL_CATEGORIES);
+  const stored = getStored(STORAGE_KEY_CATEGORIES, BASE_CATEGORIES);
+  const existingIds = new Set(stored.map((c) => c.id || c.slug));
+  const merged = [...stored];
+  for (const baseCat of BASE_CATEGORIES) {
+    if (!existingIds.has(baseCat.id) && !existingIds.has(baseCat.slug)) {
+      merged.push(baseCat);
+      existingIds.add(baseCat.id);
+    }
+  }
+
   const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
-  // Calcula a contagem real de tier lists públicas para cada categoria
-  return categories.map((cat) => {
-    const realCount = lists.filter(
-      (l) => l.category === cat.id && (l.visibility === "public" || !l.visibility)
-    ).length;
+  // Calcula a contagem estritamente real de tier lists públicas
+  return merged.map((cat) => {
+    const realCount = lists.filter((l) => {
+      const isMatch =
+        l.category === cat.id ||
+        l.category === cat.slug ||
+        (l.category && l.category.toLowerCase() === (cat.name || "").toLowerCase());
+      return isMatch && (l.visibility === "public" || !l.visibility);
+    }).length;
+
     return {
       ...cat,
       count: realCount,
     };
   });
+}
+
+// Categorias populares calculadas estritamente com base na atividade real de listas e votos
+export function getPopularCategories(limit = 6) {
+  const categories = getCategories();
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  const populated = categories
+    .map((cat) => {
+      const catLists = lists.filter((l) => {
+        const isMatch =
+          l.category === cat.id ||
+          l.category === cat.slug ||
+          (l.category && l.category.toLowerCase() === (cat.name || "").toLowerCase());
+        return isMatch && (l.visibility === "public" || !l.visibility);
+      });
+
+      const totalVotes = catLists.reduce((acc, l) => acc + (l.votes || 0), 0);
+      const totalViews = catLists.reduce((acc, l) => acc + (l.views || 0), 0);
+      const score = catLists.length * 20 + totalVotes * 5 + totalViews;
+
+      return {
+        ...cat,
+        tierListsCount: catLists.length,
+        totalVotes,
+        popularityScore: score,
+      };
+    })
+    .filter((c) => c.tierListsCount > 0) // REGRA ESTRITA: só é popular se houver listas reais criadas
+    .sort((a, b) => b.popularityScore - a.popularityScore);
+
+  return populated.slice(0, limit);
+}
+
+export function searchCategories(queryText) {
+  const all = getCategories();
+  if (!queryText || !queryText.trim()) return all;
+  const q = queryText.toLowerCase().trim();
+
+  return all.filter((c) => {
+    const nameMatch = (c.name || "").toLowerCase().includes(q);
+    const slugMatch = (c.slug || "").toLowerCase().includes(q);
+    const descMatch = (c.description || "").toLowerCase().includes(q);
+    const subMatch = (c.subcategories || []).some((sub) =>
+      (typeof sub === "string" ? sub : sub.name || "").toLowerCase().includes(q)
+    );
+    return nameMatch || slugMatch || descMatch || subMatch;
+  });
+}
+
+export function validateCategoryName(name) {
+  if (!name || typeof name !== "string") {
+    return { valid: false, error: "O nome da categoria é obrigatório." };
+  }
+  const clean = name.trim();
+  if (clean.length < 3) {
+    return { valid: false, error: "O nome da categoria deve ter pelo menos 3 caracteres." };
+  }
+  if (clean.length > 45) {
+    return { valid: false, error: "O nome da categoria não pode ter mais de 45 caracteres." };
+  }
+
+  const slug = slugify(clean);
+  if (!slug) {
+    return { valid: false, error: "O nome introduzido não é válido." };
+  }
+
+  const existing = getCategories();
+  const isDuplicate = existing.some(
+    (c) =>
+      c.id === slug ||
+      c.slug === slug ||
+      (c.name || "").toLowerCase() === clean.toLowerCase()
+  );
+
+  if (isDuplicate) {
+    return {
+      valid: false,
+      error: `Já existe uma categoria semelhante com o nome "${clean}".`,
+    };
+  }
+
+  return { valid: true, slug, name: clean };
+}
+
+export async function createCustomCategory({
+  name,
+  description = "",
+  icon = "Sparkles",
+  color = "#7C5CFF",
+  subcategories = [],
+  createdBy = null,
+}) {
+  const validation = validateCategoryName(name);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const newCategory = {
+    id: validation.slug,
+    name: validation.name,
+    slug: validation.slug,
+    description: description.trim() || `Tier Lists e rankings da comunidade sobre ${validation.name}.`,
+    icon,
+    color,
+    subcategories: Array.isArray(subcategories)
+      ? subcategories.filter(Boolean)
+      : [],
+    isActive: true,
+    isCustom: true,
+    createdBy: createdBy || "community",
+    createdAt: new Date().toISOString(),
+    count: 0,
+  };
+
+  const stored = getStored(STORAGE_KEY_CATEGORIES, BASE_CATEGORIES);
+  stored.push(newCategory);
+  setStored(STORAGE_KEY_CATEGORIES, stored);
+
+  if (isFirebaseConfigured()) {
+    try {
+      const ref = doc(db, "categories", newCategory.id);
+      await setDoc(ref, {
+        ...newCategory,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      console.warn("Firestore category save notice:", e);
+    }
+  }
+
+  return newCategory;
 }
 
 // -------------------------------------------------------------
