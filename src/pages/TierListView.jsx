@@ -8,13 +8,14 @@ import {
   ThumbsDown,
   Share2,
   ArrowLeft,
-  Sparkles,
-  Check,
+  Lock,
   Send,
+  ExternalLink,
 } from "lucide-react";
 import {
   getTierListById,
   voteTierList,
+  getUserVoteForList,
   incrementViews,
   getCommentsForTierList,
   addCommentToTierList,
@@ -22,10 +23,11 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Avatar, Badge, PrimaryButton, GhostButton, colorFor } from "../components/UI";
+import ShareModal from "../components/ShareModal";
 
 export default function TierListView() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -33,20 +35,24 @@ export default function TierListView() {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
-  const [userVoted, setUserVoted] = useState(null); // 'up' | 'down' | null
-  const [copied, setCopied] = useState(false);
+  const [userVote, setUserVote] = useState(0); // 1, -1, or 0
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const userIdOrAnon = user?.uid || "anon_user";
 
   useEffect(() => {
     async function loadData() {
       if (!id) return;
       setLoading(true);
       try {
-        const data = await getTierListById(id);
+        const data = await getTierListById(id, user?.uid);
         setTierList(data);
-        if (data) {
+        if (data && !data.isPrivateForbidden) {
           incrementViews(id);
           const comms = getCommentsForTierList(id);
           setComments(comms);
+          const initialVote = getUserVoteForList(id, userIdOrAnon);
+          setUserVote(initialVote);
         }
       } catch (err) {
         console.error("Error loading tier list:", err);
@@ -55,20 +61,12 @@ export default function TierListView() {
       }
     }
     loadData();
-  }, [id]);
+  }, [id, user?.uid]);
 
   async function handleVote(direction) {
-    if (userVoted === direction) return;
-    const diff = direction === "up" ? (userVoted === "down" ? 2 : 1) : (userVoted === "up" ? -2 : -1);
-    setUserVoted(direction);
-    const newVotes = await voteTierList(id, diff);
-    setTierList((prev) => (prev ? { ...prev, votes: newVotes } : null));
-  }
-
-  function handleShare() {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    const res = await voteTierList(id, userIdOrAnon, direction);
+    setUserVote(res.userVote);
+    setTierList((prev) => (prev ? { ...prev, votes: res.votes } : null));
   }
 
   function handleAddComment(e) {
@@ -76,8 +74,8 @@ export default function TierListView() {
     if (!commentText.trim()) return;
 
     const newComment = addCommentToTierList(id, {
-      userName: user?.displayName || user?.email?.split("@")[0] || "Visitante",
-      userAvatar: user?.photoURL || "",
+      userName: profile?.displayName || user?.displayName || "Visitante",
+      userAvatar: profile?.avatar || user?.photoURL || "",
       text: commentText.trim(),
     });
 
@@ -93,12 +91,20 @@ export default function TierListView() {
     );
   }
 
-  if (!tierList) {
+  if (!tierList || tierList.isPrivateForbidden) {
     return (
-      <div className="mx-auto max-w-[600px] px-6 py-24 text-center">
-        <h2 className="mb-2 font-display text-[24px] font-bold text-text">
-          {t("tierListView.tierListNotFound")}
+      <div className="mx-auto max-w-[600px] px-6 py-28 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accentSoft text-accent mx-auto">
+          <Lock size={26} />
+        </div>
+        <h2 className="mb-2 font-display text-[26px] font-black text-white">
+          {tierList?.isPrivateForbidden
+            ? t("tierListView.privateNotice")
+            : t("tierListView.tierListNotFound")}
         </h2>
+        <p className="mb-6 text-[14px] text-muted">
+          Esta tier list foi configurada como privada ou foi eliminada pelo autor.
+        </p>
         <Link to="/explore">
           <PrimaryButton icon={ArrowLeft}>{t("tierListView.backToExplore")}</PrimaryButton>
         </Link>
@@ -112,66 +118,91 @@ export default function TierListView() {
   const tiers = tierList.tiers || [];
 
   return (
-    <div className="mx-auto max-w-[1140px] px-6 pb-28 pt-8">
-      {/* Voltar e Meta */}
+    <div className="mx-auto max-w-[1140px] px-4 sm:px-6 pb-28 pt-8">
+      {/* Voltar e Partilha */}
       <div className="mb-6 flex items-center justify-between">
         <Link
           to="/explore"
-          className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-muted hover:text-text transition-colors"
+          className="inline-flex items-center gap-2 text-[13.5px] font-bold text-muted hover:text-text transition-colors"
         >
           <ArrowLeft size={16} /> {t("tierListView.backToExplore")}
         </Link>
 
         <button
           type="button"
-          onClick={handleShare}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-[13px] font-medium text-text hover:bg-surface2 transition-colors"
+          onClick={() => setShareOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
         >
-          {copied ? <Check size={14} className="text-teal" /> : <Share2 size={14} />}
-          <span>{copied ? t("tierListView.linkCopied") : t("tierListView.share")}</span>
+          <Share2 size={14} className="text-accent" />
+          <span>{t("tierListView.share")}</span>
         </button>
       </div>
 
       {/* Cabeçalho da Tier List */}
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-6 border-b border-border pb-7">
         <div className="flex-1 min-w-[280px]">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge tone="accent">{tierList.category?.toUpperCase() || "GERAL"}</Badge>
-            {tierList.createdDaysAgo !== undefined && tierList.createdDaysAgo <= 2 && (
-              <Badge tone="teal">Novo</Badge>
+          <div className="mb-2.5 flex items-center gap-2">
+            <Badge tone="accent">
+              {t(`categories.${tierList.category}`) || tierList.category?.toUpperCase() || "GERAL"}
+            </Badge>
+            {tierList.visibility === "private" && (
+              <Badge tone="rose">
+                <Lock size={11} /> Privada
+              </Badge>
+            )}
+            {tierList.visibility === "unlisted" && (
+              <Badge tone="amber">Não Listada</Badge>
             )}
           </div>
 
-          <h1 className="font-display text-[28px] sm:text-[36px] font-black tracking-tight text-text">
+          <h1 className="font-display text-[28px] sm:text-[38px] font-black tracking-tight text-white leading-tight">
             {tierList.title}
           </h1>
 
           {tierList.description && (
-            <p className="mt-2 max-w-2xl text-[14.5px] leading-relaxed text-muted">
+            <p className="mt-2.5 max-w-2xl text-[14.5px] leading-relaxed text-muted">
               {tierList.description}
             </p>
           )}
 
-          <div className="mt-4 flex items-center gap-2.5">
-            <Avatar name={tierList.creator} size={26} />
-            <span className="text-[13.5px] font-semibold text-text">
-              {tierList.creator || "Criador Anónimo"}
-            </span>
+          {/* Criador com link para o Perfil Público */}
+          <div className="mt-4 flex items-center gap-3">
+            <Link
+              to={`/profile/${tierList.creatorHandle || tierList.ownerId}`}
+              className="flex items-center gap-2.5 group"
+            >
+              <Avatar
+                name={tierList.creator}
+                image={tierList.creatorAvatar}
+                size={30}
+              />
+              <div>
+                <span className="font-display text-[14px] font-bold text-text group-hover:text-accent transition-colors">
+                  {tierList.creator || "Criador"}
+                </span>
+                {tierList.creatorHandle && (
+                  <span className="ml-2 text-[12px] font-semibold text-accent/80">
+                    #{tierList.creatorHandle}
+                  </span>
+                )}
+              </div>
+            </Link>
+
             {tierList.creatorBadge && (
               <Badge tone="default">{tierList.creatorBadge}</Badge>
             )}
           </div>
         </div>
 
-        {/* Painel de Votação e Estatísticas */}
+        {/* Painel de Votação Anti-Abuso e Métricas Reais */}
         <div className="flex flex-col gap-3 sm:items-end">
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => handleVote("up")}
-              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-[13px] font-bold transition-all ${
-                userVoted === "up"
-                  ? "border-teal bg-[rgba(49,216,168,0.15)] text-teal shadow-sm"
+              onClick={() => handleVote(1)}
+              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition-all ${
+                userVote === 1
+                  ? "border-teal bg-[rgba(49,216,168,0.2)] text-teal shadow-glow"
                   : "border-border bg-surface text-muted hover:border-borderStrong hover:text-text"
               }`}
             >
@@ -181,10 +212,10 @@ export default function TierListView() {
 
             <button
               type="button"
-              onClick={() => handleVote("down")}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-bold transition-all ${
-                userVoted === "down"
-                  ? "border-[#FF5470] bg-[rgba(255,84,112,0.15)] text-[#FF5470] shadow-sm"
+              onClick={() => handleVote(-1)}
+              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition-all ${
+                userVote === -1
+                  ? "border-[#FF5470] bg-[rgba(255,84,112,0.2)] text-[#FF5470] shadow-glow"
                   : "border-border bg-surface text-muted hover:border-borderStrong hover:text-text"
               }`}
             >
@@ -194,7 +225,7 @@ export default function TierListView() {
           </div>
 
           <div className="flex items-center gap-4 text-[12.5px] text-mutedDim">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 font-bold text-white">
               <Heart size={14} className="text-[#FF5470]" />
               {t("tierListView.votes", { count: (tierList.votes || 0).toLocaleString() })}
             </span>
@@ -211,7 +242,7 @@ export default function TierListView() {
       </div>
 
       {/* A Tier List Renderizada */}
-      <div className="mb-14 overflow-hidden rounded-2xl border border-borderStrong bg-surface shadow-2xl">
+      <div className="mb-14 overflow-hidden rounded-3xl border border-borderStrong bg-surface shadow-2xl">
         {tiers.map((tier) => {
           const tierItems = Object.entries(placements)
             .filter(([, tId]) => tId === tier.id)
@@ -221,15 +252,15 @@ export default function TierListView() {
           return (
             <div key={tier.id} className="flex border-b border-border/60 last:border-b-0">
               <div
-                className="flex w-[80px] sm:w-[96px] flex-shrink-0 items-center justify-center p-2 text-center"
+                className="flex w-[84px] sm:w-[100px] flex-shrink-0 items-center justify-center p-2 text-center border-r border-white/10"
                 style={{ background: tier.color }}
               >
-                <span className="font-display text-[22px] sm:text-[26px] font-black text-[#0A0A0D]">
+                <span className="font-display text-[22px] sm:text-[28px] font-black text-[#0A0A0D]">
                   {tier.label}
                 </span>
               </div>
 
-              <div className="flex min-h-[96px] flex-1 flex-wrap items-center gap-2.5 p-3.5 bg-surface">
+              <div className="flex min-h-[100px] flex-1 flex-wrap items-center gap-2.5 p-3.5 bg-surface">
                 {tierItems.length === 0 ? (
                   <span className="text-[12px] italic text-mutedDim px-2">—</span>
                 ) : (
@@ -242,7 +273,7 @@ export default function TierListView() {
                     return (
                       <div
                         key={it.id}
-                        className={`relative flex items-center justify-center overflow-hidden rounded-xl border border-border transition-transform hover:scale-105 ${
+                        className={`relative flex items-center justify-center overflow-hidden rounded-xl border border-border transition-all hover:scale-105 hover:shadow-glow ${
                           mode === "image" && hasImage
                             ? "h-20 w-20 flex-shrink-0 bg-surface2"
                             : mode === "both" && hasImage
@@ -273,7 +304,7 @@ export default function TierListView() {
                           <div
                             className={`z-10 font-display text-center font-bold leading-tight ${
                               showImage
-                                ? "w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent pb-1 pt-3 px-1 text-[10.5px] text-white"
+                                ? "w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent pb-1.5 pt-3.5 px-1 text-[10px] text-white"
                                 : "text-[11.5px] text-text"
                             }`}
                           >
@@ -290,26 +321,29 @@ export default function TierListView() {
         })}
       </div>
 
-      {/* Secção de Comentários e Debate Comunitário */}
+      {/* Secção de Comentários */}
       <div className="mx-auto max-w-[800px]">
         <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-          <h3 className="font-display text-[20px] font-bold text-text flex items-center gap-2">
+          <h3 className="font-display text-[20px] font-bold text-white flex items-center gap-2">
             <MessageCircle size={20} className="text-accent" />
             {t("tierListView.comments", { count: comments.length })}
           </h3>
         </div>
 
-        {/* Formulário para adicionar comentário */}
         <form onSubmit={handleAddComment} className="mb-8">
           <div className="flex gap-3">
-            <Avatar name={user?.displayName || "Eu"} size={36} />
+            <Avatar
+              name={profile?.displayName || user?.displayName || "Eu"}
+              image={profile?.avatar || user?.photoURL}
+              size={36}
+            />
             <div className="flex-1">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={t("tierListView.addCommentPlaceholder")}
                 rows={3}
-                className="w-full rounded-xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent"
+                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent"
               />
               <div className="mt-2 flex justify-end">
                 <PrimaryButton small icon={Send} type="submit" disabled={!commentText.trim()}>
@@ -320,10 +354,9 @@ export default function TierListView() {
           </div>
         </form>
 
-        {/* Lista de Comentários */}
         <div className="flex flex-col gap-4">
           {comments.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border py-8 text-center text-[13.5px] text-muted">
+            <div className="rounded-2xl border border-dashed border-border py-8 text-center text-[13.5px] text-muted">
               {t("tierListView.emptyComments")}
             </div>
           ) : (
@@ -334,8 +367,8 @@ export default function TierListView() {
               >
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <Avatar name={c.userName} size={28} />
-                    <span className="font-display text-[13.5px] font-bold text-text">
+                    <Avatar name={c.userName} image={c.userAvatar} size={28} />
+                    <span className="font-display text-[13.5px] font-bold text-white">
                       {c.userName}
                     </span>
                   </div>
@@ -351,7 +384,15 @@ export default function TierListView() {
           )}
         </div>
       </div>
+
+      {/* Modal de Partilha Social */}
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={tierList.title}
+        url={window.location.href}
+        description={tierList.description || "Classificação completa no TierForge"}
+      />
     </div>
   );
 }
-

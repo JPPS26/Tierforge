@@ -1,94 +1,129 @@
-import React from "react";
-import { Crown } from "lucide-react";
-import { Crown, Sparkles } from "lucide-react";
-import { Avatar } from "../components/UI";
-import { CREATORS } from "../data/mock";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Crown, Sparkles, Trophy, Plus, Layers, Heart, Users } from "lucide-react";
+import { Avatar, Badge, EmptyState, PrimaryButton } from "../components/UI";
 import { useLanguage } from "../context/LanguageContext";
-
-const TOP_CREATORS = [
-  { name: "Rodrigo Matos", badge: "Criador de Elite", xp: 64200, avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" },
-  { name: "Alexandre Rocha", badge: "Especialista Gaming", xp: 58900, avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80" },
-  { name: "Beatriz Costa", badge: "Crítica de Cinema", xp: 49100, avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" },
-  { name: "Marco Fernandes", badge: "Criador Top", xp: 42300, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" },
-  { name: "Carolina Silva", badge: "Avaliadora Pro", xp: 38700, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" },
-  { name: "Diogo Santos", badge: "Criador em Ascensão", xp: 33100, avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80" },
-];
+import { getLeaderboard } from "../services/db";
 
 export default function Leaderboard() {
-  const rows = CREATORS.concat(CREATORS).map((c, i) => ({ ...c, xp: 48000 - i * 3120, rank: i + 1 }));
   const { t } = useLanguage();
+  const [creators, setCreators] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Calcula a classificação dos criadores em tempo real a partir dos dados da base de dados
+    const ranked = getLeaderboard();
+    setCreators(ranked);
+    setLoading(false);
+  }, []);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 pb-24 pt-10">
-      <h1 className="mb-1.5 font-display text-[34px] font-bold">Leaderboard</h1>
-      <p className="mb-7 text-muted">Top creators this month, ranked by Creator XP.</p>
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        {rows.slice(0, 10).map((r, i) => (
-      <h1 className="mb-2 font-display text-[32px] sm:text-[38px] font-black text-white">
-        {t("leaderboard.title")}
-      </h1>
-      <p className="mb-8 text-muted">{t("leaderboard.subtitle")}</p>
-
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
-        <div className="flex items-center justify-between border-b border-border/80 bg-surface2/60 px-5 py-3 text-[12px] font-bold uppercase tracking-wider text-mutedDim">
-          <div className="flex items-center gap-4">
-            <span className="w-8">{t("leaderboard.rank")}</span>
-            <span>{t("leaderboard.creator")}</span>
-          </div>
-          <span>{t("leaderboard.xp")}</span>
+    <div className="mx-auto max-w-[940px] px-4 sm:px-6 pb-28 pt-10">
+      <div className="mb-8">
+        <div className="mb-2 flex items-center gap-2">
+          <Badge tone="accent">
+            <Trophy size={12} /> Classificação Dinâmica
+          </Badge>
         </div>
-
-        {TOP_CREATORS.map((r, i) => (
-          <div
-            key={i}
-            className={`flex items-center gap-3.5 px-4.5 py-3.5 ${i < 9 ? "border-b border-border" : ""}`}
-            key={r.name}
-            className={`flex items-center justify-between px-5 py-4 transition-colors hover:bg-surface2/50 ${
-              i < TOP_CREATORS.length - 1 ? "border-b border-border/60" : ""
-            }`}
-          >
-            <div className={`w-6 font-display text-[14px] font-bold ${r.rank <= 3 ? "text-[#FFD23F]" : "text-mutedDim"}`}>
-              {r.rank}
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-8 font-display text-[15px] font-black ${
-                  i === 0
-                    ? "text-[#FFD23F]"
-                    : i === 1
-                    ? "text-[#C0C0C0]"
-                    : i === 2
-                    ? "text-[#CD7F32]"
-                    : "text-mutedDim"
-                }`}
-              >
-                {i + 1}
-              </div>
-
-              <Avatar name={r.name} size={36} />
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-[14.5px] font-bold text-text">
-                    {r.name}
-                  </span>
-                  {i === 0 && <Crown size={15} className="text-[#FFD23F]" />}
-                </div>
-                <div className="text-[12px] text-mutedDim">{r.badge}</div>
-              </div>
-            </div>
-            <Avatar name={r.name} size={34} />
-            <div className="flex-1">
-              <div className="text-[14.5px] font-semibold">{r.name}</div>
-              <div className="text-[12px] text-mutedDim">{r.badge}</div>
-
-            <div className="font-display text-[14.5px] font-bold text-white">
-              {r.xp.toLocaleString()} XP
-            </div>
-            {r.rank <= 3 && <Crown size={16} className="text-[#FFD23F]" />}
-            <div className="font-display text-[14px] font-bold">{r.xp.toLocaleString()} XP</div>
-          </div>
-        ))}
+        <h1 className="font-display text-[32px] sm:text-[40px] font-black text-white tracking-tight">
+          {t("leaderboard.title")}
+        </h1>
+        <p className="mt-2 text-[14.5px] text-muted max-w-xl leading-relaxed">
+          {t("leaderboard.subtitle")}
+        </p>
       </div>
+
+      {loading ? (
+        <div className="py-24 text-center text-muted">A calcular classificações…</div>
+      ) : creators.length === 0 ? (
+        <EmptyState
+          icon={Trophy}
+          title={t("leaderboard.empty")}
+          cta={
+            <Link to="/create" className="inline-block mt-2">
+              <PrimaryButton icon={Plus}>{t("home.createBtn")}</PrimaryButton>
+            </Link>
+          }
+        />
+      ) : (
+        <div className="overflow-hidden rounded-3xl border border-borderStrong bg-surface shadow-2xl">
+          {/* Cabeçalho da Tabela */}
+          <div className="flex items-center justify-between border-b border-border/80 bg-surface2/60 px-6 py-3.5 text-[11.5px] font-bold uppercase tracking-wider text-mutedDim">
+            <div className="flex items-center gap-4">
+              <span className="w-8 text-center">{t("leaderboard.rank")}</span>
+              <span>{t("leaderboard.creator")}</span>
+            </div>
+            <div className="flex items-center gap-8">
+              <span className="hidden sm:inline">Estatísticas</span>
+              <span>{t("leaderboard.xp")}</span>
+            </div>
+          </div>
+
+          {/* Linhas de Criadores Reais */}
+          <div className="divide-y divide-border/60">
+            {creators.map((c) => (
+              <Link
+                key={c.uid}
+                to={`/profile/${c.handle}`}
+                className="flex items-center justify-between px-6 py-4.5 transition-all hover:bg-surface2/60 group"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div
+                    className={`w-8 text-center font-display text-[16px] font-black ${
+                      c.rank === 1
+                        ? "text-[#FFD23F] drop-shadow-[0_0_8px_rgba(255,210,63,0.5)]"
+                        : c.rank === 2
+                        ? "text-[#E0E0E0]"
+                        : c.rank === 3
+                        ? "text-[#CD7F32]"
+                        : "text-mutedDim"
+                    }`}
+                  >
+                    {c.rank}
+                  </div>
+
+                  <Avatar name={c.name} image={c.avatar} size={40} />
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-[15px] font-bold text-white group-hover:text-accent transition-colors truncate">
+                        {c.name}
+                      </span>
+                      {c.rank === 1 && <Crown size={15} className="text-[#FFD23F] flex-shrink-0" />}
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px]">
+                      <span className="font-bold text-accent">#{c.handle}</span>
+                      <span className="text-mutedDim">•</span>
+                      <span className="text-mutedDim">{c.badge}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0">
+                  {/* Estatísticas reais de listas e votos */}
+                  <div className="hidden sm:flex items-center gap-4 text-[12px] text-mutedDim font-semibold">
+                    <span className="flex items-center gap-1" title="Tier Lists Criadas">
+                      <Layers size={13} /> {c.listsCount}
+                    </span>
+                    <span className="flex items-center gap-1" title="Votos Recebidos">
+                      <Heart size={13} className="text-[#FF5470]" /> {c.votesCount}
+                    </span>
+                    <span className="flex items-center gap-1" title="Seguidores">
+                      <Users size={13} /> {c.followersCount}
+                    </span>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="font-display text-[16px] font-black text-white group-hover:text-accent transition-colors">
+                      {c.xp.toLocaleString()} XP
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

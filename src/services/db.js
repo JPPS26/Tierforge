@@ -1,5 +1,6 @@
 // Camada de serviços da base de dados (Repository Pattern)
-// Sincroniza com o Firebase Firestore e mantém persistência local com dados reais verificados.
+// Todas as métricas (votos, listas, visualizações, rankings de criadores)
+// são calculadas estritamente a partir dos dados reais da base de dados.
 
 import {
   addDoc,
@@ -15,77 +16,37 @@ import {
   increment,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { REAL_ITEMS, SEED_TIERLISTS, REAL_CATEGORIES } from "../data/realCatalog";
+import { REAL_ITEMS, SEED_TIERLISTS, REAL_CATEGORIES, SEED_USERS } from "../data/realCatalog";
 import { searchWikimediaEntities } from "./wikipediaApi";
 
 const STORAGE_KEY_TIERLISTS = "tierforge_real_tierlists";
+const STORAGE_KEY_USERS = "tierforge_real_users";
+const STORAGE_KEY_CATEGORIES = "tierforge_real_categories";
 const STORAGE_KEY_COMMENTS = "tierforge_real_comments";
-const STORAGE_KEY_VOTES = "tierforge_user_votes";
+const STORAGE_KEY_USER_VOTES = "tierforge_antiabuse_votes";
 
-// Inicializa o armazenamento local com dados reais se necessário
-function getStoredTierLists() {
+// Helper de persistência segura com fallback
+function getStored(key, initialFallback) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_TIERLISTS);
+    const raw = localStorage.getItem(key);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(SEED_TIERLISTS));
-      return SEED_TIERLISTS;
+      localStorage.setItem(key, JSON.stringify(initialFallback));
+      return initialFallback;
     }
     return JSON.parse(raw);
   } catch {
-    return SEED_TIERLISTS;
+    return initialFallback;
   }
 }
 
-function saveStoredTierLists(lists) {
+function setStored(key, value) {
   try {
-    localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(lists));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
-    console.warn("Could not save tierlists to localStorage", e);
+    console.warn(`Could not save ${key} to storage`, e);
   }
 }
 
-function getStoredComments() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_COMMENTS);
-    if (!raw) {
-      const initial = {
-        "tl-football-goat-2026": [
-          {
-            id: "c-1",
-            userName: "Tiago Silva",
-            userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80",
-            text: "Totalmente de acordo com o Cristiano e o Messi no topo. Mas colocaria o De Bruyne também no nível mais alto!",
-            createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-            likes: 42,
-          },
-          {
-            id: "c-2",
-            userName: "André Pereira",
-            userAvatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80",
-            text: "O Bellingham teve uma época incrível no Real Madrid, merecia estar taco a taco com os melhores.",
-            createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-            likes: 19,
-          },
-        ],
-      };
-      localStorage.setItem(STORAGE_KEY_COMMENTS, JSON.stringify(initial));
-      return initial;
-    }
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-function saveStoredComments(allComments) {
-  try {
-    localStorage.setItem(STORAGE_KEY_COMMENTS, JSON.stringify(allComments));
-  } catch (e) {
-    console.warn("Could not save comments to localStorage", e);
-  }
-}
-
-// Verifica se o Firebase está devidamente configurado com chaves válidas
 function isFirebaseConfigured() {
   return Boolean(
     import.meta.env.VITE_FIREBASE_API_KEY &&
@@ -93,23 +54,274 @@ function isFirebaseConfigured() {
   );
 }
 
-// Obter tier lists recentes/filtradas
-export async function getTierLists({ category = "All", tab = "Trending", queryText = "" } = {}) {
-  let lists = [];
+// -------------------------------------------------------------
+// GESTÃO DE UTILIZADORES E PERFIS
+// -------------------------------------------------------------
+export function getAllUsers() {
+  return getStored(STORAGE_KEY_USERS, SEED_USERS);
+}
+
+export function getUserByUid(uid) {
+  if (!uid) return null;
+  const users = getAllUsers();
+  return users.find((u) => u.uid === uid) || null;
+}
+
+export function getUserByHandle(handle) {
+  if (!handle) return null;
+  const clean = handle.replace(/^#/, "").toLowerCase().trim();
+  const users = getAllUsers();
+  const user = users.find((u) => (u.handle || "").toLowerCase() === clean);
+  if (!user) return null;
+
+  // Calcula métricas reais deste criador a partir das suas tier lists na base de dados
+  const allLists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const userLists = allLists.filter((l) => l.ownerId === user.uid);
+  const publicLists = userLists.filter((l) => l.visibility !== "private");
+
+  const totalVotes = userLists.reduce((acc, l) => acc + (l.votes || 0), 0);
+  const totalViews = userLists.reduce((acc, l) => acc + (l.views || 0), 0);
+  const totalLikes = userLists.reduce((acc, l) => acc + (l.likes || 0), 0);
+  const followersCount = user.followers?.length || 0;
+
+  // Fórmula real de Creator XP
+  const realXp =
+    userLists.length * 50 +
+    totalVotes * 10 +
+    totalViews * 1 +
+    followersCount * 25;
+
+  return {
+    ...user,
+    tierListCount: userLists.length,
+    publicListsCount: publicLists.length,
+    totalVotes,
+    totalViews,
+    totalLikes,
+    followersCount,
+    followingCount: user.following?.length || 0,
+    creatorXp: realXp,
+  };
+}
+
+const RESERVED_HANDLES = [
+  "admin", "administrator", "tierforge", "support", "help",
+  "explore", "categories", "login", "register", "create",
+  "api", "settings", "leaderboard", "terms", "privacy"
+];
+
+export function checkHandleAvailable(handle, currentUid) {
+  if (!handle) return { available: false, reason: "empty" };
+  const clean = handle.replace(/^#/, "").toLowerCase().trim();
+
+  // Validação de formato alfanumérico com underscore (3 a 20 caracteres)
+  const regex = /^[a-zA-Z0-9_]{3,20}$/;
+  if (!regex.test(clean)) {
+    return { available: false, reason: "invalid_format" };
+  }
+
+  if (RESERVED_HANDLES.includes(clean)) {
+    return { available: false, reason: "reserved" };
+  }
+
+  const users = getAllUsers();
+  const existing = users.find(
+    (u) => (u.handle || "").toLowerCase() === clean && u.uid !== currentUid
+  );
+
+  if (existing) {
+    return { available: false, reason: "taken" };
+  }
+
+  return { available: true, handle: clean };
+}
+
+export async function updateUserProfile(uid, data) {
+  const users = getAllUsers();
+  const index = users.findIndex((u) => u.uid === uid);
+  if (index === -1) return null;
+
+  const current = users[index];
+  const updated = {
+    ...current,
+    displayName: data.displayName !== undefined ? data.displayName.trim() : current.displayName,
+    handle: data.handle !== undefined ? data.handle.replace(/^#/, "").toLowerCase().trim() : current.handle,
+    bio: data.bio !== undefined ? data.bio.trim() : current.bio,
+    avatar: data.avatar !== undefined ? data.avatar : current.avatar,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users[index] = updated;
+  setStored(STORAGE_KEY_USERS, users);
+
+  // Sincroniza o nome e avatar do criador nas suas tier lists existentes
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let listsChanged = false;
+  lists.forEach((l) => {
+    if (l.ownerId === uid) {
+      l.creator = updated.displayName;
+      l.creatorHandle = updated.handle;
+      l.creatorAvatar = updated.avatar;
+      listsChanged = true;
+    }
+  });
+  if (listsChanged) {
+    setStored(STORAGE_KEY_TIERLISTS, lists);
+  }
 
   if (isFirebaseConfigured()) {
     try {
-      const colRef = collection(db, "tierlists");
-      const q = query(colRef, orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      lists = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const ref = doc(db, "users", uid);
+      await updateDoc(ref, {
+        displayName: updated.displayName,
+        handle: updated.handle,
+        bio: updated.bio,
+        avatar: updated.avatar,
+        updatedAt: serverTimestamp(),
+      });
     } catch (e) {
-      console.warn("Firestore not reachable, using local verified repository:", e);
-      lists = getStoredTierLists();
+      console.warn("Firestore user update error:", e);
     }
-  } else {
-    lists = getStoredTierLists();
   }
+
+  return updated;
+}
+
+export function toggleFollowUser(currentUid, targetUid) {
+  if (!currentUid || !targetUid || currentUid === targetUid) return false;
+
+  const users = getAllUsers();
+  const currentUser = users.find((u) => u.uid === currentUid);
+  const targetUser = users.find((u) => u.uid === targetUid);
+  if (!currentUser || !targetUser) return false;
+
+  const following = new Set(currentUser.following || []);
+  const followers = new Set(targetUser.followers || []);
+
+  const isFollowing = following.has(targetUid);
+  if (isFollowing) {
+    following.delete(targetUid);
+    followers.delete(currentUid);
+  } else {
+    following.add(targetUid);
+    followers.add(currentUid);
+  }
+
+  currentUser.following = Array.from(following);
+  targetUser.followers = Array.from(followers);
+
+  setStored(STORAGE_KEY_USERS, users);
+  return !isFollowing;
+}
+
+// -------------------------------------------------------------
+// ESTATÍSTICAS GLOBAIS REAIS (CÁLCULO ESTRITO)
+// -------------------------------------------------------------
+export function getGlobalStats() {
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const users = getAllUsers();
+
+  const totalTierLists = lists.length;
+  // Criadores que criaram pelo menos uma lista ou estão registados
+  const totalCreators = users.length;
+  const totalVotes = lists.reduce((acc, l) => acc + (l.votes || 0), 0);
+  const totalViews = lists.reduce((acc, l) => acc + (l.views || 0), 0);
+
+  return {
+    totalTierLists,
+    totalCreators,
+    totalVotes,
+    totalViews,
+  };
+}
+
+// -------------------------------------------------------------
+// CLASSIFICAÇÃO DOS CRIADORES (LEADERBOARD) 100% DINÂMICA
+// -------------------------------------------------------------
+export function getLeaderboard() {
+  const users = getAllUsers();
+  const allLists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  const creators = users.map((u) => {
+    const userLists = allLists.filter((l) => l.ownerId === u.uid);
+    const totalVotes = userLists.reduce((acc, l) => acc + (l.votes || 0), 0);
+    const totalViews = userLists.reduce((acc, l) => acc + (l.views || 0), 0);
+    const totalLikes = userLists.reduce((acc, l) => acc + (l.likes || 0), 0);
+    const followersCount = u.followers?.length || 0;
+
+    // Fórmula de Creator XP
+    const score =
+      userLists.length * 50 +
+      totalVotes * 10 +
+      totalViews * 1 +
+      followersCount * 25;
+
+    let badge = "Novo Criador";
+    if (score > 1500) badge = "Criador de Elite";
+    else if (score > 1000) badge = "Criador Verificado";
+    else if (score > 500) badge = "Criador em Ascensão";
+    else if (userLists.length > 0) badge = "Criador Ativo";
+
+    return {
+      uid: u.uid,
+      handle: u.handle || `user${u.uid.slice(0, 6)}`,
+      name: u.displayName || "Criador",
+      avatar: u.avatar || "",
+      badge,
+      xp: score,
+      listsCount: userLists.length,
+      votesCount: totalVotes,
+      followersCount,
+    };
+  });
+
+  // Ordenar decrescente por XP
+  creators.sort((a, b) => b.xp - a.xp);
+
+  return creators.map((c, idx) => ({
+    ...c,
+    rank: idx + 1,
+  }));
+}
+
+// -------------------------------------------------------------
+// SISTEMA DE CATEGORIAS DINÂMICAS E ESCALÁVEIS
+// -------------------------------------------------------------
+export function getCategories() {
+  const categories = getStored(STORAGE_KEY_CATEGORIES, REAL_CATEGORIES);
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  // Calcula a contagem real de tier lists públicas para cada categoria
+  return categories.map((cat) => {
+    const realCount = lists.filter(
+      (l) => l.category === cat.id && (l.visibility === "public" || !l.visibility)
+    ).length;
+    return {
+      ...cat,
+      count: realCount,
+    };
+  });
+}
+
+// -------------------------------------------------------------
+// TIER LISTS (CONSULTA, FILTRAGEM E VISIBILIDADE)
+// -------------------------------------------------------------
+export async function getTierLists({
+  category = "All",
+  tab = "Trending",
+  queryText = "",
+  requestingUid = null,
+} = {}) {
+  let lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  // Filtragem estrita de visibilidade:
+  // Apenas públicas aparecem no Explorar e pesquisa geral (ou privadas se pertencerem ao próprio utilizador)
+  lists = lists.filter((l) => {
+    const vis = l.visibility || "public";
+    if (vis === "public") return true;
+    if (vis === "private") return requestingUid && l.ownerId === requestingUid;
+    return false; // unlisted não aparece no feed geral
+  });
 
   // Filtragem por categoria
   if (category && category !== "All" && category !== "all") {
@@ -118,47 +330,47 @@ export async function getTierLists({ category = "All", tab = "Trending", queryTe
     );
   }
 
-  // Filtragem por texto de pesquisa
+  // Filtragem por pesquisa de texto
   if (queryText && queryText.trim()) {
     const qLower = queryText.toLowerCase().trim();
     lists = lists.filter(
       (l) =>
         (l.title && l.title.toLowerCase().includes(qLower)) ||
         (l.description && l.description.toLowerCase().includes(qLower)) ||
-        (l.creator && l.creator.toLowerCase().includes(qLower))
+        (l.creator && l.creator.toLowerCase().includes(qLower)) ||
+        (l.creatorHandle && l.creatorHandle.toLowerCase().includes(qLower))
     );
   }
 
-  // Ordenação
+  // Ordenação com métricas reais
   const copy = [...lists];
   if (tab === "New") {
-    copy.sort((a, b) => (b.createdAt?.seconds || b.createdDaysAgo || 0) - (a.createdAt?.seconds || a.createdDaysAgo || 0));
+    copy.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   } else if (tab === "Popular") {
     copy.sort((a, b) => (b.views || 0) - (a.views || 0));
   } else {
-    // Trending (padrão)
-    copy.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+    // Trending: ponderação de votos e visualizações
+    copy.sort((a, b) => {
+      const scoreB = (b.votes || 0) * 3 + (b.views || 0);
+      const scoreA = (a.votes || 0) * 3 + (a.views || 0);
+      return scoreB - scoreA;
+    });
   }
 
   return copy;
 }
 
-// Obter uma tier list por ID
-export async function getTierListById(id) {
-  if (isFirebaseConfigured()) {
-    try {
-      const ref = doc(db, "tierlists", id);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        return { id: snap.id, ...snap.data() };
-      }
-    } catch (e) {
-      console.warn("Firestore fetch error, checking local store", e);
-    }
+export async function getTierListById(id, requestingUid = null) {
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const target = stored.find((l) => l.id === id);
+  if (!target) return null;
+
+  // Verifica permissão de visibilidade privada
+  if (target.visibility === "private" && target.ownerId !== requestingUid) {
+    return { ...target, isPrivateForbidden: true };
   }
 
-  const stored = getStoredTierLists();
-  return stored.find((l) => l.id === id) || null;
+  return target;
 }
 
 // Guardar/Publicar uma nova tier list
@@ -171,10 +383,14 @@ export async function createTierList(uid, {
   items,
   placements,
   itemDisplayMode = "both",
+  visibility = "public",
   creatorName = "Anónimo",
+  creatorHandle = "",
   creatorAvatar = "",
 }) {
   const newId = `tl-${Date.now()}`;
+  const now = new Date().toISOString();
+
   const record = {
     id: newId,
     title: title || "A Minha Tier List",
@@ -185,108 +401,153 @@ export async function createTierList(uid, {
     items,
     placements,
     itemDisplayMode,
+    visibility: visibility || "public",
     ownerId: uid || "anon",
     creator: creatorName,
+    creatorHandle: creatorHandle || (uid ? `user_${uid.slice(0, 6)}` : "anon"),
     creatorAvatar,
-    votes: 1,
+    votes: 0,
     views: 1,
-    likes: 1,
+    likes: 0,
     commentsCount: 0,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
     createdDaysAgo: 0,
   };
 
+  const existing = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  setStored(STORAGE_KEY_TIERLISTS, [record, ...existing]);
+
   if (isFirebaseConfigured() && uid) {
     try {
-      const docRef = await addDoc(collection(db, "tierlists"), {
+      await addDoc(collection(db, "tierlists"), {
         ...record,
         createdAt: serverTimestamp(),
       });
-      return { id: docRef.id, ...record };
     } catch (e) {
-      console.warn("Could not save to Firestore, saving locally:", e);
+      console.warn("Could not save to Firestore, local state preserved:", e);
     }
   }
 
-  // Guardar localmente
-  const existing = getStoredTierLists();
-  saveStoredTierLists([record, ...existing]);
   return record;
 }
 
-// Obter tier lists criadas por um utilizador
-export async function getUserTierLists(uid) {
+// Obter tier lists criadas por um utilizador (com filtro de privadas)
+export async function getUserTierLists(uid, isOwner = false) {
   if (!uid) return [];
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
-  if (isFirebaseConfigured()) {
-    try {
-      const q = query(
-        collection(db, "tierlists"),
-        where("ownerId", "==", uid),
-        orderBy("createdAt", "desc")
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      }
-    } catch (e) {
-      console.warn("Firestore user tierlists error, falling back locally", e);
-    }
-  }
-
-  const stored = getStoredTierLists();
-  return stored.filter((l) => l.ownerId === uid);
+  return stored.filter((l) => {
+    if (l.ownerId !== uid) return false;
+    // Se não for o próprio dono a consultar, omite as privadas
+    if (!isOwner && l.visibility === "private") return false;
+    return true;
+  });
 }
 
-// Votar numa tier list (+1 ou -1)
-export async function voteTierList(id, direction = 1) {
-  const stored = getStoredTierLists();
-  const target = stored.find((l) => l.id === id);
+// -------------------------------------------------------------
+// SISTEMA DE VOTOS COM PROTEÇÃO ANTI-ABUSO
+// -------------------------------------------------------------
+export async function voteTierList(tierListId, userId = "anonymous", direction = 1) {
+  const voteStore = getStored(STORAGE_KEY_USER_VOTES, {});
+  const listVotes = voteStore[tierListId] || {};
+  const currentVote = listVotes[userId] || 0;
+
+  let delta = 0;
+  if (currentVote === direction) {
+    // Se clicar no mesmo voto, cancela o voto
+    delta = -direction;
+    delete listVotes[userId];
+  } else if (currentVote !== 0) {
+    // Inverte o voto (ex: de -1 para +1 => diferença de +2)
+    delta = direction * 2;
+    listVotes[userId] = direction;
+  } else {
+    // Novo voto
+    delta = direction;
+    listVotes[userId] = direction;
+  }
+
+  voteStore[tierListId] = listVotes;
+  setStored(STORAGE_KEY_USER_VOTES, voteStore);
+
+  // Atualiza a tier list na base de dados
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const target = stored.find((l) => l.id === tierListId);
   if (target) {
-    target.votes = Math.max(0, (target.votes || 0) + direction);
-    saveStoredTierLists(stored);
+    target.votes = Math.max(0, (target.votes || 0) + delta);
+    setStored(STORAGE_KEY_TIERLISTS, stored);
   }
 
-  if (isFirebaseConfigured()) {
-    try {
-      const ref = doc(db, "tierlists", id);
-      await updateDoc(ref, { votes: increment(direction) });
-    } catch (e) {
-      console.warn("Firestore vote update failed", e);
-    }
-  }
+  return {
+    votes: target ? target.votes : 0,
+    userVote: listVotes[userId] || 0,
+  };
+}
 
-  return target ? target.votes : 0;
+export function getUserVoteForList(tierListId, userId = "anonymous") {
+  const voteStore = getStored(STORAGE_KEY_USER_VOTES, {});
+  return voteStore[tierListId]?.[userId] || 0;
 }
 
 // Incrementar contagem de visualizações
 export async function incrementViews(id) {
-  const stored = getStoredTierLists();
+  const sessionKey = `viewed_${id}`;
+  if (sessionStorage.getItem(sessionKey)) return; // Evita contagem infinita por recarregamento da página
+
+  sessionStorage.setItem(sessionKey, "1");
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   const target = stored.find((l) => l.id === id);
   if (target) {
     target.views = (target.views || 0) + 1;
-    saveStoredTierLists(stored);
-  }
-
-  if (isFirebaseConfigured()) {
-    try {
-      const ref = doc(db, "tierlists", id);
-      await updateDoc(ref, { views: increment(1) });
-    } catch (e) {
-      // Silencioso
-    }
+    setStored(STORAGE_KEY_TIERLISTS, stored);
   }
 }
 
-// Obter comentários de uma tier list
+// -------------------------------------------------------------
+// PESQUISA GLOBAL OMNI-SEARCH (UTILIZADORES E TIER LISTS)
+// -------------------------------------------------------------
+export function searchOmni(queryText) {
+  if (!queryText || queryText.trim().length < 2) {
+    return { creators: [], tierlists: [] };
+  }
+
+  const q = queryText.toLowerCase().trim().replace(/^#/, "");
+
+  // Pesquisa criadores
+  const users = getAllUsers();
+  const creators = users
+    .filter(
+      (u) =>
+        (u.handle && u.handle.toLowerCase().includes(q)) ||
+        (u.displayName && u.displayName.toLowerCase().includes(q))
+    )
+    .slice(0, 5);
+
+  // Pesquisa tier lists públicas
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const tierlists = lists
+    .filter((l) => {
+      if (l.visibility === "private") return false;
+      const titleMatch = l.title && l.title.toLowerCase().includes(q);
+      const catMatch = l.category && l.category.toLowerCase().includes(q);
+      const creatorMatch = l.creator && l.creator.toLowerCase().includes(q);
+      return titleMatch || catMatch || creatorMatch;
+    })
+    .slice(0, 5);
+
+  return { creators, tierlists };
+}
+
+// -------------------------------------------------------------
+// COMENTÁRIOS REAIS
+// -------------------------------------------------------------
 export function getCommentsForTierList(tierListId) {
-  const all = getStoredComments();
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
   return all[tierListId] || [];
 }
 
-// Adicionar um comentário
 export function addCommentToTierList(tierListId, { userName, userAvatar, text }) {
-  const all = getStoredComments();
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
   const listComments = all[tierListId] || [];
 
   const newComment = {
@@ -299,23 +560,24 @@ export function addCommentToTierList(tierListId, { userName, userAvatar, text })
   };
 
   all[tierListId] = [newComment, ...listComments];
-  saveStoredComments(all);
+  setStored(STORAGE_KEY_COMMENTS, all);
 
   // Atualiza contador de comentários na lista
-  const stored = getStoredTierLists();
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   const target = stored.find((l) => l.id === tierListId);
   if (target) {
     target.commentsCount = (target.commentsCount || 0) + 1;
-    saveStoredTierLists(stored);
+    setStored(STORAGE_KEY_TIERLISTS, stored);
   }
 
   return newComment;
 }
 
-// Pesquisa unificada no catálogo real + API externa
+// -------------------------------------------------------------
+// PESQUISA NO CATÁLOGO REAL + WIKIMEDIA API
+// -------------------------------------------------------------
 export async function searchCatalog(queryText, category = null, lang = "pt") {
   if (!queryText || queryText.trim().length === 0) {
-    // Se a pesquisa estiver vazia, retorna os itens mais populares do catálogo
     let results = REAL_ITEMS;
     if (category && category !== "All") {
       results = results.filter((item) => item.category === category);
@@ -325,7 +587,6 @@ export async function searchCatalog(queryText, category = null, lang = "pt") {
 
   const q = queryText.toLowerCase().trim();
 
-  // 1. Pesquisa nos itens reais verificados locais
   let localMatches = REAL_ITEMS.filter((item) => {
     const matchName = item.name.toLowerCase().includes(q);
     const matchTags = item.tags?.some((t) => t.toLowerCase().includes(q));
@@ -333,11 +594,9 @@ export async function searchCatalog(queryText, category = null, lang = "pt") {
     return (matchName || matchTags) && matchCat;
   });
 
-  // 2. Se tiver poucos resultados, consulta a API real da Wikimedia/Wikipedia
   if (localMatches.length < 5) {
     try {
       const externalResults = await searchWikimediaEntities(queryText, lang);
-      // Evitar duplicados por nome
       const existingNames = new Set(localMatches.map((m) => m.name.toLowerCase()));
       const filteredExternal = externalResults.filter(
         (ext) => !existingNames.has(ext.name.toLowerCase())
@@ -350,16 +609,3 @@ export async function searchCatalog(queryText, category = null, lang = "pt") {
 
   return localMatches;
 }
-
-// Categorias com contagens dinâmicas
-export function getCategories() {
-  const lists = getStoredTierLists();
-  return REAL_CATEGORIES.map((cat) => {
-    const count = lists.filter((l) => l.category === cat.id).length;
-    return {
-      ...cat,
-      liveCount: count,
-    };
-  });
-}
-

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,17 +6,82 @@
 
 * { box-sizing: border-box; }
 
-html, body, #root { height: 100%; }
+html, body, #root {
+  min-height: 100%;
+  background-color: #09090D;
+  color: #F1F1F5;
+}
 
 body {
   font-family: "Inter", sans-serif;
+  overflow-x: hidden;
 }
 
-::selection { background: rgba(124, 92, 255, 0.35); }
+::selection {
+  background: rgba(124, 92, 255, 0.4);
+  color: #ffffff;
+}
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #232330; border-radius: 8px; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D12;
+}
+::-webkit-scrollbar-thumb {
+  background: #232330;
+  border-radius: 999px;
+  border: 2px solid #0D0D12;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #39394D;
+}
+
+/* Utilitários Premium e Microinterações */
+.glass-panel {
+  background: rgba(18, 18, 24, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  border-color: rgba(124, 92, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7), 0 0 20px -8px rgba(124, 92, 255, 0.25);
+}
+
+.glow-accent {
+  box-shadow: 0 0 30px -8px rgba(124, 92, 255, 0.35);
+}
+
+.glow-subtle {
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Animação Shimmer para Loading Skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(25, 25, 34, 0.8) 25%, rgba(40, 40, 56, 0.8) 50%, rgba(25, 25, 34, 0.8) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
