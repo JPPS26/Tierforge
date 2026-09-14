@@ -309,3 +309,4 @@ export const BASE_CATEGORIES = [
     isActive: true,
   },
 ];
+
