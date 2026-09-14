@@ -12,7 +12,6 @@ import {
   Globe,
   Heart,
   ExternalLink,
-  ArrowUp,
 } from "lucide-react";
 
 export default function Footer() {
@@ -167,14 +166,6 @@ export default function Footer() {
             <span className="rounded-lg border border-border bg-surface px-2.5 py-1 font-mono text-[11px] text-muted">
               tierworld.netlify.app
             </span>
-            <button
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-[11.5px] font-medium text-muted hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all group"
-            >
-              <span>Voltar ao topo</span>
-              <ArrowUp size={12} className="transition-transform group-hover:-translate-y-0.5" />
-            </button>
           </div>
         </div>
       </div>
