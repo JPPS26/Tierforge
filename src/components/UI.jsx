@@ -57,12 +57,13 @@ export function PrimaryButton({ children, onClick, icon: Icon, small, type = "bu
   );
 }
 
-export function GhostButton({ children, onClick, icon: Icon, small, type = "button" }) {
+export function GhostButton({ children, onClick, icon: Icon, small, type = "button", disabled }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-xl border border-border bg-surface2 font-display font-semibold text-text transition-colors hover:border-borderStrong ${
+      disabled={disabled}
+      className={`inline-flex items-center gap-2 rounded-xl border border-border bg-surface2 font-display font-semibold text-text transition-colors hover:border-borderStrong disabled:opacity-50 ${
         small ? "px-3.5 py-2 text-[13.5px]" : "px-5 py-3 text-[14.5px]"
       }`}
     >

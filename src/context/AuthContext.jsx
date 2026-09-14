@@ -1,11 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../firebase";
@@ -50,19 +47,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function register(email, password, displayName) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName) await updateProfile(cred.user, { displayName });
-    await ensureUserDoc(cred.user, { displayName });
-    return cred.user;
-  }
-
-  async function login(email, password) {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    await ensureUserDoc(cred.user);
-    return cred.user;
-  }
-
   async function loginWithGoogle() {
     const cred = await signInWithPopup(auth, googleProvider);
     await ensureUserDoc(cred.user);
@@ -73,7 +57,7 @@ export function AuthProvider({ children }) {
     await signOut(auth);
   }
 
-  const value = { user, profile, loading, register, login, loginWithGoogle, logout };
+  const value = { user, profile, loading, loginWithGoogle, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
