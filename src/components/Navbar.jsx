@@ -86,8 +86,8 @@ export default function Navbar() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      const results = searchOmni(q);
+    const timer = setTimeout(async () => {
+      const results = await searchOmni(q);
       setSearchResults(results);
       setSearchOpen(true);
     }, 180);

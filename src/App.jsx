@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -14,8 +14,12 @@ import NotFound from "./pages/NotFound";
 import InSiteNotificationToast from "./components/InSiteNotificationToast";
 import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
+import { syncDbFromRemote } from "./services/db";
 
 export default function App() {
+  useEffect(() => {
+    syncDbFromRemote().catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col justify-between">

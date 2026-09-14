@@ -11,6 +11,7 @@ import { auth, db, googleProvider } from "../firebase";
 import {
   getUserByUid,
   getAllUsers,
+  saveUsers,
   updateUserProfile as dbUpdateUserProfile,
   deleteUserAccountAndData,
   subscribeToDbSync,
@@ -37,10 +38,29 @@ export function AuthProvider({ children }) {
   }
 
   async function ensureUserDoc(firebaseUser, extra = {}) {
-    const existingInLocal = getUserByUid(firebaseUser.uid);
+    // 1. Tenta obter no armazenamento local ou Firestore
+    const existingInLocal = await getUserByUid(firebaseUser.uid);
     if (existingInLocal) {
       setProfile(existingInLocal);
       return existingInLocal;
+    }
+
+    // 2. Tenta obter do Firestore se já existir remotamente
+    try {
+      if (db) {
+        const ref = doc(db, "users", firebaseUser.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const cloudData = { ...snap.data(), uid: snap.id };
+          const allUsers = getAllUsers();
+          const filtered = allUsers.filter((u) => u.uid !== cloudData.uid);
+          saveUsers([...filtered, cloudData]);
+          setProfile(cloudData);
+          return cloudData;
+        }
+      }
+    } catch (e) {
+      console.warn("Firestore user check notice:", e);
     }
 
     const allUsers = getAllUsers();
@@ -61,8 +81,7 @@ export function AuthProvider({ children }) {
     };
 
     allUsers.push(newUserData);
-    localStorage.setItem("tierforge_real_users", JSON.stringify(allUsers));
-    notifyDbChange({ key: "tierforge_real_users", userUid: firebaseUser.uid });
+    saveUsers(allUsers);
     setProfile(newUserData);
 
     try {
@@ -109,8 +128,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    const refreshProfile = () => {
-      const fresh = getUserByUid(user.uid);
+    const refreshProfile = async () => {
+      const fresh = await getUserByUid(user.uid);
       if (fresh) {
         setProfile((prev) => {
           // Apenas atualiza se houver alguma diferença real

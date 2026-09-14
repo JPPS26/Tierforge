@@ -102,8 +102,15 @@ export default function Leaderboard() {
   // Sincronização ao segundo em tempo real da classificação de criadores
   useRealtimeDb(() => {
     const ranked = getLeaderboard();
-    setCreators(ranked);
-    setLoading(false);
+    if (ranked instanceof Promise) {
+      ranked.then((res) => {
+        setCreators(res);
+        setLoading(false);
+      });
+    } else {
+      setCreators(ranked);
+      setLoading(false);
+    }
   }, []);
 
   const maxXP = useMemo(() => {

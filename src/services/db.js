@@ -71,6 +71,7 @@ function purgeSeedData() {
 
 if (typeof window !== "undefined") {
   purgeSeedData();
+  syncDbFromRemote().catch(() => {});
 }
 
 // Helper de persistência segura com fallback sem retenção de caches obsoletos
@@ -181,13 +182,153 @@ function setStored(key, value, skipNotify = false) {
   } catch (e) {
     console.warn(`Could not save ${key} to storage`, e);
   }
+
+  // Sincroniza em background com o endpoint local do Vite dev server
+  if (typeof window !== "undefined") {
+    try {
+      let payload = null;
+      if (key === STORAGE_KEY_USERS) {
+        payload = { users: value };
+      } else if (key === STORAGE_KEY_TIERLISTS) {
+        payload = { tierlists: value };
+      }
+      if (payload) {
+        fetch("/api/db", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      }
+    } catch {
+      // Dev API fallback
+    }
+  }
+}
+
+export function saveUsers(allUsers) {
+  setStored(STORAGE_KEY_USERS, allUsers);
 }
 
 function isFirebaseConfigured() {
   return Boolean(
     import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID
+    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+    !import.meta.env.VITE_FIREBASE_API_KEY.includes("DummyKey")
   );
+}
+
+// -------------------------------------------------------------
+// SINCRONIZAÇÃO REMOTA / DESENVOLVIMENTO LOCAL BIDIRECIONAL
+// -------------------------------------------------------------
+let isSyncingRemote = false;
+
+export async function syncDbFromRemote() {
+  if (isSyncingRemote || typeof window === "undefined") return;
+  isSyncingRemote = true;
+
+  try {
+    // 1. Sincronização com o endpoint local /api/db (permite partilha imediata com janelas anónimas e outros navegadores locais)
+    try {
+      const resp = await fetch("/api/db");
+      if (resp.ok) {
+        const remoteData = await resp.json();
+        let changed = false;
+
+        // Sincronização de Utilizadores
+        const localUsers = getStored(STORAGE_KEY_USERS, []);
+        const remoteUsers = Array.isArray(remoteData.users) ? remoteData.users : [];
+        const userMap = new Map();
+        localUsers.forEach((u) => userMap.set(u.uid, u));
+
+        remoteUsers.forEach((u) => {
+          if (!userMap.has(u.uid)) {
+            userMap.set(u.uid, u);
+            changed = true;
+          } else {
+            const current = userMap.get(u.uid);
+            if (JSON.stringify(current) !== JSON.stringify(u)) {
+              userMap.set(u.uid, { ...current, ...u });
+              changed = true;
+            }
+          }
+        });
+
+        const mergedUsers = Array.from(userMap.values()).filter((u) => !SEED_USER_UIDS.has(u.uid));
+
+        if (changed || (localUsers.length === 0 && mergedUsers.length > 0)) {
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(mergedUsers));
+          notifyDbChange({ key: STORAGE_KEY_USERS });
+        }
+
+        // Se a janela atual tem utilizadores que o servidor não tinha, atualiza o servidor
+        if (localUsers.length > remoteUsers.length) {
+          fetch("/api/db", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ users: mergedUsers }),
+          }).catch(() => {});
+        }
+
+        // Sincronização de Tier Lists
+        const localLists = getStored(STORAGE_KEY_TIERLISTS, []);
+        const remoteLists = Array.isArray(remoteData.tierlists) ? remoteData.tierlists : [];
+        const listMap = new Map();
+        localLists.forEach((l) => listMap.set(l.id, l));
+
+        remoteLists.forEach((l) => {
+          if (!listMap.has(l.id)) {
+            listMap.set(l.id, l);
+            changed = true;
+          }
+        });
+
+        const mergedLists = Array.from(listMap.values()).filter((l) => !SEED_TIERLIST_IDS.has(l.id));
+
+        if (changed || (localLists.length === 0 && mergedLists.length > 0)) {
+          localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(mergedLists));
+          notifyDbChange({ key: STORAGE_KEY_TIERLISTS });
+        }
+
+        if (localLists.length > remoteLists.length) {
+          fetch("/api/db", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tierlists: mergedLists }),
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // Endpoint /api/db não disponível (ex: em produção estática)
+    }
+
+    // 2. Sincronização com Cloud Firestore (quando configurado no .env)
+    if (isFirebaseConfigured() && db) {
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        if (!snap.empty) {
+          const cloudUsers = snap.docs.map((d) => ({ ...d.data(), uid: d.id }));
+          const localUsers = getStored(STORAGE_KEY_USERS, []);
+          const userMap = new Map(localUsers.map((u) => [u.uid, u]));
+          let userChanged = false;
+          cloudUsers.forEach((cu) => {
+            if (!userMap.has(cu.uid) || JSON.stringify(userMap.get(cu.uid)) !== JSON.stringify(cu)) {
+              userMap.set(cu.uid, cu);
+              userChanged = true;
+            }
+          });
+          if (userChanged) {
+            const clean = Array.from(userMap.values());
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(clean));
+            notifyDbChange({ key: STORAGE_KEY_USERS });
+          }
+        }
+      } catch (e) {
+        console.warn("Notice syncing Firestore users:", e);
+      }
+    }
+  } finally {
+    isSyncingRemote = false;
+  }
 }
 
 // -------------------------------------------------------------
@@ -198,17 +339,74 @@ export function getAllUsers() {
   return users.filter((u) => !SEED_USER_UIDS.has(u.uid));
 }
 
-export function getUserByUid(uid) {
+export function getUserByUidSync(uid) {
   if (!uid) return null;
   const users = getAllUsers();
   return users.find((u) => u.uid === uid) || null;
 }
 
-export function getUserByHandle(handle) {
+export async function getUserByUid(uid) {
+  if (!uid) return null;
+  let users = getAllUsers();
+  let user = users.find((u) => u.uid === uid);
+
+  if (!user) {
+    await syncDbFromRemote();
+    users = getAllUsers();
+    user = users.find((u) => u.uid === uid);
+  }
+
+  if (!user && isFirebaseConfigured() && db) {
+    try {
+      const ref = doc(db, "users", uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        user = { ...snap.data(), uid: snap.id };
+        users.push(user);
+        setStored(STORAGE_KEY_USERS, users);
+      }
+    } catch (e) {
+      console.warn("Notice reading Firestore user by uid:", e);
+    }
+  }
+
+  return user || null;
+}
+
+export function getUserByHandleSync(handle) {
   if (!handle) return null;
-  const clean = handle.replace(/^#/, "").toLowerCase().trim();
+  const clean = handle.replace(/^#/, "").replace(/^@/, "").toLowerCase().trim();
   const users = getAllUsers();
-  const user = users.find((u) => (u.handle || "").toLowerCase() === clean);
+  return users.find((u) => (u.handle || "").toLowerCase() === clean) || null;
+}
+
+export async function getUserByHandle(handle) {
+  if (!handle) return null;
+  const clean = handle.replace(/^#/, "").replace(/^@/, "").toLowerCase().trim();
+  let users = getAllUsers();
+  let user = users.find((u) => (u.handle || "").toLowerCase() === clean);
+
+  if (!user) {
+    await syncDbFromRemote();
+    users = getAllUsers();
+    user = users.find((u) => (u.handle || "").toLowerCase() === clean);
+  }
+
+  if (!user && isFirebaseConfigured() && db) {
+    try {
+      const q = query(collection(db, "users"), where("handle", "==", clean));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        user = { ...d.data(), uid: d.id };
+        users.push(user);
+        setStored(STORAGE_KEY_USERS, users);
+      }
+    } catch (err) {
+      console.warn("Notice querying Firestore user by handle:", err);
+    }
+  }
+
   if (!user) return null;
 
   // Calcula métricas reais deste criador a partir das suas tier lists na base de dados
@@ -786,8 +984,13 @@ export async function getTierLists({
 } = {}) {
   let lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
+  if (lists.length === 0) {
+    await syncDbFromRemote();
+    lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  }
+
   // Se o Firebase Firestore estiver ativo, pesquisa também na cloud
-  if (isFirebaseConfigured()) {
+  if (isFirebaseConfigured() && db) {
     try {
       const q = query(
         collection(db, "tierlists"),
@@ -796,11 +999,16 @@ export async function getTierLists({
       const snap = await getDocs(q);
       const cloudLists = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
       const localIds = new Set(lists.map((l) => l.id));
+      let addedCloud = false;
       cloudLists.forEach((cl) => {
         if (!localIds.has(cl.id)) {
           lists.push(cl);
+          addedCloud = true;
         }
       });
+      if (addedCloud) {
+        setStored(STORAGE_KEY_TIERLISTS, lists, true);
+      }
     } catch (e) {
       console.warn("Notice reading Firestore tierlists:", e);
     }
@@ -1217,7 +1425,36 @@ export async function deleteUserAccountAndData(uid) {
 // Obter tier lists criadas por um utilizador (com filtro de privadas)
 export async function getUserTierLists(uid, isOwner = false) {
   if (!uid) return [];
-  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  if (stored.length === 0) {
+    await syncDbFromRemote();
+    stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  }
+
+  if (isFirebaseConfigured() && db) {
+    try {
+      const q = query(
+        collection(db, "tierlists"),
+        where("ownerId", "==", uid)
+      );
+      const snap = await getDocs(q);
+      const cloudLists = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      const localIds = new Set(stored.map((l) => l.id));
+      let addedCloud = false;
+      cloudLists.forEach((cl) => {
+        if (!localIds.has(cl.id)) {
+          stored.push(cl);
+          addedCloud = true;
+        }
+      });
+      if (addedCloud) {
+        setStored(STORAGE_KEY_TIERLISTS, stored, true);
+      }
+    } catch (e) {
+      console.warn("Notice reading Firestore user tierlists:", e);
+    }
+  }
 
   return stored.filter((l) => {
     if (l.ownerId !== uid) return false;
@@ -1332,7 +1569,7 @@ export async function incrementViews(id) {
 // -------------------------------------------------------------
 // PESQUISA GLOBAL OMNI-SEARCH (UTILIZADORES E TIER LISTS)
 // -------------------------------------------------------------
-export function searchOmni(queryText) {
+export async function searchOmni(queryText) {
   if (!queryText || queryText.trim().length < 2) {
     return { creators: [], tierlists: [] };
   }
@@ -1340,8 +1577,8 @@ export function searchOmni(queryText) {
   const q = queryText.toLowerCase().trim().replace(/^#/, "");
 
   // Pesquisa criadores
-  const users = getAllUsers();
-  const creators = users
+  let users = getAllUsers();
+  let creators = users
     .filter(
       (u) =>
         (u.handle && u.handle.toLowerCase().includes(q)) ||
@@ -1349,15 +1586,34 @@ export function searchOmni(queryText) {
     )
     .slice(0, 5);
 
+  // Se não encontrou criadores localmente, sincroniza com o servidor/cloud
+  if (creators.length === 0) {
+    await syncDbFromRemote();
+    users = getAllUsers();
+    creators = users
+      .filter(
+        (u) =>
+          (u.handle && u.handle.toLowerCase().includes(q)) ||
+          (u.displayName && u.displayName.toLowerCase().includes(q))
+      )
+      .slice(0, 5);
+  }
+
   // Pesquisa tier lists públicas
-  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  if (lists.length === 0) {
+    await syncDbFromRemote();
+    lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  }
+
   const tierlists = lists
     .filter((l) => {
       if (l.visibility === "private") return false;
       const titleMatch = l.title && l.title.toLowerCase().includes(q);
       const catMatch = l.category && l.category.toLowerCase().includes(q);
       const creatorMatch = l.creator && l.creator.toLowerCase().includes(q);
-      return titleMatch || catMatch || creatorMatch;
+      const handleMatch = l.creatorHandle && l.creatorHandle.toLowerCase().includes(q);
+      return titleMatch || catMatch || creatorMatch || handleMatch;
     })
     .slice(0, 5);
 

@@ -2,3 +2,4 @@ node_modules
 dist
 .env
 .DS_Store
+.tierforge_dev_db.json

@@ -100,9 +100,9 @@ export default function Profile() {
     try {
       let foundUser = null;
       if (paramHandle) {
-        foundUser = getUserByHandle(paramHandle) || getUserByUid(paramHandle);
+        foundUser = (await getUserByHandle(paramHandle)) || (await getUserByUid(paramHandle));
       } else if (user) {
-        foundUser = getUserByUid(user.uid);
+        foundUser = await getUserByUid(user.uid);
       }
 
       setTargetUser(foundUser);
