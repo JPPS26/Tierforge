@@ -109,9 +109,14 @@ export default function Home() {
       <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-16 pt-14 sm:pt-20">
         <div className="flex flex-wrap items-center gap-12 sm:gap-16">
           <div className="min-w-[300px] flex-1 basis-[480px]">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(124,92,255,0.35)] bg-accentSoft px-3 py-1.5 text-[12px] font-bold text-[#B6A5FF]">
-              <Database size={13} /> {t("home.heroBadge")}
-            </span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(124,92,255,0.35)] bg-accentSoft px-3 py-1.5 text-[12px] font-bold text-[#B6A5FF]">
+                <Database size={13} /> {t("home.heroBadge")}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/80 px-3 py-1.5 text-[12px] font-semibold text-mutedDim">
+                <Sparkles size={12} className="text-accent" /> Acesso Livre sem Registo
+              </span>
+            </div>
 
             <h1 className="my-5 font-display text-[clamp(38px,5vw,64px)] font-black leading-[1.04] tracking-tight text-white">
               {t("home.heroTitle1")}
@@ -197,41 +202,38 @@ export default function Home() {
         )}
       </section>
 
-      {/* Categorias (Apenas as que têm Tier Lists Reais) */}
+      {/* Categorias Temáticas */}
       <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-16">
         <SectionHeader
           icon={SlidersHorizontal}
           title={t("home.categoriesTitle")}
           to="/categories"
-          seeAllText={categories.filter((c) => c.count > 0).length > 0 ? t("home.seeAll") : null}
+          seeAllText={t("home.seeAll")}
         />
-        {categories.filter((c) => c.count > 0).length === 0 ? (
+        {categories.length === 0 ? (
           <EmptyState
             icon={SlidersHorizontal}
-            title="Ainda não existem categorias com listas"
-            body="As categorias surgirão aqui automaticamente assim que os criadores publicarem as primeiras Tier Lists."
+            title="Ainda não existem categorias"
+            body="As categorias surgirão aqui automaticamente."
             actionLabel={t("home.createBtn")}
             onAction={() => (window.location.href = "/create")}
           />
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-            {categories
-              .filter((c) => c.count > 0)
-              .slice(0, 10)
-              .map((c) => (
-                <Link
-                  key={c.id}
-                  to={`/explore?category=${c.id}`}
-                  className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-all hover:border-accent hover:bg-surface2 hover:-translate-y-0.5 shadow-sm"
-                >
-                  <div className="font-display text-[15px] font-bold text-text group-hover:text-accent transition-colors">
-                    {t(`categories.${c.id}`) || c.name}
-                  </div>
-                  <div className="text-[12px] font-semibold text-mutedDim">
-                    {t("home.listsCount", { count: c.count })}
-                  </div>
-                </Link>
-              ))}
+            {categories.slice(0, 12).map((c) => (
+              <Link
+                key={c.id}
+                to={`/explore?category=${c.id}`}
+                className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-all hover:border-accent hover:bg-surface2 hover:-translate-y-0.5 shadow-sm"
+              >
+                <div className="font-display text-[15px] font-bold text-text group-hover:text-accent transition-colors">
+                  {t(`categories.${c.id}`) || c.name}
+                </div>
+                <div className="text-[12px] font-semibold text-mutedDim">
+                  {c.count > 0 ? t("home.listsCount", { count: c.count }) : "Explorar temas"}
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </section>

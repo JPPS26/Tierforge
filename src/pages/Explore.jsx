@@ -59,7 +59,7 @@ export default function Explore() {
       .finally(() => setLoading(false));
   }, [tab, cat, selectedSub, queryText]);
 
-  const activeCategories = categories.filter((c) => (c.count || 0) > 0);
+  const activeCategories = categories;
   const activeCatObj = categories.find((c) => c.id === cat || c.slug === cat);
 
   const filteredPillCategories = categorySearchQuery.trim()
@@ -274,7 +274,7 @@ export default function Explore() {
               : t("explore.noLists")
           }
           actionLabel="Criar Tier List"
-          onAction={() => (window.location.href = "/create")}
+          onAction={() => (window.location.href = `/create${cat !== "All" ? `?category=${cat}` : ""}`)}
         />
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">

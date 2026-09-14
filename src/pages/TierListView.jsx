@@ -22,11 +22,13 @@ import {
   AlertCircle,
   Check,
   X,
+  Search,
 } from "lucide-react";
 import {
   getTierListById,
   voteTierList,
   getUserVoteForList,
+  getGuestClientId,
   incrementViews,
   getCommentsForTierList,
   addCommentToTierList,
@@ -100,7 +102,8 @@ export default function TierListView() {
   const [remixes, setRemixes] = useState([]);
   const [consensusData, setConsensusData] = useState(null);
 
-  const userIdOrAnon = user?.uid || "anon_user";
+  const guestId = getGuestClientId();
+  const voterId = user?.uid || guestId;
 
   useEffect(() => {
     async function loadData() {
@@ -113,7 +116,7 @@ export default function TierListView() {
           incrementViews(id);
           const comms = getCommentsForTierList(id);
           setComments(comms);
-          const initialVote = getUserVoteForList(id, userIdOrAnon);
+          const initialVote = getUserVoteForList(id, voterId);
           setUserVote(initialVote);
 
           // Carregar remixes e consenso da comunidade
@@ -134,7 +137,7 @@ export default function TierListView() {
   }, [id, user?.uid]);
 
   async function handleVote(direction) {
-    const res = await voteTierList(id, userIdOrAnon, direction);
+    const res = await voteTierList(id, voterId, direction);
     setUserVote(res.userVote);
     setTierList((prev) => (prev ? { ...prev, votes: res.votes } : null));
   }
@@ -169,8 +172,8 @@ export default function TierListView() {
   }
 
   function handleReact(commentId, replyId = null, reactionType = "like") {
-    const voterId = user?.uid || "anon_" + (sessionStorage.getItem("tf_anon_id") || "guest");
-    reactToComment(id, commentId, replyId, voterId, reactionType);
+    const reactionVoterId = user?.uid || guestId;
+    reactToComment(id, commentId, replyId, reactionVoterId, reactionType);
     setComments(getCommentsForTierList(id));
   }
 
@@ -279,18 +282,21 @@ export default function TierListView() {
   }
 
   if (!tierList || tierList.isPrivateForbidden) {
+    const isForbidden = Boolean(tierList?.isPrivateForbidden);
     return (
       <div className="mx-auto max-w-[600px] px-6 py-28 text-center">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accentSoft text-accent mx-auto">
-          <Lock size={26} />
+          {isForbidden ? <Lock size={26} /> : <Search size={26} />}
         </div>
         <h2 className="mb-2 font-display text-[26px] font-black text-white">
-          {tierList?.isPrivateForbidden
+          {isForbidden
             ? t("tierListView.privateNotice")
             : t("tierListView.tierListNotFound")}
         </h2>
         <p className="mb-6 text-[14px] text-muted">
-          Esta tier list foi configurada como privada ou foi eliminada pelo autor.
+          {isForbidden
+            ? "Esta tier list foi configurada como privada pelo autor. Apenas o criador com a respetiva conta pode aceder a este conteúdo."
+            : "Esta tier list não foi encontrada. O link pode estar incorreto ou a lista foi removida. Todas as tier lists públicas podem ser vistas livremente sem necessidade de registo."}
         </p>
         <Link to="/explore">
           <PrimaryButton icon={ArrowLeft}>{t("tierListView.backToExplore")}</PrimaryButton>
@@ -611,7 +617,7 @@ export default function TierListView() {
 
           <div className="flex gap-3">
             <Avatar
-              name={profile?.displayName || user?.displayName || "Eu"}
+              name={profile?.displayName || user?.displayName || "Visitante"}
               image={profile?.avatar || user?.photoURL}
               size={36}
             />
@@ -628,7 +634,7 @@ export default function TierListView() {
               />
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] text-mutedDim">
-                  💡 Dica: escreve <strong className="text-accent font-semibold">@handle</strong> para identificar criadores.
+                  💡 Dica: podes identificar criadores com <strong className="text-accent font-semibold">@handle</strong>. {!user && <span className="text-muted">(A comentar livremente como visitante)</span>}
                 </span>
                 <PrimaryButton small icon={Send} type="submit" disabled={!commentText.trim()}>
                   {t("tierListView.submitComment")}

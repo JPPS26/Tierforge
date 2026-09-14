@@ -69,9 +69,9 @@ export default function Categories() {
   const [formLoading, setFormLoading] = useState(false);
 
   const loadAll = () => {
-    // Apenas categorias com listas reais contam para a navegação pública
-    const active = getActiveCategories();
-    setCategories(active);
+    // Carrega todas as categorias disponíveis na plataforma (acessíveis a todos com ou sem conta)
+    const all = getCategories();
+    setCategories(all);
     setPopularCategories(getPopularCategories());
   };
 
@@ -259,12 +259,21 @@ export default function Categories() {
                           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
                             <Icon size={24} />
                           </div>
-                          <Link
-                            to={`/explore?category=${c.id}`}
-                            className="text-xs font-bold px-3 py-1 rounded-full bg-surface border border-border text-accent hover:bg-accent hover:text-black transition-colors"
-                          >
-                            Ver Tier Lists →
-                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              to={`/explore?category=${c.id}`}
+                              className="text-xs font-bold px-3 py-1 rounded-full bg-surface border border-border text-accent hover:bg-accent hover:text-black transition-colors"
+                            >
+                              Explorar →
+                            </Link>
+                            <Link
+                              to={`/create?category=${c.id}`}
+                              className="text-xs font-bold px-2.5 py-1 rounded-full bg-surface2 border border-border text-muted hover:text-white hover:border-accent transition-colors"
+                              title="Criar Tier List nesta categoria"
+                            >
+                              + Criar
+                            </Link>
+                          </div>
                         </div>
 
                         <h3 className="mb-1.5 font-display text-[20px] font-bold text-white">

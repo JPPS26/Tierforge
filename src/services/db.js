@@ -461,6 +461,16 @@ export function getActiveCategories() {
   return getCategories().filter((c) => (c.count || 0) > 0);
 }
 
+export function getGuestClientId() {
+  if (typeof window === "undefined") return "guest_user";
+  let guestId = localStorage.getItem("tierforge_guest_client_id");
+  if (!guestId) {
+    guestId = `guest_${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem("tierforge_guest_client_id", guestId);
+  }
+  return guestId;
+}
+
 // Categorias populares calculadas estritamente com base na atividade real de listas e votos
 export function getPopularCategories(limit = 6) {
   const categories = getCategories();
@@ -490,7 +500,12 @@ export function getPopularCategories(limit = 6) {
     .filter((c) => c.tierListsCount > 0) // REGRA ESTRITA: só é popular se houver listas reais criadas
     .sort((a, b) => b.popularityScore - a.popularityScore);
 
-  return populated.slice(0, limit);
+  if (populated.length > 0) {
+    return populated.slice(0, limit);
+  }
+
+  // Fallback elegante para categorias principais quando ainda não há listas na plataforma
+  return categories.slice(0, limit);
 }
 
 export function searchCategories(queryText) {
@@ -604,6 +619,26 @@ export async function getTierLists({
 } = {}) {
   let lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
+  // Se o Firebase Firestore estiver ativo, pesquisa também na cloud
+  if (isFirebaseConfigured()) {
+    try {
+      const q = query(
+        collection(db, "tierlists"),
+        where("visibility", "==", "public")
+      );
+      const snap = await getDocs(q);
+      const cloudLists = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      const localIds = new Set(lists.map((l) => l.id));
+      cloudLists.forEach((cl) => {
+        if (!localIds.has(cl.id)) {
+          lists.push(cl);
+        }
+      });
+    } catch (e) {
+      console.warn("Notice reading Firestore tierlists:", e);
+    }
+  }
+
   // Filtragem estrita de visibilidade:
   // Apenas públicas aparecem no Explorar e pesquisa geral (ou privadas se pertencerem ao próprio utilizador)
   lists = lists.filter((l) => {
@@ -651,8 +686,23 @@ export async function getTierLists({
 }
 
 export async function getTierListById(id, requestingUid = null) {
-  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
-  const target = stored.find((l) => l.id === id);
+  let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let target = stored.find((l) => l.id === id);
+
+  if (!target && isFirebaseConfigured()) {
+    try {
+      const ref = doc(db, "tierlists", id);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        target = { ...snap.data(), id: snap.id };
+        stored.push(target);
+        setStored(STORAGE_KEY_TIERLISTS, stored);
+      }
+    } catch (e) {
+      console.warn("Notice reading Firestore tierlist by id:", e);
+    }
+  }
+
   if (!target) return null;
 
   // Verifica permissão de visibilidade privada
@@ -744,9 +794,9 @@ export async function createTierList(uid, {
     setStored("tierforge_created_lists", myLists);
   }
 
-  if (isFirebaseConfigured() && uid) {
+  if (isFirebaseConfigured()) {
     try {
-      await addDoc(collection(db, "tierlists"), {
+      await setDoc(doc(db, "tierlists", newId), {
         ...record,
         createdAt: serverTimestamp(),
       });
