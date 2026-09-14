@@ -11,6 +11,11 @@ import {
   Lock,
   Send,
   ExternalLink,
+  Swords,
+  Download,
+  Sparkles,
+  Users,
+  User,
 } from "lucide-react";
 import {
   getTierListById,
@@ -19,11 +24,15 @@ import {
   incrementViews,
   getCommentsForTierList,
   addCommentToTierList,
+  getRemixesForTemplate,
+  calculateCommunityConsensus,
 } from "../services/db";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Avatar, Badge, PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import ShareModal from "../components/ShareModal";
+import ExportModal from "../components/ExportModal";
+import DuelModeModal from "../components/DuelModeModal";
 
 export default function TierListView() {
   const { id } = useParams();
@@ -37,6 +46,11 @@ export default function TierListView() {
   const [commentText, setCommentText] = useState("");
   const [userVote, setUserVote] = useState(0); // 1, -1, or 0
   const [shareOpen, setShareOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [duelOpen, setDuelOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("author"); // "author" | "consensus"
+  const [remixes, setRemixes] = useState([]);
+  const [consensusData, setConsensusData] = useState(null);
 
   const userIdOrAnon = user?.uid || "anon_user";
 
@@ -53,6 +67,14 @@ export default function TierListView() {
           setComments(comms);
           const initialVote = getUserVoteForList(id, userIdOrAnon);
           setUserVote(initialVote);
+
+          // Carregar remixes e consenso da comunidade
+          const rmx = getRemixesForTemplate(id);
+          setRemixes(rmx);
+          if (rmx.length > 0) {
+            const consensus = calculateCommunityConsensus(id);
+            setConsensusData(consensus);
+          }
         }
       } catch (err) {
         console.error("Error loading tier list:", err);
@@ -114,13 +136,13 @@ export default function TierListView() {
 
   const displayMode = tierList.itemDisplayMode || "both";
   const items = tierList.items || [];
-  const placements = tierList.placements || {};
-  const tiers = tierList.tiers || [];
+  const currentTiers = viewMode === "consensus" && consensusData ? consensusData.tiers : (tierList.tiers || []);
+  const currentPlacements = viewMode === "consensus" && consensusData ? consensusData.placements : (tierList.placements || {});
 
   return (
     <div className="mx-auto max-w-[1140px] px-4 sm:px-6 pb-28 pt-8">
-      {/* Voltar e Partilha */}
-      <div className="mb-6 flex items-center justify-between">
+      {/* Voltar e Ações Principais */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/explore"
           className="inline-flex items-center gap-2 text-[13.5px] font-bold text-muted hover:text-text transition-colors"
@@ -128,14 +150,47 @@ export default function TierListView() {
           <ArrowLeft size={16} /> {t("tierListView.backToExplore")}
         </Link>
 
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
-        >
-          <Share2 size={14} className="text-accent" />
-          <span>{t("tierListView.share")}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Fazer a Minha Versão (Remix Template) */}
+          <PrimaryButton
+            small
+            icon={Sparkles}
+            onClick={() => navigate(`/create?remix=${tierList.id}`)}
+          >
+            Fazer a Minha Versão
+          </PrimaryButton>
+
+          {/* Modo Duelo 1 vs 1 */}
+          <button
+            type="button"
+            onClick={() => setDuelOpen(true)}
+            disabled={items.length < 2}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft px-3.5 py-2 text-[13px] font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40"
+          >
+            <Swords size={14} />
+            <span>Duelo 1 vs 1</span>
+          </button>
+
+          {/* Exportar Imagem Social */}
+          <button
+            type="button"
+            onClick={() => setExportOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+          >
+            <Download size={14} className="text-teal" />
+            <span>Exportar</span>
+          </button>
+
+          {/* Partilhar */}
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+          >
+            <Share2 size={14} className="text-accent" />
+            <span>{t("tierListView.share")}</span>
+          </button>
+        </div>
       </div>
 
       {/* Cabeçalho da Tier List */}
@@ -158,6 +213,18 @@ export default function TierListView() {
           <h1 className="font-display text-[28px] sm:text-[38px] font-black tracking-tight text-white leading-tight">
             {tierList.title}
           </h1>
+
+          {tierList.parentTemplateTitle && (
+            <div className="mt-2 text-xs font-semibold text-mutedDim flex items-center gap-1.5">
+              <span>Criado a partir do template:</span>
+              <Link
+                to={`/tier-list/${tierList.parentTemplateId}`}
+                className="text-accent hover:underline font-bold"
+              >
+                {tierList.parentTemplateTitle} →
+              </Link>
+            </div>
+          )}
 
           {tierList.description && (
             <p className="mt-2.5 max-w-2xl text-[14.5px] leading-relaxed text-muted">
@@ -237,14 +304,20 @@ export default function TierListView() {
               <MessageCircle size={14} />
               {comments.length}
             </span>
+            {(remixes.length > 0 || tierList.remixCount > 0) && (
+              <span className="flex items-center gap-1 font-bold text-accent">
+                <Sparkles size={14} />
+                {remixes.length || tierList.remixCount} versões
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* A Tier List Renderizada */}
       <div className="mb-14 overflow-hidden rounded-3xl border border-borderStrong bg-surface shadow-2xl">
-        {tiers.map((tier) => {
-          const tierItems = Object.entries(placements)
+        {currentTiers.map((tier) => {
+          const tierItems = Object.entries(currentPlacements)
             .filter(([, tId]) => tId === tier.id)
             .map(([itemId]) => items.find((i) => i.id === itemId))
             .filter(Boolean);
@@ -392,6 +465,29 @@ export default function TierListView() {
         title={tierList.title}
         url={window.location.href}
         description={tierList.description || "Classificação completa no TierForge"}
+      />
+
+      {/* Modal de Exportação Social (Feed 16:9 & Stories 9:16) */}
+      <ExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        tierList={tierList}
+        tiers={currentTiers}
+        items={items}
+        placements={currentPlacements}
+        creatorName={tierList.creator}
+        creatorHandle={tierList.creatorHandle}
+      />
+
+      {/* Modal de Duelo 1 vs 1 */}
+      <DuelModeModal
+        isOpen={duelOpen}
+        onClose={() => setDuelOpen(false)}
+        items={items}
+        tiers={currentTiers}
+        onApplyPlacements={() => {
+          navigate(`/create?remix=${tierList.id}`);
+        }}
       />
     </div>
   );

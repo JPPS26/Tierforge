@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
   Palette,
@@ -18,12 +18,16 @@ import {
   Globe,
   Lock,
   Link2,
+  Swords,
+  FileText,
+  Wand2,
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { createTierList, searchCatalog, getCategories } from "../services/db";
+import { createTierList, searchCatalog, getCategories, getTierListById } from "../services/db";
 import ShareModal from "../components/ShareModal";
+import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
 
 const DEFAULT_TIERS = [
@@ -33,6 +37,25 @@ const DEFAULT_TIERS = [
   { id: "t4", label: "C", color: "#6BCB77" },
   { id: "t5", label: "D", color: "#4D96FF" },
 ];
+
+const THEME_PRESETS = {
+  classic: {
+    name: "Clássico",
+    colors: ["#FF3B5C", "#FF9F43", "#FFD23F", "#6BCB77", "#4D96FF", "#8A6BFF"],
+  },
+  cyberpunk: {
+    name: "Cyberpunk Neon",
+    colors: ["#FF007F", "#00F0FF", "#FFE600", "#7B2CBF", "#240046", "#05D9E8"],
+  },
+  obsidian: {
+    name: "Obsidian Dourado",
+    colors: ["#E6AF2E", "#C0C0C0", "#CD7F32", "#4A4E69", "#22223B", "#101016"],
+  },
+  pastel: {
+    name: "Pastel Modern",
+    colors: ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "#D7BAFF"],
+  },
+};
 
 function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete, dragging }) {
   const mode = item.displayMode && item.displayMode !== "auto" ? item.displayMode : displayMode;
@@ -267,6 +290,20 @@ export default function Builder() {
   const [searching, setSearching] = useState(false);
 
   const fileInputRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const remixId = searchParams.get("remix");
+
+  // Estado de Remix de Template
+  const [parentTemplateId, setParentTemplateId] = useState(null);
+  const [parentTemplateTitle, setParentTemplateTitle] = useState("");
+  const [isRemixLoading, setIsRemixLoading] = useState(false);
+
+  // Novos Modais e Ferramentas
+  const [duelModalOpen, setDuelModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkRawText, setBulkRawText] = useState("");
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [pasteToast, setPasteToast] = useState("");
 
   // Status de publicação
   const [saving, setSaving] = useState(false);
@@ -276,6 +313,74 @@ export default function Builder() {
   const categories = getCategories();
   const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Carregar Template se for Remix (?remix=...)
+  useEffect(() => {
+    async function loadRemixTemplate() {
+      if (!remixId) return;
+      setIsRemixLoading(true);
+      try {
+        const tmpl = await getTierListById(remixId);
+        if (tmpl && tmpl.items) {
+          setParentTemplateId(tmpl.id);
+          setParentTemplateTitle(tmpl.title);
+          setTitle(`${tmpl.title} (A Minha Versão)`);
+          setCategory(tmpl.category || "gaming");
+          setManualCategoryOverride(true);
+          if (tmpl.tiers && tmpl.tiers.length > 0) {
+            setTiers(tmpl.tiers);
+          }
+          if (tmpl.itemDisplayMode) {
+            setDisplayMode(tmpl.itemDisplayMode);
+          }
+          // Todos os itens vão para o banco limpos para o utilizador posicionar
+          setItems(tmpl.items.map((it) => ({ ...it })));
+          setPlacements({});
+        }
+      } catch (err) {
+        console.warn("Could not load remix template:", err);
+      } finally {
+        setIsRemixLoading(false);
+      }
+    }
+    loadRemixTemplate();
+  }, [remixId]);
+
+  // Listener Global para Colar Imagens (Ctrl + V)
+  useEffect(() => {
+    function handleGlobalPaste(e) {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        handleFilesUpload(files);
+        setPasteToast("✨ Imagem colada da área de transferência!");
+        setTimeout(() => setPasteToast(""), 3000);
+      } else {
+        const items = e.clipboardData?.items;
+        if (items) {
+          const fileArr = [];
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") !== -1) {
+              fileArr.push(items[i].getAsFile());
+            }
+          }
+          if (fileArr.length > 0) {
+            handleFilesUpload(fileArr);
+            setPasteToast("✨ Imagem colada da área de transferência!");
+            setTimeout(() => setPasteToast(""), 3000);
+          }
+        }
+      }
+    }
+
+    window.addEventListener("paste", handleGlobalPaste);
+    return () => window.removeEventListener("paste", handleGlobalPaste);
+  }, []);
 
   // Auto-deteção semântica em tempo real baseada no título e elementos
   useEffect(() => {
@@ -287,6 +392,39 @@ export default function Builder() {
   const currentCategoryObj = categories.find(
     (c) => c.id === category || c.slug === category
   ) || categories[0];
+
+  function applyTheme(themeKey) {
+    const preset = THEME_PRESETS[themeKey];
+    if (!preset) return;
+    setTiers((prev) =>
+      prev.map((t, i) => ({
+        ...t,
+        color: preset.colors[i % preset.colors.length],
+      }))
+    );
+    setThemeMenuOpen(false);
+  }
+
+  function handleBulkTextSubmit(e) {
+    e.preventDefault();
+    if (!bulkRawText.trim()) return;
+
+    const lines = bulkRawText
+      .split(/[\n,]+/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const newItems = lines.map((name, idx) => ({
+      id: `text-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+      name,
+      imageUrl: "",
+      displayMode: "text",
+    }));
+
+    setItems((prev) => [...prev, ...newItems]);
+    setBulkRawText("");
+    setBulkModalOpen(false);
+  }
 
   const itemsByTier = useCallback(
     (tierId) =>
@@ -503,6 +641,8 @@ export default function Builder() {
         creatorName,
         creatorHandle,
         creatorAvatar,
+        parentTemplateId,
+        parentTemplateTitle,
       });
 
       setSavedId(result.id);
@@ -674,53 +814,125 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Seletor de Modo de Exibição dos Elementos */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3.5 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Layers size={16} className="text-accent" />
-          <span className="text-[13.5px] font-bold text-text">
-            {t("builder.displayModeLabel")}
+      {/* Banner de Remix (se estiver a criar a partir de um template) */}
+      {parentTemplateTitle && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accentSoft/40 p-4 text-xs font-bold text-white shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <Sparkles size={18} className="text-accent flex-shrink-0" />
+            <div>
+              <span>Estás a criar uma versão a partir do template: </span>
+              <strong className="text-accent underline">{parentTemplateTitle}</strong>
+            </div>
+          </div>
+          <span className="text-[11px] text-mutedDim">
+            Itens carregados no banco prontos a classificar!
           </span>
         </div>
+      )}
 
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-surface2 p-1">
+      {/* Barra de Ferramentas Avançadas (Modos, Temas, Importação e Duelo) */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        {/* Lado Esquerdo: Modo de Exibição */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl border border-border bg-surface2 p-1">
+            <button
+              type="button"
+              onClick={() => setDisplayMode("both")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
+                displayMode === "both"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:text-text"
+              }`}
+            >
+              <ImageIcon size={13} /> + <Type size={13} />
+              <span>{t("builder.displayBoth")}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDisplayMode("image")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
+                displayMode === "image"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:text-text"
+              }`}
+            >
+              <ImageIcon size={13} />
+              <span>{t("builder.displayImage")}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDisplayMode("text")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
+                displayMode === "text"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:text-text"
+              }`}
+            >
+              <Type size={13} />
+              <span>{t("builder.displayText")}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Lado Direito: Temas, Importação em Lote e Modo Duelo */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Seletor de Temas */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-1.5 text-xs font-bold text-muted hover:text-white hover:border-accent transition-all"
+            >
+              <Palette size={13} className="text-accent" />
+              <span>Temas de Cores</span>
+            </button>
+
+            {themeMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 z-30 w-48 rounded-2xl border border-border bg-[#12131a] p-2 shadow-2xl animate-fade-in">
+                <div className="text-[10.5px] font-bold uppercase text-mutedDim px-2 py-1 mb-1">
+                  Esquema de Tiers:
+                </div>
+                {Object.entries(THEME_PRESETS).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => applyTheme(key)}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold text-muted hover:text-white hover:bg-surface2 transition-colors"
+                  >
+                    <span>{preset.name}</span>
+                    <div className="flex items-center gap-1">
+                      {preset.colors.slice(0, 4).map((c, i) => (
+                        <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Importação Rápida de Texto */}
           <button
             type="button"
-            onClick={() => setDisplayMode("both")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-all ${
-              displayMode === "both"
-                ? "bg-accent text-white shadow-sm"
-                : "text-muted hover:text-text"
-            }`}
+            onClick={() => setBulkModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-1.5 text-xs font-bold text-muted hover:text-white hover:border-accent transition-all"
           >
-            <ImageIcon size={13} /> + <Type size={13} />
-            <span>{t("builder.displayBoth")}</span>
+            <FileText size={13} className="text-teal" />
+            <span>Importar Texto</span>
           </button>
 
+          {/* Modo Duelo 1 vs 1 */}
           <button
             type="button"
-            onClick={() => setDisplayMode("image")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-all ${
-              displayMode === "image"
-                ? "bg-accent text-white shadow-sm"
-                : "text-muted hover:text-text"
-            }`}
+            onClick={() => setDuelModalOpen(true)}
+            disabled={items.length < 2}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft/60 px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40 disabled:pointer-events-none"
+            title={items.length < 2 ? "Adiciona pelo menos 2 itens para iniciar confrontos" : "Classificar por duelos 1 vs 1"}
           >
-            <ImageIcon size={13} />
-            <span>{t("builder.displayImage")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDisplayMode("text")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-all ${
-              displayMode === "text"
-                ? "bg-accent text-white shadow-sm"
-                : "text-muted hover:text-text"
-            }`}
-          >
-            <Type size={13} />
-            <span>{t("builder.displayText")}</span>
+            <Swords size={13} />
+            <span>Duelo 1 vs 1</span>
           </button>
         </div>
       </div>
@@ -1126,6 +1338,76 @@ export default function Builder() {
           url={`${window.location.origin}/tier-list/${savedId}`}
           description={`Classificação por ${profile?.displayName || "Criador TierForge"}`}
         />
+      )}
+
+      {/* Modal de Duelo 1 vs 1 */}
+      <DuelModeModal
+        isOpen={duelModalOpen}
+        onClose={() => setDuelModalOpen(false)}
+        items={items}
+        tiers={tiers}
+        onApplyPlacements={(duelPlacements) => {
+          setPlacements(duelPlacements);
+        }}
+      />
+
+      {/* Modal de Importação de Texto em Lote */}
+      {bulkModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setBulkModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-[480px] rounded-3xl border border-border bg-[#12131a] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border pb-3.5 mb-4">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-teal" />
+                <h3 className="font-display font-bold text-base text-white">
+                  Importar Itens em Lote
+                </h3>
+              </div>
+              <button
+                onClick={() => setBulkModalOpen(false)}
+                className="rounded-full p-1.5 text-mutedDim hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-mutedDim mb-3 leading-relaxed">
+              Cola nomes separados por quebra de linha ou vírgulas. Todos os cartões serão criados instantaneamente no banco.
+            </p>
+
+            <form onSubmit={handleBulkTextSubmit}>
+              <textarea
+                value={bulkRawText}
+                onChange={(e) => setBulkRawText(e.target.value)}
+                placeholder="Exemplo:&#10;Lionel Messi&#10;Cristiano Ronaldo&#10;Kylian Mbappé&#10;Erling Haaland"
+                rows={6}
+                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-xs text-white placeholder-mutedDim outline-none focus:border-accent font-mono mb-4"
+              />
+
+              <div className="flex items-center justify-end gap-2">
+                <GhostButton small onClick={() => setBulkModalOpen(false)}>
+                  Cancelar
+                </GhostButton>
+                <PrimaryButton small type="submit" disabled={!bulkRawText.trim()}>
+                  Criar Elementos
+                </PrimaryButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Notificação Flutuante ao Colar da Área de Transferência */}
+      {pasteToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-accent/60 bg-[#14141e] px-4 py-3 text-xs font-bold text-white shadow-2xl animate-fade-in">
+          <Sparkles size={14} className="text-accent" />
+          <span>{pasteToast}</span>
+        </div>
       )}
     </div>
   );

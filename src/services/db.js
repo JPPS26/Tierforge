@@ -663,6 +663,8 @@ export async function createTierList(uid, {
   creatorName = "Anónimo",
   creatorHandle = "",
   creatorAvatar = "",
+  parentTemplateId = null,
+  parentTemplateTitle = "",
 }) {
   const newId = `tl-${Date.now()}`;
   const now = new Date().toISOString();
@@ -688,9 +690,21 @@ export async function createTierList(uid, {
     commentsCount: 0,
     createdAt: now,
     createdDaysAgo: 0,
+    parentTemplateId,
+    parentTemplateTitle,
+    remixCount: 0,
   };
 
   const existing = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  
+  // Se for um remix, incrementa a contagem de derivações no template de origem
+  if (parentTemplateId) {
+    const parentIndex = existing.findIndex((l) => l.id === parentTemplateId);
+    if (parentIndex !== -1) {
+      existing[parentIndex].remixCount = (existing[parentIndex].remixCount || 0) + 1;
+    }
+  }
+
   setStored(STORAGE_KEY_TIERLISTS, [record, ...existing]);
 
   if (isFirebaseConfigured() && uid) {
@@ -705,6 +719,73 @@ export async function createTierList(uid, {
   }
 
   return record;
+}
+
+// Obter derivações/remixes de um template específico
+export function getRemixesForTemplate(templateId) {
+  if (!templateId) return [];
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  return stored.filter(
+    (l) => l.parentTemplateId === templateId && (l.visibility === "public" || !l.visibility)
+  );
+}
+
+// Calcular consenso médio global da comunidade
+export function calculateCommunityConsensus(templateId) {
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const template = stored.find((l) => l.id === templateId);
+  if (!template) return null;
+
+  const remixes = stored.filter(
+    (l) => l.parentTemplateId === templateId && (l.visibility === "public" || !l.visibility)
+  );
+
+  const submissions = [template, ...remixes];
+  const tiers = template.tiers || [];
+  const items = template.items || [];
+  const numTiers = tiers.length;
+
+  if (numTiers === 0 || items.length === 0) {
+    return { tiers, placements: {}, totalSubmissions: submissions.length, items };
+  }
+
+  // Mapeia cada tier a um valor de pontuação (Top Tier = maior pontuação)
+  const tierScores = {};
+  tiers.forEach((t, idx) => {
+    tierScores[t.id] = numTiers - idx; // ex: 5, 4, 3, 2, 1
+  });
+
+  const consensusPlacements = {};
+
+  items.forEach((item) => {
+    let totalScore = 0;
+    let placedCount = 0;
+
+    submissions.forEach((sub) => {
+      const placedTierId = sub.placements?.[item.id];
+      if (placedTierId && tierScores[placedTierId] !== undefined) {
+        totalScore += tierScores[placedTierId];
+        placedCount += 1;
+      }
+    });
+
+    if (placedCount > 0) {
+      const avgScore = totalScore / placedCount;
+      // Converte a pontuação média de volta ao índice de tier mais próximo
+      const calculatedTierIdx = Math.max(
+        0,
+        Math.min(numTiers - 1, Math.round(numTiers - avgScore))
+      );
+      consensusPlacements[item.id] = tiers[calculatedTierIdx].id;
+    }
+  });
+
+  return {
+    tiers,
+    placements: consensusPlacements,
+    totalSubmissions: submissions.length,
+    items,
+  };
 }
 
 // Obter tier lists criadas por um utilizador (com filtro de privadas)

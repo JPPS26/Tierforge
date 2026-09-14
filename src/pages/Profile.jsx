@@ -28,6 +28,7 @@ import {
   getUserTierLists,
   toggleFollowUser,
 } from "../services/db";
+import { calculateUserBadges } from "../services/badges";
 
 export default function Profile() {
   const { handle: paramHandle } = useParams();
@@ -174,6 +175,10 @@ export default function Profile() {
       })
     : "Janeiro de 2026";
 
+  const userBadges = targetUser
+    ? calculateUserBadges({ userLists: lists, userData: targetUser })
+    : [];
+
   return (
     <div className="mx-auto max-w-[1080px] px-4 sm:px-6 pb-28 pt-10">
       {/* Cabeçalho do Perfil */}
@@ -286,6 +291,28 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+          {/* Conquistas e Badges Reais */}
+          {userBadges.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-border/60">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-mutedDim mb-2.5 flex items-center gap-1.5">
+                <Crown size={13} className="text-accent" />
+                <span>Conquistas Desbloqueadas ({userBadges.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {userBadges.map((b) => (
+                  <div
+                    key={b.id}
+                    className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:border-accent transition-colors"
+                    title={b.description}
+                  >
+                    <span>{b.icon}</span>
+                    <span>{b.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Ações: Seguir / Editar / Partilhar */}
