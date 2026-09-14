@@ -341,10 +341,13 @@ export default function Builder() {
     const initialTitle = searchParams.get("title");
     if (initialCategory) {
       setCategory(initialCategory);
-      setManualCategoryOverride(true);
     }
     if (initialTitle) {
       setTitle(initialTitle);
+      const detected = detectCategory({ title: initialTitle, items: [] });
+      if (detected && detected.score > 0) {
+        setCategory(detected.slug || detected.id);
+      }
     }
   }, [searchParams, editId, remixId]);
 
@@ -473,8 +476,12 @@ export default function Builder() {
   // Auto-deteção semântica em tempo real baseada no título e elementos
   useEffect(() => {
     if (manualCategoryOverride) return;
+    if (!title.trim() && items.length === 0) return;
+
     const detected = detectCategory({ title, items });
-    setCategory(detected.id);
+    if (detected && detected.score > 0) {
+      setCategory(detected.slug || detected.id);
+    }
   }, [title, items, manualCategoryOverride]);
 
   const currentCategoryObj = categories.find(
@@ -812,7 +819,16 @@ export default function Builder() {
           </div>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setTitle(val);
+              if (!manualCategoryOverride) {
+                const detected = detectCategory({ title: val, items });
+                if (detected && detected.score > 0) {
+                  setCategory(detected.slug || detected.id);
+                }
+              }
+            }}
             placeholder="Ex: Melhores jogadores do FC Porto, Melhores jogos da PS5, Melhores carros JDM…"
             className="w-full border-none bg-transparent font-display text-[24px] sm:text-[32px] font-black text-white outline-none placeholder:text-mutedDim focus:placeholder:text-transparent"
           />
@@ -867,9 +883,26 @@ export default function Builder() {
               <div className="flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft/60 px-3 py-1 text-[12.5px] font-bold text-accent shadow-sm">
                 <Sparkles size={12} className="text-accent animate-pulse" />
                 <span>{currentCategoryObj?.name || category}</span>
-                <span className="text-[10px] text-mutedDim font-normal ml-0.5">
-                  ({manualCategoryOverride ? "manual" : "auto"})
-                </span>
+                {manualCategoryOverride ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualCategoryOverride(false);
+                      const detected = detectCategory({ title, items });
+                      if (detected && detected.score > 0) {
+                        setCategory(detected.slug || detected.id);
+                      }
+                    }}
+                    title="Clica para voltar à deteção automática"
+                    className="text-[10px] text-accent/90 hover:text-white bg-black/40 px-1.5 py-0.5 rounded-md ml-1 font-semibold transition-colors"
+                  >
+                    manual (↺ auto)
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-accent/80 font-normal ml-0.5">
+                    (auto)
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}

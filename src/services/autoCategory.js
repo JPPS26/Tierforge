@@ -1,11 +1,11 @@
-// Serviço de Auto-Categorização Semântica para TierForge
-// Analisa automaticamente o título, descrição e elementos adicionados
-// e define a categoria mais apropriada em tempo real sem esforço para o utilizador.
+// Serviço de Auto-Categorização Semântica Inteligente para TierForge
+// Analisa em tempo real o título, descrição e elementos adicionados
+// e identifica automaticamente a categoria correta a partir do catálogo da API.
 
-import { BASE_CATEGORIES } from "../data/categoriesData.js";
+import { getApiCatalog } from "./categoriesApi.js";
 
 // Normaliza texto removendo acentos, pontuação e minúsculas
-function normalizeText(str) {
+export function normalizeText(str) {
   if (!str || typeof str !== "string") return "";
   return str
     .normalize("NFD")
@@ -16,53 +16,53 @@ function normalizeText(str) {
     .trim();
 }
 
-// Dicionário semântico com palavras-chave e pesos
+// Dicionário semântico com palavras-chave ricas e variantes plurais
 const CATEGORY_KEYWORDS = {
   football: [
     "futebol", "football", "soccer", "jogador", "jogadores", "player", "players",
-    "avancado", "medio", "defesa", "guarda redes", "guarda-redes", "goleiro", "treinador", "coach",
-    "bola de ouro", "ballon d or", "golo", "golos", "gol", "gols", "estadio",
-    "porto", "fc porto", "benfica", "slb", "sporting", "scp", "braga",
-    "real madrid", "barcelona", "barca", "manchester", "united", "city", "liverpool", "arsenal", "chelsea",
-    "bayern", "psg", "juventus", "milan", "inter", "atletico",
-    "premier league", "la liga", "serie a", "bundesliga", "ligue 1", "liga portugal",
-    "champions league", "ucl", "liga dos campeoes", "mundial", "copa do mundo", "world cup", "eurocopa", "euro 2024", "euro 2026", "copa america",
-    "ronaldo", "cristiano", "messi", "mbappe", "haaland", "bellingham", "vinicius", "neymar", "modric",
-    "de bruyne", "pele", "maradona", "zidane", "figo", "cruyff", "guardiola", "mourinho", "klopp", "ancelotti"
+    "avancado", "avancados", "medio", "medios", "defesa", "defesas", "guarda redes", "guarda-redes", "goleiro", "goleiros", "treinador", "treinadores", "coach",
+    "bola de ouro", "ballon d or", "golo", "golos", "gol", "gols", "estadio", "estadios",
+    "porto", "fc porto", "benfica", "slb", "sporting", "scp", "braga", "vitoria",
+    "real madrid", "barcelona", "barca", "manchester", "united", "city", "liverpool", "arsenal", "chelsea", "tottenham",
+    "bayern", "psg", "juventus", "milan", "inter", "atletico", "dortmund",
+    "premier league", "la liga", "serie a", "bundesliga", "ligue 1", "liga portugal", "brasileirao", "libertadores",
+    "champions league", "ucl", "liga dos campeoes", "mundial", "copa do mundo", "world cup", "eurocopa", "euro", "copa america",
+    "ronaldo", "cristiano", "cr7", "messi", "mbappe", "haaland", "bellingham", "vinicius", "vini", "neymar", "modric",
+    "de bruyne", "pele", "maradona", "zidane", "figo", "cruyff", "guardiola", "mourinho", "klopp", "ancelotti",
+    "clube", "clubes", "selecao", "selecoes", "campeonato", "campeonatos"
   ],
   gaming: [
-    "jogo", "jogos", "game", "games", "gaming", "gamer", "videogame", "videojogos", "videojogos",
+    "jogo", "jogos", "game", "games", "gaming", "gamer", "gamers", "videogame", "videogames", "videojogos",
     "playstation", "ps5", "ps4", "ps3", "ps2", "ps1", "sony", "xbox", "xbox series", "game pass",
-    "nintendo", "switch", "wii", "ds", "game boy", "zelda", "mario", "pokemon", "metroid",
+    "nintendo", "switch", "wii", "ds", "game boy", "zelda", "mario", "pokemon", "pokemons", "metroid",
     "pc gaming", "steam", "epic games", "gog", "consola", "consolas",
-    "rpg", "jrpg", "fps", "battle royale", "mmo", "indie", "soulslike",
-    "gta", "grand theft auto", "elden ring", "dark souls", "bloodborne", "sekiro", "witcher",
+    "rpg", "rpgs", "jrpg", "jrpgs", "fps", "battle royale", "mmo", "mmorpg", "indie", "indies", "soulslike",
+    "gta", "gta 6", "gta v", "grand theft auto", "elden ring", "dark souls", "bloodborne", "sekiro", "witcher",
     "god of war", "kratos", "red dead", "rdr2", "cyberpunk", "fallout", "skyrim",
     "resident evil", "silent hill", "minecraft", "roblox", "fortnite", "valorant", "counter strike", "cs2", "csgo",
     "league of legends", "lol", "dota", "overwatch", "apex", "fifa", "ea fc", "efootball", "pes",
-    "hollow knight", "hades", "celeste", "baldurs gate", "final fantasy", "assassins creed"
+    "hollow knight", "hades", "celeste", "baldurs gate", "final fantasy", "assassins creed", "zelda"
   ],
   sports: [
     "desporto", "desportos", "sport", "sports", "atleta", "atletas",
     "basquetebol", "basquete", "basketball", "nba", "lebron", "jordan", "curry", "kobe", "lakers", "warriors", "celtics",
-    "formula 1", "f1", "fórmula 1", "piloto", "pilotos", "verstappen", "hamilton", "senna", "leclerc", "norris", "alonso", "ferrari", "mercedes f1", "red bull",
+    "formula 1", "f1", "fórmula 1", "piloto", "pilotos", "verstappen", "hamilton", "senna", "ayrton senna", "leclerc", "norris", "alonso", "ferrari f1", "red bull f1",
     "motogp", "moto gp", "marquez", "rossi", "bagnaia",
-    "tenis", "ténis", "tennis", "nadal", "federer", "djokovic", "alcaraz", "wimbledon", "roland garros", "grand slam",
+    "tenis", "ténis", "tennis", "nadal", "federer", "djokovic", "alcaraz", "sinner", "wimbledon", "roland garros", "grand slam",
     "mma", "ufc", "conor", "mcgregor", "khabib", "jon jones", "pereira", "adesanya",
     "wrestling", "wwe", "smackdown", "raw", "undertaker", "john cena", "roman reigns",
     "futebol americano", "nfl", "super bowl", "tom brady", "mahomes",
-    "ciclismo", "tour de france", "volta a franca", "surf", "skate", "atletismo", "olimpiadas", "jogos olimpicos", "olimpico"
+    "ciclismo", "tour de france", "volta a franca", "surf", "skate", "atletismo", "olimpiadas", "jogos olimpicos", "olimpico", "olimpicos"
   ],
   movies: [
-    "filme", "filmes", "movie", "movies", "cinema", "cinematografico", "pelicula", "filme de",
+    "filme", "filmes", "movie", "movies", "cinema", "cinematografico", "pelicula", "filmes de",
     "ator", "atores", "atriz", "atrizes", "actor", "actors", "actress",
     "realizador", "realizadores", "diretor", "diretores", "director", "filmmaker",
-    "oscar", "oscars", "oscares", "oscarizado", "hollywood", "cannes",
+    "oscar", "oscars", "oscares", "oscarizado", "hollywood", "cannes", "trilogia", "trilogias", "saga", "sagas",
     "nolan", "christopher nolan", "tarantino", "scorsese", "spielberg", "kubrick", "hitchcock", "fincher", "denis villeneuve",
-    "interstellar", "inception", "oppenheimer", "o cavaleiro das trevas", "dark knight", "pulp fiction",
-    "marvel", "mcu", "vingadores", "avengers", "batman", "joker", "coringa", "superman", "homem aranha", "spiderman",
-    "terror", "horror", "suspense", "ficcao cientifica", "scifi", "acao", "comedia", "drama", "romance",
-    "animacao", "animation", "pixar", "disney", "dreamworks", "shrek", "toy story", "rei leao"
+    "interstellar", "inception", "oppenheimer", "dark knight", "pulp fiction", "godfather",
+    "terror", "horror", "suspense", "ficcao cientifica", "scifi", "acao", "comedia", "comedias", "drama", "dramas", "romance",
+    "animacao", "animacoes", "animation", "pixar", "disney", "dreamworks", "shrek", "toy story", "rei leao"
   ],
   tvshows: [
     "serie", "series", "série", "séries", "seriado", "seriados", "show", "shows", "tv show", "tv series",
@@ -74,22 +74,22 @@ const CATEGORY_KEYWORDS = {
     "black mirror", "dark", "squid game", "round 6", "the last of us", "the boys", "severance"
   ],
   anime: [
-    "anime", "animes", "manga", "mangas", "mangá", "mangás", "otaku", "waifu", "japao", "japones", "animacao japonesa",
+    "anime", "animes", "manga", "mangas", "manga", "mangas", "otaku", "waifu", "japao", "japones", "animacao japonesa",
     "shonen", "seinen", "isekai", "shojo", "mecha",
     "one piece", "luffy", "zoro", "naruto", "sasuke", "dragon ball", "dbz", "goku", "vegeta",
     "attack on titan", "shingeki no kyojin", "eren", "levi", "mikasa",
     "jujutsu kaisen", "gojo", "sukuna", "demon slayer", "kimetsu no yaiba", "tanjiro", "nezuko",
     "bleach", "ichigo", "death note", "light", "hunter x hunter", "gon", "killua",
-    "fullmetal alchemist", "my hero academia", "boku no hero", "solo leveling", "chainsaw man", "denji",
-    "evangelion", "cowboy bebop", "berserk", "guts", "vinland saga", "studio ghibli", "hayao miyazaki"
+    "fullmetal alchemist", "my hero academia", "solo leveling", "chainsaw man", "denji",
+    "evangelion", "cowboy bebop", "berserk", "guts", "vinland saga", "studio ghibli", "ghibli", "hayao miyazaki"
   ],
   music: [
     "musica", "musicas", "música", "músicas", "music", "musical", "cancao", "cancoes", "song", "songs",
-    "cantor", "cantores", "cantora", "cantoras", "singer", "vocalista",
+    "cantor", "cantores", "cantora", "cantoras", "singer", "singers", "vocalista",
     "banda", "bandas", "band", "bands", "grupo musical",
     "album", "albuns", "álbum", "álbuns", "faixa", "faixas", "track", "tracks",
     "artista", "artistas", "artist", "compositor", "produtor musical", "dj",
-    "rap", "hip hop", "trap", "rock", "metal", "heavy metal", "pop", "r&b", "soul", "indie rock",
+    "rap", "rapper", "rappers", "hip hop", "trap", "rock", "metal", "heavy metal", "pop", "r&b", "soul", "indie rock",
     "eletronica", "edm", "house", "techno", "reggaeton", "fado", "musica portuguesa",
     "kendrick lamar", "drake", "eminem", "kanye", "travis scott", "taylor swift", "beyonce", "rihanna",
     "the weeknd", "billie eilish", "michael jackson", "queen", "beatles", "pink floyd", "nirvana", "linkin park",
@@ -108,7 +108,7 @@ const CATEGORY_KEYWORDS = {
   vehicles: [
     "carro", "carros", "car", "cars", "automovel", "automoveis", "auto", "veiculo", "veiculos",
     "jdm", "jdm cars", "tuning", "motor", "motores", "ronco", "cavalos", "v8", "v12", "turbo",
-    "mota", "motas", "moto", "motos", "motociclo", "motocicleta", "superbike",
+    "mota", "motas", "moto", "motos", "motociclo", "motocicleta", "superbike", "superbikes",
     "supercarro", "supercarros", "hipercarro", "hipercarros", "desportivo", "desportivos",
     "porsche", "911", "ferrari", "lamborghini", "mclaren", "bugatti", "aston martin",
     "bmw", "mercedes", "audi", "volkswagen", "toyota", "nissan", "honda", "mazda", "subaru",
@@ -117,7 +117,7 @@ const CATEGORY_KEYWORDS = {
   ],
   food: [
     "comida", "comidas", "food", "gastronomia", "culinaria", "culinária", "cozinha",
-    "prato", "pratos", "refeicao", "refeicoes", "restaurante", "restaurantes",
+    "prato", "pratos", "refeicao", "refeicoes", "restaurante", "restaurantes", "receita", "receitas",
     "sabor", "sabores", "flavor", "sobremesa", "sobremesas", "doce", "doces", "doçaria",
     "gelado", "gelados", "ice cream", "sorvete", "sorvetes", "gelataria",
     "pizza", "pizzas", "hamburguer", "hamburgueres", "burger", "burgers",
@@ -137,9 +137,9 @@ const CATEGORY_KEYWORDS = {
   geek: [
     "geek", "nerd", "pop", "cultura pop", "super heroi", "super herois", "super-heroi", "heroi", "herois", "vilao", "viloes",
     "star wars", "jedi", "sith", "vader", "darth vader", "luke", "yoda",
-    "harry potter", "hogwarts", "voldemort", "bruxo", "bruxos", "feiticeiro",
+    "harry potter", "hogwarts", "voldemort", "bruxo", "bruxos", "feiticeiro", "feiticeiros",
     "senhor dos aneis", "lord of the rings", "tolkien", "frodo", "gandalf", "sauron",
-    "marvel", "avengers", "vingadores", "dc", "dc comics", "justice league", "liga da justica",
+    "marvel", "avengers", "vingadores", "dc", "dc comics", "justice league", "liga da justica", "batman", "spiderman", "homem aranha",
     "jogos de cartas", "cartas", "tcg", "card game", "magic", "magic the gathering", "pokemon cards", "yu gi oh",
     "jogo de tabuleiro", "jogos de tabuleiro", "board game", "board games", "catan", "monopoly"
   ],
@@ -156,7 +156,7 @@ const CATEGORY_KEYWORDS = {
     "lifestyle", "estilo de vida", "fitness", "ginasio", "ginásio", "gym", "treino", "treinos", "workout",
     "exercicio", "exercicios", "musculacao", "musculação", "saude", "saúde", "nutricao", "nutrição", "dieta",
     "sapatilha", "sapatilhas", "tenis", "tênis", "sneaker", "sneakers", "nike", "adidas", "jordan", "yeezy",
-    "moda", "roupa", "roupas", "marca de roupa", "streetwear", "luxo", "vestuario"
+    "moda", "roupa", "roupas", "marca de roupa", "streetwear", "luxo", "vestuario", "marcas de roupa"
   ],
   business: [
     "negocio", "negocios", "negócio", "negócios", "business", "empresa", "empresas", "company",
@@ -173,8 +173,35 @@ const CATEGORY_KEYWORDS = {
   ],
 };
 
+// Cache de palavras-chave normalizadas
+const NORMALIZED_KEYWORDS = {};
+for (const [catId, kwList] of Object.entries(CATEGORY_KEYWORDS)) {
+  NORMALIZED_KEYWORDS[catId] = kwList.map(normalizeText).filter(Boolean);
+}
+
+// Verifica se um termo pesquisado casa com uma palavra-chave
+function keywordMatch(normText, normKw) {
+  if (!normText || !normKw) return false;
+
+  // Frase com mais de uma palavra
+  if (normKw.includes(" ")) {
+    return normText.includes(normKw);
+  }
+
+  // Palavras curtas (3 letras ou menos, ex: f1, pc, ia, tv, rap)
+  if (normKw.length <= 3) {
+    const regex = new RegExp(`\\b${normKw}\\b`, "i");
+    return regex.test(normText);
+  }
+
+  // Suporte a plurais em português/inglês (ex: pokemon -> pokemons, cantor -> cantores)
+  const regex = new RegExp(`\\b${normKw}(?:s|es|z)?\\b`, "i");
+  return regex.test(normText) || normText.includes(normKw);
+}
+
 /**
  * Deteta automaticamente a melhor categoria para uma Tier List.
+ * Analisa o título, descrição, itens e catálogo de subcategorias em tempo real.
  * 
  * @param {Object} options
  * @param {string} options.title - Título ou tema da tier list
@@ -183,10 +210,11 @@ const CATEGORY_KEYWORDS = {
  * @returns {Object} Categoria identificada com id, name, icon, color e confiança
  */
 export function detectCategory({ title = "", description = "", items = [] } = {}) {
+  const catalog = getApiCatalog();
   const normTitle = normalizeText(title);
   const normDesc = normalizeText(description);
 
-  // Combina nomes dos elementos
+  // Combina nomes e tags dos elementos
   const itemsText = items
     .map((it) => `${it.name || ""} ${(it.tags || []).join(" ")} ${it.category || ""}`)
     .join(" ");
@@ -194,34 +222,57 @@ export function detectCategory({ title = "", description = "", items = [] } = {}
 
   // Mapa de pontuações por categoria
   const scores = {};
-  Object.keys(CATEGORY_KEYWORDS).forEach((catId) => {
-    scores[catId] = 0;
+  catalog.forEach((c) => {
+    scores[c.id] = 0;
   });
 
-  // Analisa cada categoria
-  for (const [catId, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+  // 1. Deteção direta a partir do Catálogo da API (Nome da Categoria e Subcategorias)
+  for (const cat of catalog) {
+    const normCatName = normalizeText(cat.name);
+    const normSlug = normalizeText(cat.slug);
+
+    if (normTitle && (normTitle.includes(normCatName) || normTitle.includes(normSlug))) {
+      scores[cat.id] = (scores[cat.id] || 0) + 25;
+    }
+
+    // Subcategorias da API
+    if (Array.isArray(cat.subcategories)) {
+      for (const sub of cat.subcategories) {
+        const normSub = normalizeText(typeof sub === "string" ? sub : sub.name);
+        if (normSub && normSub.length > 2) {
+          if (normTitle && normTitle.includes(normSub)) {
+            scores[cat.id] = (scores[cat.id] || 0) + 20;
+          }
+          if (normItems && normItems.includes(normSub)) {
+            scores[cat.id] = (scores[cat.id] || 0) + 10;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Análise do Dicionário Semântico Enriquecido
+  for (const [catId, keywords] of Object.entries(NORMALIZED_KEYWORDS)) {
     for (const kw of keywords) {
-      const regex = new RegExp(`\\b${kw}\\b`, "i");
-
-      // Título tem o peso mais alto (peso 10x)
-      if (normTitle && regex.test(normTitle)) {
-        scores[catId] += kw.includes(" ") ? 15 : 10;
+      // Título tem o peso mais alto (peso 10x - 15x)
+      if (normTitle && keywordMatch(normTitle, kw)) {
+        scores[catId] = (scores[catId] || 0) + (kw.includes(" ") ? 15 : 10);
       }
 
-      // Descrição tem peso moderado (peso 3x)
-      if (normDesc && regex.test(normDesc)) {
-        scores[catId] += kw.includes(" ") ? 5 : 3;
+      // Descrição tem peso moderado (peso 3x - 5x)
+      if (normDesc && keywordMatch(normDesc, kw)) {
+        scores[catId] = (scores[catId] || 0) + (kw.includes(" ") ? 5 : 3);
       }
 
-      // Itens individuais têm peso acumulativo (peso 2x)
-      if (normItems && regex.test(normItems)) {
-        scores[catId] += kw.includes(" ") ? 4 : 2;
+      // Itens individuais têm peso acumulativo (peso 2x - 4x)
+      if (normItems && keywordMatch(normItems, kw)) {
+        scores[catId] = (scores[catId] || 0) + (kw.includes(" ") ? 4 : 2);
       }
     }
   }
 
   // Encontra a categoria com maior pontuação
-  let bestCatId = "gaming"; // fallback por defeito se tudo for vazio
+  let bestCatId = "gaming";
   let maxScore = 0;
 
   for (const [catId, score] of Object.entries(scores)) {
@@ -231,11 +282,13 @@ export function detectCategory({ title = "", description = "", items = [] } = {}
     }
   }
 
-  // Procura o objeto completo da categoria
-  const found = BASE_CATEGORIES.find((c) => c.id === bestCatId) || BASE_CATEGORIES[0];
+  // Procura o objeto correspondente no catálogo da API
+  const found =
+    catalog.find((c) => c.id === bestCatId || c.slug === bestCatId) || catalog[0];
 
   return {
     id: found.id,
+    slug: found.slug,
     name: found.name,
     icon: found.icon,
     color: found.color,

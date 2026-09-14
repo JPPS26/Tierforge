@@ -246,6 +246,76 @@ export const API_CATALOG = [
       "Física & Química",
     ],
   },
+  {
+    id: "culture",
+    slug: "cultura-viagens",
+    name: "Cultura, Países & Viagens",
+    domain: "culture",
+    color: "#059669",
+    icon: "Globe",
+    description: "Cidades imperdíveis, países do mundo, história universal, monumentos, maravilhas e literatura.",
+    imageUrl: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&auto=format&fit=crop&q=80",
+    subcategories: [
+      "Cidades Europeias",
+      "Destinos de Praia & Ilhas",
+      "Países do Mundo",
+      "Períodos Históricos",
+      "Livros & Obras Literárias",
+      "Monumentos do Mundo",
+    ],
+  },
+  {
+    id: "lifestyle",
+    slug: "lifestyle-fitness",
+    name: "Lifestyle & Fitness",
+    domain: "lifestyle",
+    color: "#10B981",
+    icon: "Dumbbell",
+    description: "Treinos de ginásio, sapatilhas, marcas de moda, nutrição e desenvolvimento pessoal.",
+    imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=80",
+    subcategories: [
+      "Treinos & Ginásio",
+      "Sapatilhas & Sneakers",
+      "Marcas de Roupa & Moda",
+      "Suplementos & Nutrição",
+      "Hábitos de Sucesso",
+    ],
+  },
+  {
+    id: "business",
+    slug: "negocios-financas",
+    name: "Negócios & Finanças",
+    domain: "general",
+    color: "#0284C7",
+    icon: "Briefcase",
+    description: "Grandes empresas de tecnologia, empreendedores, criptomoedas e investimentos.",
+    imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80",
+    subcategories: [
+      "Empresas Tecnológicas",
+      "Empreendedores & CEOs",
+      "Criptomoedas & Bitcoin",
+      "Marcas Mais Valiosas",
+      "Ideias de Negócio",
+    ],
+  },
+  {
+    id: "creators",
+    slug: "criadores-internet",
+    name: "Criadores & Internet",
+    domain: "culture",
+    color: "#A259FF",
+    icon: "Zap",
+    description: "YouTubers, streamers Twitch, podcasts, personalidades digitais e cultura da internet.",
+    imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+    subcategories: [
+      "YouTubers Globais",
+      "Criadores Portugueses",
+      "Streamers Twitch",
+      "Podcasts",
+      "Memes Lendários",
+      "Canais de Gaming",
+    ],
+  },
 ];
 
 export function getApiCatalog() {
@@ -419,3 +489,4 @@ export async function fetchCategoryDetailsFromApi(topicName, lang = "pt") {
     return null;
   }
 }
+
