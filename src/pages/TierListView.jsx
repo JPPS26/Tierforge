@@ -18,6 +18,10 @@ import {
   User,
   Edit2,
   Trash2,
+  CornerDownRight,
+  AlertCircle,
+  Check,
+  X,
 } from "lucide-react";
 import {
   getTierListById,
@@ -26,17 +30,49 @@ import {
   incrementViews,
   getCommentsForTierList,
   addCommentToTierList,
+  updateComment,
+  deleteComment,
+  addReplyToComment,
+  updateReply,
+  deleteReply,
+  reactToComment,
   getRemixesForTemplate,
   calculateCommunityConsensus,
   canEditTierList,
   deleteTierList,
 } from "../services/db";
+import { checkContentSafety } from "../services/safetyFilter";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Avatar, Badge, PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import ShareModal from "../components/ShareModal";
 import ExportModal from "../components/ExportModal";
 import DuelModeModal from "../components/DuelModeModal";
+
+function FormattedCommentText({ text }) {
+  if (!text) return null;
+  const parts = text.split(/(@[a-zA-Z0-9_]{3,20})/g);
+  return (
+    <span>
+      {parts.map((part, index) => {
+        if (part.startsWith("@") && part.length > 1) {
+          const handle = part.slice(1);
+          return (
+            <Link
+              key={index}
+              to={`/profile/${handle}`}
+              className="font-bold text-accent hover:underline inline-block mx-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </Link>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </span>
+  );
+}
 
 export default function TierListView() {
   const { id } = useParams();
@@ -48,6 +84,13 @@ export default function TierListView() {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null); // commentId
+  const [replyText, setReplyText] = useState("");
+  const [replyError, setReplyError] = useState("");
+  const [editingTarget, setEditingTarget] = useState(null); // { commentId, replyId, text }
+  const [editError, setEditError] = useState("");
+
   const [userVote, setUserVote] = useState(0); // 1, -1, or 0
   const [shareOpen, setShareOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -98,17 +141,114 @@ export default function TierListView() {
 
   function handleAddComment(e) {
     e.preventDefault();
+    setCommentError("");
     if (!commentText.trim()) return;
 
-    const newComment = addCommentToTierList(id, {
-      userUid: user?.uid || null,
-      userName: profile?.displayName || user?.displayName || "Visitante",
-      userAvatar: profile?.avatar || user?.photoURL || "",
-      text: commentText.trim(),
-    });
+    const safety = checkContentSafety(commentText);
+    if (!safety.isSafe) {
+      setCommentError(safety.reason || "O comentário contém linguagem ou termos impróprios.");
+      return;
+    }
 
-    setComments((prev) => [newComment, ...prev]);
-    setCommentText("");
+    try {
+      addCommentToTierList(id, {
+        userUid: user?.uid || null,
+        userName: profile?.displayName || user?.displayName || "Visitante",
+        userHandle: profile?.handle || (user ? `user_${user.uid.slice(0, 5)}` : ""),
+        userAvatar: profile?.avatar || user?.photoURL || "",
+        text: commentText.trim(),
+        tierListOwnerId: tierList.ownerId,
+        tierListTitle: tierList.title,
+      });
+
+      setComments(getCommentsForTierList(id));
+      setCommentText("");
+    } catch (err) {
+      setCommentError(err.message || "Erro ao adicionar comentário.");
+    }
+  }
+
+  function handleReact(commentId, replyId = null, reactionType = "like") {
+    const voterId = user?.uid || "anon_" + (sessionStorage.getItem("tf_anon_id") || "guest");
+    reactToComment(id, commentId, replyId, voterId, reactionType);
+    setComments(getCommentsForTierList(id));
+  }
+
+  function handleStartEdit(item, isReply = false, parentId = null) {
+    setEditingTarget({
+      commentId: isReply ? parentId : item.id,
+      replyId: isReply ? item.id : null,
+      text: item.text,
+    });
+    setEditError("");
+  }
+
+  function handleSaveEdit() {
+    if (!editingTarget) return;
+    setEditError("");
+
+    const safety = checkContentSafety(editingTarget.text);
+    if (!safety.isSafe) {
+      setEditError(safety.reason || "O comentário contém linguagem ou termos impróprios.");
+      return;
+    }
+
+    try {
+      if (editingTarget.replyId) {
+        updateReply(id, editingTarget.commentId, editingTarget.replyId, editingTarget.text, user?.uid);
+      } else {
+        updateComment(id, editingTarget.commentId, editingTarget.text, user?.uid);
+      }
+      setComments(getCommentsForTierList(id));
+      setEditingTarget(null);
+    } catch (err) {
+      setEditError(err.message || "Erro ao guardar alterações.");
+    }
+  }
+
+  function handleDeleteCommentItem(commentId, replyId = null) {
+    const confirmed = window.confirm("Tens a certeza que desejas eliminar este comentário?");
+    if (!confirmed) return;
+
+    try {
+      if (replyId) {
+        deleteReply(id, commentId, replyId, user?.uid, tierList.ownerId);
+      } else {
+        deleteComment(id, commentId, user?.uid, tierList.ownerId);
+      }
+      setComments(getCommentsForTierList(id));
+    } catch (err) {
+      alert(err.message || "Erro ao eliminar comentário.");
+    }
+  }
+
+  function handleAddReplySubmit(parentCommentId, e) {
+    e.preventDefault();
+    setReplyError("");
+    if (!replyText.trim()) return;
+
+    const safety = checkContentSafety(replyText);
+    if (!safety.isSafe) {
+      setReplyError(safety.reason || "A resposta contém linguagem ou termos impróprios.");
+      return;
+    }
+
+    try {
+      addReplyToComment(id, parentCommentId, {
+        userUid: user?.uid || null,
+        userName: profile?.displayName || user?.displayName || "Visitante",
+        userHandle: profile?.handle || (user ? `user_${user.uid.slice(0, 5)}` : ""),
+        userAvatar: profile?.avatar || user?.photoURL || "",
+        text: replyText.trim(),
+        tierListTitle: tierList.title,
+      });
+
+      setComments(getCommentsForTierList(id));
+      setReplyingTo(null);
+      setReplyText("");
+    } catch (err) {
+      setReplyError(err.message || "Erro ao adicionar resposta.");
+    }
   }
 
   async function handleDelete() {
@@ -447,15 +587,28 @@ export default function TierListView() {
       </div>
 
       {/* Secção de Comentários */}
-      <div className="mx-auto max-w-[800px]">
+      {/* Secção de Comentários */}
+      <div className="mx-auto max-w-[840px]">
         <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
           <h3 className="font-display text-[20px] font-bold text-white flex items-center gap-2">
             <MessageCircle size={20} className="text-accent" />
-            {t("tierListView.comments", { count: comments.length })}
+            <span>
+              {t("tierListView.comments", {
+                count: comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0),
+              })}
+            </span>
           </h3>
         </div>
 
+        {/* Formulário Principal de Comentário */}
         <form onSubmit={handleAddComment} className="mb-8">
+          {commentError && (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[13px] text-red-400">
+              <AlertCircle size={16} className="flex-shrink-0" />
+              <span>{commentError}</span>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Avatar
               name={profile?.displayName || user?.displayName || "Eu"}
@@ -465,12 +618,18 @@ export default function TierListView() {
             <div className="flex-1">
               <textarea
                 value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder={t("tierListView.addCommentPlaceholder")}
+                onChange={(e) => {
+                  setCommentText(e.target.value);
+                  if (commentError) setCommentError("");
+                }}
+                placeholder="Escreve a tua opinião… Podes mencionar criadores com @handle"
                 rows={3}
-                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent"
+                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
               />
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] text-mutedDim">
+                  💡 Dica: escreve <strong className="text-accent font-semibold">@handle</strong> para identificar criadores.
+                </span>
                 <PrimaryButton small icon={Send} type="submit" disabled={!commentText.trim()}>
                   {t("tierListView.submitComment")}
                 </PrimaryButton>
@@ -479,33 +638,394 @@ export default function TierListView() {
           </div>
         </form>
 
+        {/* Lista de Comentários */}
         <div className="flex flex-col gap-4">
           {comments.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border py-8 text-center text-[13.5px] text-muted">
-              {t("tierListView.emptyComments")}
+            <div className="rounded-2xl border border-dashed border-border py-10 text-center text-[13.5px] text-muted">
+              <MessageCircle size={28} className="mx-auto mb-2 opacity-30 text-muted" />
+              <p>{t("tierListView.emptyComments")}</p>
             </div>
           ) : (
-            comments.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-borderStrong"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={c.userName} image={c.userAvatar} size={28} />
-                    <span className="font-display text-[13.5px] font-bold text-white">
-                      {c.userName}
-                    </span>
+            comments.map((c) => {
+              const isCommentAuthor = user?.uid && user.uid === c.userUid;
+              const isListOwner = user?.uid && user.uid === tierList.ownerId;
+              const canEditThis = isCommentAuthor;
+              const canDeleteThis = isCommentAuthor || isListOwner;
+
+              const isUserLiked = user && c.likes?.includes(user.uid);
+              const isUserDisliked = user && c.dislikes?.includes(user.uid);
+              const isEditingThis = editingTarget && editingTarget.commentId === c.id && !editingTarget.replyId;
+
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-borderStrong"
+                >
+                  {/* Cabeçalho do Comentário */}
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={c.userName} image={c.userAvatar} size={30} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          {c.userHandle ? (
+                            <Link
+                              to={`/profile/${c.userHandle}`}
+                              className="font-display text-[13.5px] font-bold text-white hover:text-accent transition-colors"
+                            >
+                              {c.userName}
+                            </Link>
+                          ) : (
+                            <span className="font-display text-[13.5px] font-bold text-white">
+                              {c.userName}
+                            </span>
+                          )}
+
+                          {c.userHandle && (
+                            <span className="text-[11.5px] font-semibold text-mutedDim">
+                              #{c.userHandle}
+                            </span>
+                          )}
+
+                          {c.userUid && c.userUid === tierList.ownerId && (
+                            <span className="rounded-md bg-accentSoft px-1.5 py-0.5 text-[10px] font-bold text-accent border border-accent/20">
+                              Autor da Lista
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-[11px] text-mutedDim">
+                          <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                          {c.updatedAt && (
+                            <span className="italic text-mutedDim/80">(editado)</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ações de Editar / Eliminar */}
+                    <div className="flex items-center gap-1">
+                      {canEditThis && !isEditingThis && (
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(c)}
+                          className="rounded-lg p-1.5 text-mutedDim hover:bg-surface2 hover:text-white transition-colors"
+                          title="Editar comentário"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                      )}
+                      {canDeleteThis && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCommentItem(c.id)}
+                          className="rounded-lg p-1.5 text-mutedDim hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                          title="Eliminar comentário"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[11.5px] text-mutedDim">
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </span>
+
+                  {/* Corpo do Comentário */}
+                  <div className="pl-10">
+                    {isEditingThis ? (
+                      <div className="my-2">
+                        {editError && (
+                          <div className="mb-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-400">
+                            <AlertCircle size={14} />
+                            <span>{editError}</span>
+                          </div>
+                        )}
+                        <textarea
+                          value={editingTarget.text}
+                          onChange={(e) =>
+                            setEditingTarget((prev) => ({ ...prev, text: e.target.value }))
+                          }
+                          rows={2}
+                          className="w-full rounded-xl border border-border bg-surface2 p-2.5 text-[13px] text-text outline-none focus:border-accent"
+                        />
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingTarget(null)}
+                            className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted hover:text-white"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEdit}
+                            className="rounded-lg bg-accent px-3 py-1 text-xs font-bold text-black hover:opacity-90 shadow-sm"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[13.5px] leading-relaxed text-muted">
+                        <FormattedCommentText text={c.text} />
+                      </p>
+                    )}
+
+                    {/* Barra de Reações e Responder */}
+                    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/40 pt-2.5">
+                      {/* Gostos */}
+                      <button
+                        type="button"
+                        onClick={() => handleReact(c.id, null, "like")}
+                        className={`inline-flex items-center gap-1 text-[12px] font-bold transition-colors ${
+                          isUserLiked ? "text-teal" : "text-mutedDim hover:text-text"
+                        }`}
+                        title="Gosto"
+                      >
+                        <ThumbsUp size={13} className={isUserLiked ? "fill-teal" : ""} />
+                        <span>{c.likes?.length || 0}</span>
+                      </button>
+
+                      {/* Não Gostos */}
+                      <button
+                        type="button"
+                        onClick={() => handleReact(c.id, null, "dislike")}
+                        className={`inline-flex items-center gap-1 text-[12px] font-bold transition-colors ${
+                          isUserDisliked ? "text-red-400" : "text-mutedDim hover:text-text"
+                        }`}
+                        title="Não gosto"
+                      >
+                        <ThumbsDown size={13} className={isUserDisliked ? "fill-red-400" : ""} />
+                        <span>{c.dislikes?.length || 0}</span>
+                      </button>
+
+                      {/* Responder */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (replyingTo === c.id) {
+                            setReplyingTo(null);
+                            setReplyText("");
+                          } else {
+                            setReplyingTo(c.id);
+                            setReplyText(c.userHandle ? `@${c.userHandle} ` : "");
+                            setReplyError("");
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1 text-[12px] font-bold transition-colors ${
+                          replyingTo === c.id ? "text-accent" : "text-mutedDim hover:text-text"
+                        }`}
+                      >
+                        <CornerDownRight size={13} />
+                        <span>Responder</span>
+                      </button>
+                    </div>
+
+                    {/* Formulário de Resposta Inline */}
+                    {replyingTo === c.id && (
+                      <form
+                        onSubmit={(e) => handleAddReplySubmit(c.id, e)}
+                        className="mt-3 rounded-xl border border-border bg-surface2/60 p-3 animate-fadeIn"
+                      >
+                        {replyError && (
+                          <div className="mb-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-400">
+                            <AlertCircle size={14} />
+                            <span>{replyError}</span>
+                          </div>
+                        )}
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => {
+                            setReplyText(e.target.value);
+                            if (replyError) setReplyError("");
+                          }}
+                          placeholder="Escreve a tua resposta… Podes mencionar com @handle"
+                          rows={2}
+                          className="w-full rounded-xl border border-border bg-surface p-2.5 text-[13px] text-text outline-none focus:border-accent"
+                          autoFocus
+                        />
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReplyingTo(null);
+                              setReplyText("");
+                            }}
+                            className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted hover:text-white"
+                          >
+                            Cancelar
+                          </button>
+                          <PrimaryButton small icon={Send} type="submit" disabled={!replyText.trim()}>
+                            Responder
+                          </PrimaryButton>
+                        </div>
+                      </form>
+                    )}
+
+                    {/* Respostas Aninhadas (Replies Thread) */}
+                    {c.replies && c.replies.length > 0 && (
+                      <div className="mt-3.5 flex flex-col gap-3 border-l-2 border-border/80 pl-3.5 sm:pl-4">
+                        {c.replies.map((r) => {
+                          const isReplyAuthor = user?.uid && user.uid === r.userUid;
+                          const canEditReply = isReplyAuthor;
+                          const canDeleteReply = isReplyAuthor || isListOwner;
+
+                          const isReplyLiked = user && r.likes?.includes(user.uid);
+                          const isReplyDisliked = user && r.dislikes?.includes(user.uid);
+                          const isEditingThisReply =
+                            editingTarget &&
+                            editingTarget.commentId === c.id &&
+                            editingTarget.replyId === r.id;
+
+                          return (
+                            <div
+                              key={r.id}
+                              className="rounded-xl border border-border/60 bg-surface2/40 p-3 transition-colors hover:border-borderStrong"
+                            >
+                              <div className="mb-1.5 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Avatar name={r.userName} image={r.userAvatar} size={24} />
+                                  <div className="flex items-center gap-1.5">
+                                    {r.userHandle ? (
+                                      <Link
+                                        to={`/profile/${r.userHandle}`}
+                                        className="font-display text-[12.5px] font-bold text-white hover:text-accent transition-colors"
+                                      >
+                                        {r.userName}
+                                      </Link>
+                                    ) : (
+                                      <span className="font-display text-[12.5px] font-bold text-white">
+                                        {r.userName}
+                                      </span>
+                                    )}
+
+                                    {r.userHandle && (
+                                      <span className="text-[11px] font-semibold text-mutedDim">
+                                        #{r.userHandle}
+                                      </span>
+                                    )}
+
+                                    {r.userUid && r.userUid === tierList.ownerId && (
+                                      <span className="rounded bg-accentSoft px-1 py-0.2 text-[9px] font-bold text-accent border border-accent/20">
+                                        Autor
+                                      </span>
+                                    )}
+
+                                    <span className="text-[10.5px] text-mutedDim">
+                                      • {new Date(r.createdAt).toLocaleDateString()}
+                                    </span>
+                                    {r.updatedAt && (
+                                      <span className="text-[10px] text-mutedDim italic">
+                                        (editado)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  {canEditReply && !isEditingThisReply && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEdit(r, true, c.id)}
+                                      className="rounded p-1 text-mutedDim hover:text-white transition-colors"
+                                      title="Editar resposta"
+                                    >
+                                      <Edit2 size={11} />
+                                    </button>
+                                  )}
+                                  {canDeleteReply && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteCommentItem(c.id, r.id)}
+                                      className="rounded p-1 text-mutedDim hover:text-red-400 transition-colors"
+                                      title="Eliminar resposta"
+                                    >
+                                      <Trash2 size={11} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Conteúdo da Resposta */}
+                              <div className="pl-8">
+                                {isEditingThisReply ? (
+                                  <div className="my-1.5">
+                                    {editError && (
+                                      <div className="mb-1.5 flex items-center gap-1 rounded border border-red-500/30 bg-red-500/10 p-1.5 text-xs text-red-400">
+                                        <AlertCircle size={12} />
+                                        <span>{editError}</span>
+                                      </div>
+                                    )}
+                                    <textarea
+                                      value={editingTarget.text}
+                                      onChange={(e) =>
+                                        setEditingTarget((prev) => ({
+                                          ...prev,
+                                          text: e.target.value,
+                                        }))
+                                      }
+                                      rows={2}
+                                      className="w-full rounded-lg border border-border bg-surface p-2 text-xs text-text outline-none focus:border-accent"
+                                    />
+                                    <div className="mt-1.5 flex items-center justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingTarget(null)}
+                                        className="rounded px-2 py-0.5 text-xs text-muted hover:text-white"
+                                      >
+                                        Cancelar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={handleSaveEdit}
+                                        className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-black hover:opacity-90"
+                                      >
+                                        Guardar
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-[13px] leading-relaxed text-muted">
+                                    <FormattedCommentText text={r.text} />
+                                  </p>
+                                )}
+
+                                {/* Reações na Resposta */}
+                                <div className="mt-2 flex items-center gap-3 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReact(c.id, r.id, "like")}
+                                    className={`inline-flex items-center gap-1 text-[11px] font-bold transition-colors ${
+                                      isReplyLiked ? "text-teal" : "text-mutedDim hover:text-text"
+                                    }`}
+                                    title="Gosto"
+                                  >
+                                    <ThumbsUp size={11} className={isReplyLiked ? "fill-teal" : ""} />
+                                    <span>{r.likes?.length || 0}</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReact(c.id, r.id, "dislike")}
+                                    className={`inline-flex items-center gap-1 text-[11px] font-bold transition-colors ${
+                                      isReplyDisliked ? "text-red-400" : "text-mutedDim hover:text-text"
+                                    }`}
+                                    title="Não gosto"
+                                  >
+                                    <ThumbsDown
+                                      size={11}
+                                      className={isReplyDisliked ? "fill-red-400" : ""}
+                                    />
+                                    <span>{r.dislikes?.length || 0}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[13.5px] leading-relaxed text-muted pl-9">
-                  {c.text}
-                </p>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

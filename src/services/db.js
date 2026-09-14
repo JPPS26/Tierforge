@@ -21,12 +21,14 @@ import { db } from "../firebase";
 import { REAL_ITEMS, SEED_TIERLISTS, SEED_USERS } from "../data/realCatalog";
 import { BASE_CATEGORIES } from "../data/categoriesData";
 import { searchWikimediaEntities } from "./wikipediaApi";
+import { checkContentSafety, extractMentions } from "./safetyFilter";
 
 const STORAGE_KEY_TIERLISTS = "tierforge_real_tierlists";
 const STORAGE_KEY_USERS = "tierforge_real_users";
 const STORAGE_KEY_CATEGORIES = "tierforge_real_categories";
 const STORAGE_KEY_COMMENTS = "tierforge_real_comments";
 const STORAGE_KEY_USER_VOTES = "tierforge_antiabuse_votes";
+const STORAGE_KEY_NOTIFICATIONS = "tierforge_real_notifications";
 
 // IDs de listas e utilizadores de teste anteriores a purgar totalmente
 const SEED_TIERLIST_IDS = new Set([
@@ -1079,25 +1081,54 @@ export function searchOmni(queryText) {
 }
 
 // -------------------------------------------------------------
-// COMENTÁRIOS REAIS
+// COMENTÁRIOS REAIS, RESPOSTAS E REAÇÕES
 // -------------------------------------------------------------
-export function getCommentsForTierList(tierListId) {
-  const all = getStored(STORAGE_KEY_COMMENTS, {});
-  return all[tierListId] || [];
+function normalizeComment(c) {
+  return {
+    ...c,
+    likes: Array.isArray(c.likes) ? c.likes : [],
+    dislikes: Array.isArray(c.dislikes) ? c.dislikes : [],
+    replies: Array.isArray(c.replies)
+      ? c.replies.map((r) => ({
+          ...r,
+          likes: Array.isArray(r.likes) ? r.likes : [],
+          dislikes: Array.isArray(r.dislikes) ? r.dislikes : [],
+        }))
+      : [],
+  };
 }
 
-export function addCommentToTierList(tierListId, { userName, userAvatar, text, userUid }) {
+export function getCommentsForTierList(tierListId) {
   const all = getStored(STORAGE_KEY_COMMENTS, {});
-  const listComments = all[tierListId] || [];
+  const list = all[tierListId] || [];
+  return list.map(normalizeComment);
+}
+
+export function addCommentToTierList(
+  tierListId,
+  { userName, userHandle, userAvatar, text, userUid, tierListOwnerId, tierListTitle }
+) {
+  const safety = checkContentSafety(text);
+  if (!safety.isSafe) {
+    throw new Error(safety.reason || "Conteúdo não cumpre as regras da comunidade.");
+  }
+
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
 
   const newComment = {
-    id: `c-${Date.now()}`,
+    id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    tierListId,
     userUid: userUid || null,
     userName: userName || "Utilizador",
+    userHandle: userHandle || "",
     userAvatar: userAvatar || "",
-    text,
+    text: text.trim(),
     createdAt: new Date().toISOString(),
-    likes: 0,
+    updatedAt: null,
+    likes: [],
+    dislikes: [],
+    replies: [],
   };
 
   all[tierListId] = [newComment, ...listComments];
@@ -1111,7 +1142,369 @@ export function addCommentToTierList(tierListId, { userName, userAvatar, text, u
     setStored(STORAGE_KEY_TIERLISTS, stored);
   }
 
+  // Notificação para o dono da lista (se diferente de quem comentou)
+  if (tierListOwnerId && tierListOwnerId !== userUid && tierListOwnerId !== "anon") {
+    createNotification({
+      recipientUid: tierListOwnerId,
+      senderUid: userUid,
+      senderName: userName,
+      senderHandle: userHandle,
+      senderAvatar: userAvatar,
+      type: "comment",
+      tierListId,
+      tierListTitle: tierListTitle || target?.title || "Tier List",
+      commentId: newComment.id,
+      text: "comentou na tua Tier List",
+    });
+  }
+
+  // Notificações para menções @handle
+  const mentions = extractMentions(text);
+  mentions.forEach((h) => {
+    const mentioned = getUserByHandle(h);
+    if (mentioned && mentioned.uid !== userUid && mentioned.uid !== tierListOwnerId) {
+      createNotification({
+        recipientUid: mentioned.uid,
+        senderUid: userUid,
+        senderName: userName,
+        senderHandle: userHandle,
+        senderAvatar: userAvatar,
+        type: "mention",
+        tierListId,
+        tierListTitle: tierListTitle || target?.title || "Tier List",
+        commentId: newComment.id,
+        text: "mencionou-te num comentário",
+      });
+    }
+  });
+
   return newComment;
+}
+
+export function updateComment(tierListId, commentId, newText, uid) {
+  const safety = checkContentSafety(newText);
+  if (!safety.isSafe) {
+    throw new Error(safety.reason || "Conteúdo não cumpre as regras da comunidade.");
+  }
+
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const comment = listComments.find((c) => c.id === commentId);
+
+  if (!comment) throw new Error("Comentário não encontrado.");
+  if (comment.userUid !== uid) throw new Error("Não tens permissão para editar este comentário.");
+
+  comment.text = newText.trim();
+  comment.updatedAt = new Date().toISOString();
+
+  all[tierListId] = listComments;
+  setStored(STORAGE_KEY_COMMENTS, all);
+  return comment;
+}
+
+export function deleteComment(tierListId, commentId, uid, tierListOwnerId) {
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const comment = listComments.find((c) => c.id === commentId);
+
+  if (!comment) throw new Error("Comentário não encontrado.");
+  // Permite eliminar se for o autor do comentário OU o dono da tier list
+  const isAuthor = comment.userUid && comment.userUid === uid;
+  const isOwner = tierListOwnerId && tierListOwnerId === uid;
+  if (!isAuthor && !isOwner) {
+    throw new Error("Não tens permissão para eliminar este comentário.");
+  }
+
+  const removedRepliesCount = comment.replies?.length || 0;
+  const totalRemoved = 1 + removedRepliesCount;
+
+  all[tierListId] = listComments.filter((c) => c.id !== commentId);
+  setStored(STORAGE_KEY_COMMENTS, all);
+
+  // Atualiza contagem na lista
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const target = stored.find((l) => l.id === tierListId);
+  if (target) {
+    target.commentsCount = Math.max(0, (target.commentsCount || 0) - totalRemoved);
+    setStored(STORAGE_KEY_TIERLISTS, stored);
+  }
+
+  return true;
+}
+
+export function addReplyToComment(
+  tierListId,
+  parentCommentId,
+  { userUid, userName, userHandle, userAvatar, text, tierListTitle }
+) {
+  const safety = checkContentSafety(text);
+  if (!safety.isSafe) {
+    throw new Error(safety.reason || "Conteúdo não cumpre as regras da comunidade.");
+  }
+
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const parent = listComments.find((c) => c.id === parentCommentId);
+
+  if (!parent) throw new Error("Comentário original não encontrado.");
+
+  const newReply = {
+    id: `r-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    commentId: parentCommentId,
+    userUid: userUid || null,
+    userName: userName || "Utilizador",
+    userHandle: userHandle || "",
+    userAvatar: userAvatar || "",
+    text: text.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: null,
+    likes: [],
+    dislikes: [],
+  };
+
+  parent.replies = parent.replies || [];
+  parent.replies.push(newReply);
+
+  all[tierListId] = listComments;
+  setStored(STORAGE_KEY_COMMENTS, all);
+
+  // Atualiza contagem na lista
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const target = stored.find((l) => l.id === tierListId);
+  if (target) {
+    target.commentsCount = (target.commentsCount || 0) + 1;
+    setStored(STORAGE_KEY_TIERLISTS, stored);
+  }
+
+  // Notificação para o autor do comentário pai
+  if (parent.userUid && parent.userUid !== userUid) {
+    createNotification({
+      recipientUid: parent.userUid,
+      senderUid: userUid,
+      senderName: userName,
+      senderHandle: userHandle,
+      senderAvatar: userAvatar,
+      type: "reply",
+      tierListId,
+      tierListTitle: tierListTitle || target?.title || "Tier List",
+      commentId: newReply.id,
+      text: "respondeu ao teu comentário",
+    });
+  }
+
+  // Notificações para menções @handle
+  const mentions = extractMentions(text);
+  mentions.forEach((h) => {
+    const mentioned = getUserByHandle(h);
+    if (mentioned && mentioned.uid !== userUid && mentioned.uid !== parent.userUid) {
+      createNotification({
+        recipientUid: mentioned.uid,
+        senderUid: userUid,
+        senderName: userName,
+        senderHandle: userHandle,
+        senderAvatar: userAvatar,
+        type: "mention",
+        tierListId,
+        tierListTitle: tierListTitle || target?.title || "Tier List",
+        commentId: newReply.id,
+        text: "mencionou-te numa resposta",
+      });
+    }
+  });
+
+  return newReply;
+}
+
+export function updateReply(tierListId, parentCommentId, replyId, newText, uid) {
+  const safety = checkContentSafety(newText);
+  if (!safety.isSafe) {
+    throw new Error(safety.reason || "Conteúdo não cumpre as regras da comunidade.");
+  }
+
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const parent = listComments.find((c) => c.id === parentCommentId);
+  if (!parent) throw new Error("Comentário original não encontrado.");
+
+  const reply = parent.replies?.find((r) => r.id === replyId);
+  if (!reply) throw new Error("Resposta não encontrada.");
+  if (reply.userUid !== uid) throw new Error("Não tens permissão para editar esta resposta.");
+
+  reply.text = newText.trim();
+  reply.updatedAt = new Date().toISOString();
+
+  all[tierListId] = listComments;
+  setStored(STORAGE_KEY_COMMENTS, all);
+  return reply;
+}
+
+export function deleteReply(tierListId, parentCommentId, replyId, uid, tierListOwnerId) {
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const parent = listComments.find((c) => c.id === parentCommentId);
+  if (!parent) throw new Error("Comentário original não encontrado.");
+
+  const reply = parent.replies?.find((r) => r.id === replyId);
+  if (!reply) throw new Error("Resposta não encontrada.");
+
+  const isAuthor = reply.userUid && reply.userUid === uid;
+  const isOwner = tierListOwnerId && tierListOwnerId === uid;
+  if (!isAuthor && !isOwner) {
+    throw new Error("Não tens permissão para eliminar esta resposta.");
+  }
+
+  parent.replies = parent.replies.filter((r) => r.id !== replyId);
+  all[tierListId] = listComments;
+  setStored(STORAGE_KEY_COMMENTS, all);
+
+  // Atualiza contagem na lista
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const target = stored.find((l) => l.id === tierListId);
+  if (target) {
+    target.commentsCount = Math.max(0, (target.commentsCount || 0) - 1);
+    setStored(STORAGE_KEY_TIERLISTS, stored);
+  }
+
+  return true;
+}
+
+export function reactToComment(tierListId, commentId, replyId = null, uid, reactionType = "like") {
+  if (!uid) return { likes: [], dislikes: [] };
+
+  const all = getStored(STORAGE_KEY_COMMENTS, {});
+  const listComments = (all[tierListId] || []).map(normalizeComment);
+  const parent = listComments.find((c) => c.id === commentId);
+  if (!parent) return { likes: [], dislikes: [] };
+
+  let target = parent;
+  if (replyId) {
+    target = parent.replies?.find((r) => r.id === replyId);
+    if (!target) return { likes: [], dislikes: [] };
+  }
+
+  target.likes = Array.isArray(target.likes) ? target.likes : [];
+  target.dislikes = Array.isArray(target.dislikes) ? target.dislikes : [];
+
+  if (reactionType === "like") {
+    if (target.likes.includes(uid)) {
+      // Toggle off
+      target.likes = target.likes.filter((u) => u !== uid);
+    } else {
+      target.likes.push(uid);
+      target.dislikes = target.dislikes.filter((u) => u !== uid);
+    }
+  } else if (reactionType === "dislike") {
+    if (target.dislikes.includes(uid)) {
+      // Toggle off
+      target.dislikes = target.dislikes.filter((u) => u !== uid);
+    } else {
+      target.dislikes.push(uid);
+      target.likes = target.likes.filter((u) => u !== uid);
+    }
+  }
+
+  all[tierListId] = listComments;
+  setStored(STORAGE_KEY_COMMENTS, all);
+
+  return {
+    likes: target.likes,
+    dislikes: target.dislikes,
+  };
+}
+
+// -------------------------------------------------------------
+// SISTEMA DE NOTIFICAÇÕES
+// -------------------------------------------------------------
+export function createNotification({
+  recipientUid,
+  senderUid,
+  senderName,
+  senderHandle,
+  senderAvatar,
+  type,
+  tierListId,
+  tierListTitle,
+  commentId,
+  text,
+}) {
+  if (!recipientUid || recipientUid === senderUid) return;
+
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  const newNotif = {
+    id: `n-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    recipientUid,
+    senderUid: senderUid || "anon",
+    senderName: senderName || "Utilizador",
+    senderHandle: senderHandle || "",
+    senderAvatar: senderAvatar || "",
+    type: type || "comment", // 'comment' | 'reply' | 'mention'
+    tierListId,
+    tierListTitle: tierListTitle || "Tier List",
+    commentId: commentId || null,
+    text: text || "interagiu contigo",
+    createdAt: new Date().toISOString(),
+    read: false,
+  };
+
+  // Mantém no máximo 100 notificações
+  const updated = [newNotif, ...notifs].slice(0, 100);
+  setStored(STORAGE_KEY_NOTIFICATIONS, updated);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("tierforge_notifications_updated", {
+        detail: { recipientUid },
+      })
+    );
+  }
+
+  return newNotif;
+}
+
+export function getUserNotifications(uid) {
+  if (!uid) return [];
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  return notifs.filter((n) => n.recipientUid === uid);
+}
+
+export function markNotificationAsRead(notifId) {
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  const target = notifs.find((n) => n.id === notifId);
+  if (target) {
+    target.read = true;
+    setStored(STORAGE_KEY_NOTIFICATIONS, notifs);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tierforge_notifications_updated"));
+    }
+  }
+}
+
+export function markAllNotificationsAsRead(uid) {
+  if (!uid) return;
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  let changed = false;
+  notifs.forEach((n) => {
+    if (n.recipientUid === uid && !n.read) {
+      n.read = true;
+      changed = true;
+    }
+  });
+  if (changed) {
+    setStored(STORAGE_KEY_NOTIFICATIONS, notifs);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tierforge_notifications_updated"));
+    }
+  }
+}
+
+export function clearAllNotifications(uid) {
+  if (!uid) return;
+  const notifs = getStored(STORAGE_KEY_NOTIFICATIONS, []);
+  const filtered = notifs.filter((n) => n.recipientUid !== uid);
+  setStored(STORAGE_KEY_NOTIFICATIONS, filtered);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("tierforge_notifications_updated"));
+  }
 }
 
 // -------------------------------------------------------------

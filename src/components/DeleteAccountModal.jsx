@@ -143,3 +143,4 @@ export default function DeleteAccountModal({ isOpen, onClose }) {
     </div>
   );
 }
+

@@ -17,6 +17,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { Avatar, PrimaryButton, GhostButton, Badge } from "./UI";
 import LanguageSelector from "./LanguageSelector";
 import ProfileEditModal from "./ProfileEditModal";
+import NotificationsDropdown from "./NotificationsDropdown";
 import { searchOmni } from "../services/db";
 
 export default function Navbar() {
@@ -230,6 +231,9 @@ export default function Navbar() {
               <span className="hidden sm:inline">{t("nav.create")}</span>
               <span className="sm:hidden">Criar</span>
             </PrimaryButton>
+
+            {/* Notificações */}
+            {user && <NotificationsDropdown />}
 
             {/* Menu de Perfil */}
             {user ? (
