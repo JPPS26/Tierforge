@@ -12,6 +12,7 @@ import Builder from "./pages/Builder";
 import TierListView from "./pages/TierListView";
 import { useLanguage } from "./context/LanguageContext";
 import InSiteNotificationToast from "./components/InSiteNotificationToast";
+import Footer from "./components/Footer";
 
 export default function App() {
   const { t } = useLanguage();
@@ -62,19 +63,7 @@ export default function App() {
       </div>
 
       {/* Rodapé Premium TierWorld */}
-      <footer className="border-t border-border bg-surface/50 px-4 sm:px-6 py-8 mt-16 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 text-[13px] text-mutedDim">
-          <div className="flex items-center gap-2">
-            <span className="font-display font-black text-white">TierWorld</span>
-            <span>—</span>
-            <span>{t("footer.tagline")}</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-[12px]">© {new Date().getFullYear()} {t("footer.rights")}</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Notificações no Próprio Site (Toasts Flutuantes) */}
       <InSiteNotificationToast />
