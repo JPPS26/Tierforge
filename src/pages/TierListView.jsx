@@ -366,7 +366,17 @@ export default function TierListView() {
           <PrimaryButton
             small
             icon={Sparkles}
-            onClick={() => navigate(`/create?remix=${tierList.id}`)}
+            onClick={() => {
+              if (!user) {
+                setAuthModalConfig({
+                  isOpen: true,
+                  title: "Inicia sessão para criar a tua versão",
+                  description: "Para remixares e publicares a tua versão desta Tier List, precisas de ter uma conta.",
+                });
+                return;
+              }
+              navigate(`/create?remix=${tierList.id}`);
+            }}
           >
             Fazer a Minha Versão
           </PrimaryButton>
@@ -1138,6 +1148,15 @@ export default function TierListView() {
         items={items}
         tiers={currentTiers}
         onApplyPlacements={() => {
+          if (!user) {
+            setDuelOpen(false);
+            setAuthModalConfig({
+              isOpen: true,
+              title: "Inicia sessão para guardar a tua Tier List",
+              description: "Para aplicares as posições do Duelo e publicares a tua Tier List, inicia sessão com a tua conta.",
+            });
+            return;
+          }
           navigate(`/create?remix=${tierList.id}`);
         }}
       />
