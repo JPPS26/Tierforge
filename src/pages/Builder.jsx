@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import { useNavigate, Link, useSearchParams, useParams } from "react-router-dom";
 import {
   Plus,
@@ -21,6 +21,12 @@ import {
   Swords,
   FileText,
   Wand2,
+  ArrowLeft,
+  ChevronDown,
+  Info,
+  SlidersHorizontal,
+  RefreshCw,
+  FolderPlus,
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import { useAuth } from "../context/AuthContext";
@@ -65,6 +71,10 @@ const THEME_PRESETS = {
     name: "Pastel Modern",
     colors: ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "#D7BAFF"],
   },
+  emerald: {
+    name: "Esmeralda & Menta",
+    colors: ["#059669", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0", "#064E3B"],
+  },
 };
 
 function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete, dragging }) {
@@ -80,20 +90,20 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
       draggable
       onDragStart={(e) => onDragStart(e, item)}
       onDragEnd={onDragEnd}
-      className={`group relative flex cursor-grab select-none items-center justify-center overflow-hidden rounded-xl border border-border transition-all duration-200 hover:border-accent hover:shadow-glow hover:-translate-y-0.5 active:cursor-grabbing ${
+      className={`group relative flex cursor-grab select-none items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:border-accent hover:shadow-glow hover:-translate-y-0.5 active:cursor-grabbing ${
         mode === "image" && hasImage
-          ? "h-20 w-20 flex-shrink-0 bg-surface2"
+          ? "h-20 w-20 flex-shrink-0 bg-surface2 border-border/80"
           : mode === "both" && hasImage
-          ? "h-20 w-20 flex-shrink-0 bg-surface2 flex-col justify-end"
-          : "h-16 min-w-[72px] max-w-[120px] flex-shrink-0 px-2.5 py-1.5 text-center"
+          ? "h-20 w-20 flex-shrink-0 bg-surface2 border-border/80 flex-col justify-end"
+          : "h-16 min-w-[76px] max-w-[124px] flex-shrink-0 px-2.5 py-1.5 text-center border-border/70"
       }`}
       style={{
         background:
           showImage && !showText
-            ? "#121218"
+            ? "#0e0e14"
             : showImage && showText
-            ? "#14141D"
-            : `linear-gradient(145deg, ${colorFor(name)}40, #161620)`,
+            ? "#12121a"
+            : `linear-gradient(145deg, ${colorFor(name)}35, #14141e)`,
         opacity: dragging ? 0.35 : 1,
       }}
       title={name}
@@ -103,7 +113,7 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
           src={item.imageUrl}
           alt={name}
           className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-110 ${
-            showText ? "absolute inset-0 z-0 opacity-80" : ""
+            showText ? "absolute inset-0 z-0 opacity-85" : ""
           }`}
           onError={(e) => {
             e.currentTarget.style.display = "none";
@@ -115,8 +125,8 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
         <div
           className={`z-10 font-display text-center font-bold leading-tight ${
             showImage
-              ? "w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent pb-1.5 pt-3.5 px-1 text-[10px] text-white"
-              : "text-[11.5px] text-text"
+              ? "w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent pb-1.5 pt-4 px-1 text-[10.5px] text-white"
+              : "text-[12px] text-text"
           }`}
         >
           <span className="line-clamp-2">{name}</span>
@@ -132,7 +142,7 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
               e.stopPropagation();
               onEdit(item);
             }}
-            className="flex h-5 w-5 items-center justify-center rounded-md bg-black/80 text-white hover:bg-accent transition-colors"
+            className="flex h-5 w-5 items-center justify-center rounded-md bg-black/85 text-white hover:bg-accent transition-colors shadow-sm"
             title="Editar elemento"
           >
             <Edit2 size={10} />
@@ -145,7 +155,7 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
               e.stopPropagation();
               onDelete(item.id);
             }}
-            className="flex h-5 w-5 items-center justify-center rounded-md bg-black/80 text-[#FF5470] hover:bg-[#FF5470] hover:text-white transition-colors"
+            className="flex h-5 w-5 items-center justify-center rounded-md bg-black/85 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors shadow-sm"
             title="Eliminar elemento"
           >
             <X size={11} />
@@ -178,33 +188,36 @@ function TierRow({
   const colorInputRef = useRef(null);
 
   return (
-    <div className="mb-3 flex group/row">
-      <div className="relative w-[76px] flex-shrink-0">
+    <div className="mb-3.5 flex group/row">
+      {/* Cabeçalho do Nível / Tier Label */}
+      <div className="relative w-20 sm:w-24 flex-shrink-0">
         <div
-          className="flex h-full min-h-[96px] w-full flex-col items-center justify-center gap-1.5 rounded-l-2xl shadow-inner border border-r-0 border-white/10"
+          className="flex h-full min-h-[102px] w-full flex-col items-center justify-center gap-1.5 rounded-l-2xl shadow-inner border border-r-0 border-white/10"
           style={{ background: tier.color }}
         >
           {editing ? (
             <input
               autoFocus
               value={label}
-              onChange={(e) => setLabel(e.target.value.slice(0, 5))}
+              onChange={(e) => setLabel(e.target.value.slice(0, 6))}
               onBlur={() => {
                 setEditing(false);
                 onRename(label || tier.label);
               }}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-              className="w-12 rounded-lg bg-black/30 text-center font-display text-[16px] font-black text-[#0A0A0D] outline-none"
+              className="w-14 rounded-lg bg-black/30 text-center font-display text-[17px] font-black text-[#0A0A0D] outline-none ring-2 ring-black/40"
             />
           ) : (
             <span
               onClick={() => setEditing(true)}
-              className="cursor-text font-display text-[22px] font-black tracking-tight text-[#0A0A0D] transition-transform hover:scale-105"
+              className="cursor-text font-display text-[22px] sm:text-[25px] font-black tracking-tight text-[#0A0A0D] transition-transform hover:scale-105"
               title={t("builder.editTierName")}
             >
               {tier.label}
             </span>
           )}
+
+          {/* Botão de Cor */}
           <button
             type="button"
             onClick={() => colorInputRef.current?.click()}
@@ -223,13 +236,14 @@ function TierRow({
         </div>
       </div>
 
+      {/* Zona de Soltar (Dropzone) */}
       <div
         onDrop={(e) => onDrop(e, tier.id)}
         onDragOver={(e) => onDragOver(e, tier.id)}
-        className={`flex min-h-[96px] flex-1 flex-wrap items-center gap-2.5 rounded-r-2xl border p-3.5 transition-all ${
+        className={`flex min-h-[102px] flex-1 flex-wrap items-center gap-2.5 rounded-r-2xl border p-3.5 transition-all ${
           isDragOver
-            ? "border-accent bg-accentSoft/30 shadow-[0_0_24px_-8px_rgba(124,92,255,0.4)]"
-            : "border-border bg-surface hover:border-borderStrong"
+            ? "border-accent bg-accentSoft/35 shadow-[0_0_24px_-6px_rgba(124,92,255,0.45)] ring-1 ring-accent"
+            : "border-border bg-[#111117] hover:border-borderStrong"
         }`}
       >
         {items.length === 0 && (
@@ -254,7 +268,7 @@ function TierRow({
           type="button"
           onClick={onDelete}
           title={t("builder.deleteTier")}
-          className="ml-auto self-start p-1.5 text-mutedDim opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-[#FF5470]"
+          className="ml-auto self-start p-1.5 text-mutedDim opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-rose-400"
         >
           <Trash2 size={15} />
         </button>
@@ -268,7 +282,7 @@ export default function Builder() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  // Tier list state — Começa 100% VAZIA sem nenhum item!
+  // Tier list state
   const [items, setItems] = useState([]);
   const [tiers, setTiers] = useState(DEFAULT_TIERS);
   const [placements, setPlacements] = useState({});
@@ -288,6 +302,7 @@ export default function Builder() {
   const [editingItem, setEditingItem] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   // Form states para adição / edição manual
   const [formName, setFormName] = useState("");
@@ -298,6 +313,9 @@ export default function Builder() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+
+  // Filtro de elementos na bancada
+  const [benchFilter, setBenchFilter] = useState("");
 
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -329,7 +347,6 @@ export default function Builder() {
 
   const categories = getCategories();
   const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [catSearchQuery, setCatSearchQuery] = useState("");
   const [catApiSuggestions, setCatApiSuggestions] = useState([]);
   const [catSearchingApi, setCatSearchingApi] = useState(false);
@@ -364,7 +381,7 @@ export default function Builder() {
       try {
         const results = await searchApiCategories(q);
         const existingSlugs = new Set(categories.map((c) => c.slug || c.id));
-        setCatApiSuggestions(results.filter((r) => !existingSlugs.has(r.slug)).slice(0, 3));
+        setCatApiSuggestions(results.filter((r) => !existingSlugs.has(r.slug)).slice(0, 4));
       } catch (e) {
         console.warn("Erro ao pesquisar sugestões da API:", e);
       } finally {
@@ -424,7 +441,6 @@ export default function Builder() {
           if (tmpl.itemDisplayMode) {
             setDisplayMode(tmpl.itemDisplayMode);
           }
-          // Todos os itens vão para o banco limpos para o utilizador posicionar
           setItems(tmpl.items.map((it) => ({ ...it })));
           setPlacements({});
         }
@@ -452,12 +468,12 @@ export default function Builder() {
         setPasteToast("✨ Imagem colada da área de transferência!");
         setTimeout(() => setPasteToast(""), 3000);
       } else {
-        const items = e.clipboardData?.items;
-        if (items) {
+        const pasteItems = e.clipboardData?.items;
+        if (pasteItems) {
           const fileArr = [];
-          for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf("image") !== -1) {
-              fileArr.push(items[i].getAsFile());
+          for (let i = 0; i < pasteItems.length; i++) {
+            if (pasteItems[i].type.indexOf("image") !== -1) {
+              fileArr.push(pasteItems[i].getAsFile());
             }
           }
           if (fileArr.length > 0) {
@@ -530,7 +546,14 @@ export default function Builder() {
     [items, placements]
   );
 
-  const benchItems = items.filter((it) => !placements[it.id]);
+  const benchItems = useMemo(() => {
+    const unplaced = items.filter((it) => !placements[it.id]);
+    if (!benchFilter.trim()) return unplaced;
+    const q = benchFilter.toLowerCase().trim();
+    return unplaced.filter((it) => it.name.toLowerCase().includes(q));
+  }, [items, placements, benchFilter]);
+
+  const placedCount = Object.keys(placements).length;
 
   function handleItemDragStart(e, item) {
     setDraggingId(item.id);
@@ -677,7 +700,8 @@ export default function Builder() {
   }
 
   function handleClearBench() {
-    if (benchItems.length === 0) return;
+    const unplaced = items.filter((it) => !placements[it.id]);
+    if (unplaced.length === 0) return;
     if (window.confirm(t("builder.resetConfirm"))) {
       setItems((prev) => prev.filter((it) => placements[it.id]));
     }
@@ -742,7 +766,7 @@ export default function Builder() {
         });
 
         setSavedId(editListId);
-        setSaveMsg("Tier List atualizada com sucesso!");
+        setSaveMsg("Tier List atualizada com sucesso! ✓");
       } else {
         const result = await createTierList(user?.uid || null, {
           title: title.trim() || t("builder.defaultTitle"),
@@ -791,262 +815,72 @@ export default function Builder() {
   }
 
   return (
-    <div className="mx-auto max-w-[1140px] px-4 sm:px-6 pb-28 pt-8">
-      {/* Banner se estiver em Modo de Edição */}
-      {isEditing && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accentSoft/40 px-4 py-3 text-xs font-semibold text-accent shadow-sm">
-          <div className="flex items-center gap-2">
-            <Edit2 size={16} />
-            <span>
-              <strong>Modo de Edição:</strong> Estás a editar a Tier List &ldquo;{title}&rdquo;.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate(`/tier-list/${editListId}`)}
-            className="rounded-lg bg-surface px-2.5 py-1 text-[11px] font-bold text-text hover:bg-surface2 transition-colors"
-          >
-            Ver Página Pública →
-          </button>
-        </div>
-      )}
+    <div className="mx-auto max-w-[1180px] px-4 sm:px-6 pb-28 pt-6 sm:pt-8 animate-fade-in">
+      {/* =========================================================
+          1. TOP BAR / STUDIO BREADCRUMB & HEADER
+         ========================================================= */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+        <div className="flex-1 min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-1 font-semibold text-mutedDim hover:text-white transition-colors"
+            >
+              <ArrowLeft size={13} />
+              <span>Explorar</span>
+            </Link>
+            <span className="text-mutedDim">/</span>
 
-      {/* Barra de Título, Tema e Visibilidade */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
-        <div className="flex-1 min-w-[280px]">
-          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-accent">
-            Tema / Título da Tier List
+            {isEditing ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accentSoft/60 px-2.5 py-0.5 font-bold text-accent">
+                <Edit2 size={12} />
+                <span>Modo de Edição</span>
+              </span>
+            ) : parentTemplateTitle ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-teal/40 bg-teal/10 px-2.5 py-0.5 font-bold text-teal">
+                <Sparkles size={12} />
+                <span>Remix de Template</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface2 px-2.5 py-0.5 font-bold text-white">
+                <Layers size={12} className="text-accent" />
+                <span>Creative Studio</span>
+              </span>
+            )}
           </div>
-          <input
-            value={title}
-            onChange={(e) => {
-              const val = e.target.value;
-              setTitle(val);
-              if (!manualCategoryOverride) {
-                const detected = detectCategory({ title: val, items });
-                if (detected && detected.score > 0) {
-                  setCategory(detected.slug || detected.id);
+
+          {/* Input de Título Principal */}
+          <div className="relative">
+            <input
+              value={title}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTitle(val);
+                if (!manualCategoryOverride) {
+                  const detected = detectCategory({ title: val, items });
+                  if (detected && detected.score > 0) {
+                    setCategory(detected.slug || detected.id);
+                  }
                 }
-              }
-            }}
-            placeholder="Ex: Melhores jogadores do FC Porto, Melhores jogos da PS5, Melhores carros JDM…"
-            className="w-full border-none bg-transparent font-display text-[24px] sm:text-[32px] font-black text-white outline-none placeholder:text-mutedDim focus:placeholder:text-transparent"
-          />
-
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            {/* Seletor de Visibilidade (Pública / Não Listada / Privada) */}
-            <div className="flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-muted">{t("builder.visibilityLabel")}</span>
-              <div className="flex items-center rounded-xl border border-border bg-surface2 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setVisibility("public")}
-                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-colors ${
-                    visibility === "public"
-                      ? "bg-accent text-white"
-                      : "text-muted hover:text-text"
-                  }`}
-                  title={t("builder.visibilityPublicDesc")}
-                >
-                  <Globe size={12} /> {t("builder.visibilityPublic")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVisibility("unlisted")}
-                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-colors ${
-                    visibility === "unlisted"
-                      ? "bg-accent text-white"
-                      : "text-muted hover:text-text"
-                  }`}
-                  title={t("builder.visibilityUnlistedDesc")}
-                >
-                  <Link2 size={12} /> {t("builder.visibilityUnlisted")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVisibility("private")}
-                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-colors ${
-                    visibility === "private"
-                      ? "bg-accent text-white"
-                      : "text-muted hover:text-text"
-                  }`}
-                  title={t("builder.visibilityPrivateDesc")}
-                >
-                  <Lock size={12} /> {t("builder.visibilityPrivate")}
-                </button>
-              </div>
-            </div>
-
-            {/* Categoria Auto-Detetada Inteligente */}
-            <div className="relative flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-muted">Categoria:</span>
-              <div className="flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft/60 px-3 py-1 text-[12.5px] font-bold text-accent shadow-sm">
-                <Sparkles size={12} className="text-accent animate-pulse" />
-                <span>{currentCategoryObj?.name || category}</span>
-                {manualCategoryOverride ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setManualCategoryOverride(false);
-                      const detected = detectCategory({ title, items });
-                      if (detected && detected.score > 0) {
-                        setCategory(detected.slug || detected.id);
-                      }
-                    }}
-                    title="Clica para voltar à deteção automática"
-                    className="text-[10px] text-accent/90 hover:text-white bg-black/40 px-1.5 py-0.5 rounded-md ml-1 font-semibold transition-colors"
-                  >
-                    manual (↺ auto)
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-accent/80 font-normal ml-0.5">
-                    (auto)
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="ml-1 text-[11px] font-semibold text-white/70 hover:text-white underline"
-                >
-                  alterar
-                </button>
-              </div>
-
-              {/* Dropdown com Pesquisa e API de Categorias */}
-              {showCategoryDropdown && (
-                <div className="absolute top-full left-0 mt-2 z-40 w-72 max-h-80 overflow-y-auto rounded-2xl border border-border bg-[#12131a] p-3 shadow-2xl animate-fade-in">
-                  <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/50">
-                    <span className="text-[11px] font-bold text-mutedDim">
-                      Definir categoria:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowCategoryDropdown(false)}
-                      className="text-mutedDim hover:text-white p-0.5"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-
-                  {/* Input de Pesquisa */}
-                  <div className="relative mb-2">
-                    <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-mutedDim" />
-                    <input
-                      type="text"
-                      value={catSearchQuery}
-                      onChange={(e) => setCatSearchQuery(e.target.value)}
-                      placeholder="Pesquisar ou tema da API…"
-                      className="w-full rounded-xl border border-border bg-[#0a0b0e] pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-mutedDim focus:border-accent focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Sugestões da API */}
-                  {catApiSuggestions.length > 0 && (
-                    <div className="mb-2 p-2 rounded-xl bg-accentSoft/20 border border-accent/30">
-                      <div className="text-[10px] font-bold text-accent mb-1 flex items-center gap-1">
-                        <Sparkles size={11} />
-                        <span>Sugerido da API Pública:</span>
-                      </div>
-                      <div className="space-y-1">
-                        {catApiSuggestions.map((apiCat) => (
-                          <button
-                            key={apiCat.id}
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const detailed = await fetchCategoryDetailsFromApi(apiCat.name);
-                                const saved = await saveCategoryWithApiData({
-                                  ...apiCat,
-                                  ...(detailed || {}),
-                                });
-                                setCategory(saved.slug || saved.id);
-                                if (saved.subcategories && saved.subcategories.length > 0) {
-                                  setSubcategory(saved.subcategories[0]);
-                                }
-                              } catch {
-                                setCategory(apiCat.slug);
-                              }
-                              setManualCategoryOverride(true);
-                              setShowCategoryDropdown(false);
-                              setCatSearchQuery("");
-                              setCatApiSuggestions([]);
-                            }}
-                            className="w-full text-left px-2 py-1 rounded-lg text-[11px] font-semibold text-white hover:bg-accent hover:text-black flex items-center justify-between transition-colors"
-                          >
-                            <span className="truncate">{apiCat.name}</span>
-                            <span className="text-[9px] text-accent group-hover:text-black font-normal ml-1">
-                              + Selecionar
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Lista de Categorias Existentes */}
-                  <div className="space-y-0.5 max-h-40 overflow-y-auto">
-                    {categories
-                      .filter((c) =>
-                        catSearchQuery.trim()
-                          ? (c.name || "").toLowerCase().includes(catSearchQuery.toLowerCase()) ||
-                            (c.slug || "").toLowerCase().includes(catSearchQuery.toLowerCase())
-                          : true
-                      )
-                      .map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setCategory(c.slug || c.id);
-                            setManualCategoryOverride(true);
-                            setShowCategoryDropdown(false);
-                            setCatSearchQuery("");
-                            setCatApiSuggestions([]);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
-                            category === c.id || category === c.slug
-                              ? "bg-accent text-black font-bold"
-                              : "text-muted hover:bg-surface2 hover:text-white"
-                          }`}
-                        >
-                          <span className="truncate">{c.name}</span>
-                          {(category === c.id || category === c.slug) && <span>✓</span>}
-                        </button>
-                      ))}
-                  </div>
-
-                  {manualCategoryOverride && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setManualCategoryOverride(false);
-                        setShowCategoryDropdown(false);
-                        setCatSearchQuery("");
-                        setCatApiSuggestions([]);
-                      }}
-                      className="w-full text-center mt-2 pt-1.5 border-t border-border/50 text-[11px] text-accent font-bold hover:underline"
-                    >
-                      ↺ Voltar a Deteção Automática
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+              }}
+              placeholder="Dá um título memorável à tua Tier List…"
+              className="w-full border-none bg-transparent font-display text-[26px] sm:text-[34px] font-black text-white outline-none placeholder:text-mutedDim/60 focus:placeholder:text-transparent"
+            />
           </div>
         </div>
 
-        {/* Ações: Eliminar, Partilhar e Guardar/Publicar */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Barra de Ações Rápidas de Topo */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-center">
           {isEditing && (
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[13px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-[13px] font-bold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all shadow-sm disabled:opacity-50"
               title="Eliminar permanentemente esta Tier List"
             >
               <Trash2 size={14} />
-              <span>{deleting ? "A eliminar..." : "Eliminar Lista"}</span>
+              <span>{deleting ? "A eliminar..." : "Eliminar"}</span>
             </button>
           )}
 
@@ -1055,9 +889,10 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setShareModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[13px] font-bold text-text hover:bg-surface2"
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-colors"
               >
-                <Share2 size={14} /> {t("tierListView.share")}
+                <Share2 size={14} className="text-accent" />
+                <span>{t("tierListView.share")}</span>
               </button>
               <Link to={`/tier-list/${savedId}`}>
                 <GhostButton small icon={ExternalLink}>
@@ -1079,11 +914,11 @@ export default function Builder() {
         </div>
       </div>
 
-      {/* Mensagem de confirmação ao publicar */}
+      {/* Mensagem de sucesso após publicação */}
       {saveMsg && (
-        <div className="mb-6 flex items-center justify-between rounded-2xl border border-[rgba(49,216,168,0.35)] bg-[rgba(49,216,168,0.12)] p-4 text-[13.5px] text-teal animate-fadeIn">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-teal/40 bg-teal/10 p-4 text-[13.5px] text-teal shadow-lg animate-fadeIn">
           <div className="flex items-center gap-2 font-bold">
-            <Check size={17} />
+            <Check size={18} className="stroke-[3]" />
             <span>{saveMsg}</span>
           </div>
           {savedId && (
@@ -1094,130 +929,209 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Banner de Remix (se estiver a criar a partir de um template) */}
-      {parentTemplateTitle && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accentSoft/40 p-4 text-xs font-bold text-white shadow-sm">
-          <div className="flex items-center gap-2.5">
-            <Sparkles size={18} className="text-accent flex-shrink-0" />
-            <div>
-              <span>Estás a criar uma versão a partir do template: </span>
-              <strong className="text-accent underline">{parentTemplateTitle}</strong>
+      {/* =========================================================
+          2. STUDIO META RIBBON: VISIBILIDADE, CATEGORIA & FERRAMENTAS
+         ========================================================= */}
+      <div className="mb-8 rounded-3xl border border-border bg-[#101016] p-4 sm:p-5 shadow-xl backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Lado Esquerdo: Visibilidade e Categoria */}
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            {/* Segmented Control de Visibilidade */}
+            <div className="flex items-center rounded-2xl border border-border bg-surface2/90 p-1">
+              <button
+                type="button"
+                onClick={() => setVisibility("public")}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                  visibility === "public"
+                    ? "bg-accent text-white shadow-glow"
+                    : "text-muted hover:text-white"
+                }`}
+                title={t("builder.visibilityPublicDesc")}
+              >
+                <Globe size={13} />
+                <span>{t("builder.visibilityPublic")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVisibility("unlisted")}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                  visibility === "unlisted"
+                    ? "bg-accent text-white shadow-glow"
+                    : "text-muted hover:text-white"
+                }`}
+                title={t("builder.visibilityUnlistedDesc")}
+              >
+                <Link2 size={13} />
+                <span>{t("builder.visibilityUnlisted")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVisibility("private")}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                  visibility === "private"
+                    ? "bg-accent text-white shadow-glow"
+                    : "text-muted hover:text-white"
+                }`}
+                title={t("builder.visibilityPrivateDesc")}
+              >
+                <Lock size={13} />
+                <span>{t("builder.visibilityPrivate")}</span>
+              </button>
             </div>
-          </div>
-          <span className="text-[11px] text-mutedDim">
-            Itens carregados no banco prontos a classificar!
-          </span>
-        </div>
-      )}
 
-      {/* Barra de Ferramentas Avançadas (Modos, Temas, Importação e Duelo) */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-        {/* Lado Esquerdo: Modo de Exibição */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-border bg-surface2 p-1">
+            {/* Categoria com Trigger para Modal/Seletor Completo */}
             <button
               type="button"
-              onClick={() => setDisplayMode("both")}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
-                displayMode === "both"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-muted hover:text-text"
-              }`}
+              onClick={() => setCategoryModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accentSoft/60 px-3.5 py-1.5 text-xs font-bold text-accent hover:border-accent hover:bg-accentSoft transition-all shadow-sm group"
             >
-              <ImageIcon size={13} /> + <Type size={13} />
-              <span>{t("builder.displayBoth")}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setDisplayMode("image")}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
-                displayMode === "image"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-muted hover:text-text"
-              }`}
-            >
-              <ImageIcon size={13} />
-              <span>{t("builder.displayImage")}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setDisplayMode("text")}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold transition-all ${
-                displayMode === "text"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-muted hover:text-text"
-              }`}
-            >
-              <Type size={13} />
-              <span>{t("builder.displayText")}</span>
+              <Sparkles size={13} className="text-accent animate-pulse" />
+              <span>{currentCategoryObj?.name || category}</span>
+              <span className="text-[10.5px] font-medium text-muted group-hover:text-white">
+                {manualCategoryOverride ? "(manual)" : "(auto)"}
+              </span>
+              <ChevronDown size={13} className="text-accent ml-0.5" />
             </button>
           </div>
-        </div>
 
-        {/* Lado Direito: Temas, Importação em Lote e Modo Duelo */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Seletor de Temas */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-1.5 text-xs font-bold text-muted hover:text-white hover:border-accent transition-all"
-            >
-              <Palette size={13} className="text-accent" />
-              <span>Temas de Cores</span>
-            </button>
+          {/* Lado Direito: Modos de Exibição, Temas de Cores e Duelos */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Modo de Exibição */}
+            <div className="flex items-center rounded-2xl border border-border bg-surface2/90 p-1">
+              <button
+                type="button"
+                onClick={() => setDisplayMode("both")}
+                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                  displayMode === "both"
+                    ? "bg-white text-black font-black shadow-sm"
+                    : "text-muted hover:text-white"
+                }`}
+                title="Imagem + Nome"
+              >
+                <ImageIcon size={12} />
+                <span>Misto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayMode("image")}
+                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                  displayMode === "image"
+                    ? "bg-white text-black font-black shadow-sm"
+                    : "text-muted hover:text-white"
+                }`}
+                title="Apenas Imagem"
+              >
+                <ImageIcon size={12} />
+                <span>Fotos</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayMode("text")}
+                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                  displayMode === "text"
+                    ? "bg-white text-black font-black shadow-sm"
+                    : "text-muted hover:text-white"
+                }`}
+                title="Apenas Nome"
+              >
+                <Type size={12} />
+                <span>Nomes</span>
+              </button>
+            </div>
 
-            {themeMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 z-30 w-48 rounded-2xl border border-border bg-[#12131a] p-2 shadow-2xl animate-fade-in">
-                <div className="text-[10.5px] font-bold uppercase text-mutedDim px-2 py-1 mb-1">
-                  Esquema de Tiers:
+            {/* Seletor de Temas de Cores */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface2/80 px-3 py-2 text-xs font-bold text-muted hover:text-white hover:border-accent/50 transition-all"
+              >
+                <Palette size={13} className="text-accent" />
+                <span>Temas</span>
+              </button>
+
+              {themeMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 z-40 w-52 rounded-2xl border border-border bg-[#13141c] p-2 shadow-2xl animate-fade-in">
+                  <div className="px-2.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">
+                    Paleta dos Níveis:
+                  </div>
+                  {Object.entries(THEME_PRESETS).map(([key, preset]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => applyTheme(key)}
+                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold text-muted hover:text-white hover:bg-surface2 transition-colors"
+                    >
+                      <span>{preset.name}</span>
+                      <div className="flex items-center gap-1">
+                        {preset.colors.slice(0, 4).map((c, i) => (
+                          <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+                        ))}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                {Object.entries(THEME_PRESETS).map(([key, preset]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => applyTheme(key)}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold text-muted hover:text-white hover:bg-surface2 transition-colors"
-                  >
-                    <span>{preset.name}</span>
-                    <div className="flex items-center gap-1">
-                      {preset.colors.slice(0, 4).map((c, i) => (
-                        <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-                      ))}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Duelo 1 vs 1 */}
+            <button
+              type="button"
+              onClick={() => setDuelModalOpen(true)}
+              disabled={items.length < 2}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-accent/40 bg-accentSoft/60 px-3.5 py-2 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40 disabled:pointer-events-none"
+              title={items.length < 2 ? "Adiciona pelo menos 2 elementos para iniciar duelos" : "Ordenar por confrontos diretos 1 vs 1"}
+            >
+              <Swords size={13} />
+              <span>Duelo 1v1</span>
+            </button>
           </div>
-
-          {/* Importação Rápida de Texto */}
-          <button
-            type="button"
-            onClick={() => setBulkModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-1.5 text-xs font-bold text-muted hover:text-white hover:border-accent transition-all"
-          >
-            <FileText size={13} className="text-teal" />
-            <span>Importar Texto</span>
-          </button>
-
-          {/* Modo Duelo 1 vs 1 */}
-          <button
-            type="button"
-            onClick={() => setDuelModalOpen(true)}
-            disabled={items.length < 2}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft/60 px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40 disabled:pointer-events-none"
-            title={items.length < 2 ? "Adiciona pelo menos 2 itens para iniciar confrontos" : "Classificar por duelos 1 vs 1"}
-          >
-            <Swords size={13} />
-            <span>Duelo 1 vs 1</span>
-          </button>
         </div>
+
+        {/* Subcategorias da Categoria Ativa (se existirem) */}
+        {currentCategoryObj?.subcategories?.length > 0 && (
+          <div className="mt-3.5 pt-3 border-t border-border/50 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase text-mutedDim mr-1">
+              Subcategoria:
+            </span>
+            <button
+              type="button"
+              onClick={() => setSubcategory("")}
+              className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
+                !subcategory
+                  ? "bg-white text-black font-bold"
+                  : "bg-surface text-mutedDim hover:text-white"
+              }`}
+            >
+              Todas / Geral
+            </button>
+            {currentCategoryObj.subcategories.map((sub) => {
+              const subName = typeof sub === "string" ? sub : sub.name;
+              const isSubSelected = subcategory === subName;
+              return (
+                <button
+                  key={subName}
+                  type="button"
+                  onClick={() => setSubcategory(subName)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
+                    isSubSelected
+                      ? "bg-accent text-white font-bold shadow-sm"
+                      : "bg-surface text-mutedDim hover:text-white"
+                  }`}
+                >
+                  {subName}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Linhas de Tiers */}
+      {/* =========================================================
+          3. QUADRO DE TIERS (THE TIER BOARD)
+         ========================================================= */}
       <div className="mb-8">
         {tiers.map((tier) => (
           <TierRow
@@ -1244,16 +1158,20 @@ export default function Builder() {
           />
         ))}
 
+        {/* Botão de Adicionar Novo Nível */}
         <button
           type="button"
           onClick={addTier}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-[13.5px] font-bold text-muted transition-all hover:border-accent hover:text-text hover:bg-surface2/40"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border/80 bg-surface/30 py-4 text-[13.5px] font-bold text-muted transition-all hover:border-accent hover:text-white hover:bg-surface2/50"
         >
-          <Plus size={16} /> {t("builder.addTier")}
+          <Plus size={16} className="text-accent" />
+          <span>{t("builder.addTier")}</span>
         </button>
       </div>
 
-      {/* Bancada de Elementos — COMEÇA 100% VAZIA */}
+      {/* =========================================================
+          4. BANCADA DE ELEMENTOS (CREATIVE WORKBENCH)
+         ========================================================= */}
       <div
         onDrop={handleBenchFileDrop}
         onDragOver={(e) => {
@@ -1261,22 +1179,30 @@ export default function Builder() {
           setIsDraggingFile(true);
         }}
         onDragLeave={() => setIsDraggingFile(false)}
-        className={`rounded-3xl border bg-surface p-5 sm:p-6 transition-all ${
+        className={`rounded-3xl border bg-[#0d0e14] p-5 sm:p-6 transition-all shadow-xl ${
           isDraggingFile
-            ? "border-accent bg-accentSoft/30 shadow-glow scale-[1.005]"
-            : "border-border shadow-sm"
+            ? "border-accent bg-accentSoft/35 shadow-glow scale-[1.005]"
+            : "border-border"
         }`}
       >
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-[17px] font-bold text-white">
-              {t("builder.benchTitle")}
+        {/* Cabeçalho da Bancada */}
+        <div className="mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display text-[18px] font-bold text-white flex items-center gap-2">
+              <Layers size={18} className="text-accent" />
+              <span>{t("builder.benchTitle")}</span>
+            </h2>
+
+            {/* Contadores */}
+            <span className="rounded-full bg-accentSoft px-3 py-0.5 text-xs font-extrabold text-accent border border-accent/30">
+              {benchItems.length} na bancada
             </span>
-            <span className="rounded-full bg-surface2 px-2.5 py-0.5 text-[12px] font-bold text-accent">
-              {benchItems.length}
+            <span className="text-xs font-semibold text-mutedDim">
+              ({placedCount} de {items.length} colocados)
             </span>
           </div>
 
+          {/* Ferramentas de Ação do Estúdio */}
           <div className="flex flex-wrap items-center gap-2">
             <input
               ref={fileInputRef}
@@ -1287,10 +1213,12 @@ export default function Builder() {
               className="hidden"
             />
 
+            {/* ➕ Adicionar Elemento Manual */}
             <PrimaryButton small icon={Plus} onClick={openAddModal}>
               {t("builder.actions.addElement")}
             </PrimaryButton>
 
+            {/* 📁 Upload de Fotos */}
             <GhostButton
               small
               icon={Upload}
@@ -1299,6 +1227,7 @@ export default function Builder() {
               {t("builder.actions.uploadImages")}
             </GhostButton>
 
+            {/* 🔍 Catálogo / Pesquisa */}
             <GhostButton
               small
               icon={Search}
@@ -1310,11 +1239,22 @@ export default function Builder() {
               {t("builder.actions.searchDatabase")}
             </GhostButton>
 
+            {/* 📝 Importar Texto em Lote */}
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs font-bold text-muted hover:text-white hover:border-teal/50 transition-colors"
+            >
+              <FileText size={13} className="text-teal" />
+              <span>Texto em Lote</span>
+            </button>
+
+            {/* 🗑️ Limpar Bancada */}
             {benchItems.length > 0 && (
               <button
                 type="button"
                 onClick={handleClearBench}
-                className="rounded-xl p-2 text-mutedDim transition-colors hover:bg-surface2 hover:text-[#FF5470]"
+                className="rounded-xl p-2 text-mutedDim transition-colors hover:bg-rose-500/10 hover:text-rose-400"
                 title={t("builder.actions.clearAll")}
               >
                 <Trash2 size={16} />
@@ -1323,8 +1263,23 @@ export default function Builder() {
           </div>
         </div>
 
+        {/* Barra de Filtro Rápido dentro da bancada se tiver muitos itens */}
+        {items.length > 8 && (
+          <div className="mb-4 relative max-w-sm">
+            <Search size={13} className="absolute left-3 top-2.5 text-mutedDim" />
+            <input
+              type="text"
+              value={benchFilter}
+              onChange={(e) => setBenchFilter(e.target.value)}
+              placeholder="Filtrar itens da bancada…"
+              className="w-full rounded-xl border border-border bg-surface2/60 py-1.5 pl-8 pr-3 text-xs text-white placeholder-mutedDim outline-none focus:border-accent"
+            />
+          </div>
+        )}
+
+        {/* Estados da Bancada: Vazia, Todos Colocados ou Lista de Itens */}
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 py-14 text-center px-4 bg-surface2/30">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 py-14 text-center px-4 bg-surface2/20">
             <div className="mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
               <Sparkles size={26} />
             </div>
@@ -1335,7 +1290,7 @@ export default function Builder() {
               {t("builder.benchEmptySubtitle")}
             </p>
 
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-2.5">
               <PrimaryButton small icon={Plus} onClick={openAddModal}>
                 {t("builder.actions.addElement")}
               </PrimaryButton>
@@ -1359,11 +1314,12 @@ export default function Builder() {
             </div>
           </div>
         ) : benchItems.length === 0 ? (
-          <div className="py-8 text-center text-[14px] text-teal font-bold animate-fadeIn">
-            {t("builder.benchAllPlaced")}
+          <div className="py-10 text-center text-sm font-bold text-teal flex items-center justify-center gap-2 animate-fadeIn">
+            <Sparkles size={16} />
+            <span>{t("builder.benchAllPlaced")}</span>
           </div>
         ) : (
-          <div className="flex min-h-[96px] flex-wrap items-center gap-2.5">
+          <div className="flex min-h-[102px] flex-wrap items-center gap-2.5">
             {benchItems.map((it) => (
               <ItemCard
                 key={it.id}
@@ -1378,12 +1334,25 @@ export default function Builder() {
             ))}
           </div>
         )}
+
+        {/* Dica de atalhos no rodapé da bancada */}
+        <div className="mt-5 pt-4 border-t border-border/40 flex flex-wrap items-center justify-between text-xs text-mutedDim">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-accent" />
+            <span>Dica Pro: Podes colar imagens diretamente do clipboard com <strong>Ctrl + V</strong>.</span>
+          </div>
+          <span>Arrasta ficheiros para a bancada ou para os níveis para carregar instantaneamente.</span>
+        </div>
       </div>
+
+      {/* =========================================================
+          5. MODAIS INTEGRADOS
+         ========================================================= */}
 
       {/* MODAL 1: Adicionar / Editar Elemento Manualmente */}
       {addModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-[480px] rounded-3xl border border-borderStrong bg-surface p-6 shadow-2xl">
+          <div className="w-full max-w-[480px] rounded-3xl border border-borderStrong bg-[#12131a] p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between border-b border-border pb-4">
               <h3 className="font-display text-[18px] font-bold text-white">
                 {editingItem ? t("builder.modalEditTitle") : t("builder.modalAddTitle")}
@@ -1501,7 +1470,7 @@ export default function Builder() {
       {/* MODAL 2: Pesquisar na Base de Dados Real */}
       {searchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="flex max-h-[85vh] w-full max-w-[660px] flex-col rounded-3xl border border-borderStrong bg-surface shadow-2xl overflow-hidden">
+          <div className="flex max-h-[85vh] w-full max-w-[660px] flex-col rounded-3xl border border-borderStrong bg-[#12131a] shadow-2xl overflow-hidden">
             <div className="border-b border-border p-5 sm:p-6">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="font-display text-[19px] font-black text-white flex items-center gap-2.5">
@@ -1584,7 +1553,7 @@ export default function Builder() {
                           disabled={isAdded}
                           className={`rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all ${
                             isAdded
-                              ? "bg-accentSoft text-[#B6A5FF] opacity-60"
+                              ? "bg-accentSoft text-accent opacity-60"
                               : "bg-accent text-white hover:bg-accent/90 shadow-sm"
                           }`}
                         >
@@ -1609,29 +1578,157 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Modal de Partilha */}
-      {savedId && (
-        <ShareModal
-          isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
-          title={title || t("builder.defaultTitle")}
-          url={`${window.location.origin}/tier-list/${savedId}`}
-          description={`Classificação por ${profile?.displayName || "Criador TierWorld"}`}
-        />
+      {/* MODAL 3: Categoria & Taxonomia Studio Modal */}
+      {categoryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
+          onClick={() => setCategoryModalOpen(false)}
+        >
+          <div
+            className="flex max-h-[85vh] w-full max-w-[620px] flex-col rounded-3xl border border-border bg-[#111219] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="border-b border-border p-5 sm:p-6">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="font-display text-[19px] font-black text-white flex items-center gap-2">
+                  <Sparkles size={18} className="text-accent" />
+                  <span>Categoria & Taxonomia</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setCategoryModalOpen(false)}
+                  className="rounded-xl p-1.5 text-mutedDim hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="text-xs text-muted leading-relaxed">
+                Seleciona a categoria mais adequada ou pesquisa qualquer tema na nossa API pública para estrear novos assuntos na plataforma.
+              </p>
+
+              {/* Input de Pesquisa de Categorias */}
+              <div className="relative mt-3.5">
+                <Search size={15} className="absolute left-3.5 top-[11px] text-mutedDim" />
+                <input
+                  type="text"
+                  value={catSearchQuery}
+                  onChange={(e) => setCatSearchQuery(e.target.value)}
+                  placeholder="Pesquisar categoria ou tema da API (ex: Fórmula 1, Rock, Marvel)…"
+                  className="w-full rounded-xl border border-border bg-surface2 py-2 pl-9 pr-3 text-xs text-white placeholder-mutedDim outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+              {/* Sugestões da API em Tempo Real */}
+              {catApiSuggestions.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-accentSoft/20 border border-accent/30">
+                  <div className="text-[11px] font-bold text-accent mb-2 flex items-center gap-1.5">
+                    <Sparkles size={13} />
+                    <span>Sugerido da API Pública (Estrear Novo Tema):</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {catApiSuggestions.map((apiCat) => (
+                      <button
+                        key={apiCat.id}
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const detailed = await fetchCategoryDetailsFromApi(apiCat.name);
+                            const saved = await saveCategoryWithApiData({
+                              ...apiCat,
+                              ...(detailed || {}),
+                            });
+                            setCategory(saved.slug || saved.id);
+                            if (saved.subcategories && saved.subcategories.length > 0) {
+                              setSubcategory(saved.subcategories[0]);
+                            }
+                          } catch {
+                            setCategory(apiCat.slug);
+                          }
+                          setManualCategoryOverride(true);
+                          setCategoryModalOpen(false);
+                          setCatSearchQuery("");
+                          setCatApiSuggestions([]);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-accent/40 text-xs font-bold text-white hover:bg-accent hover:text-black transition-all shadow-sm"
+                      >
+                        <span>{apiCat.name}</span>
+                        <span className="text-[10px] text-accent font-normal">+ Adicionar</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Categorias Disponíveis */}
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-mutedDim mb-2.5">
+                  Categorias Disponíveis:
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {categories
+                    .filter((c) =>
+                      catSearchQuery.trim()
+                        ? (c.name || "").toLowerCase().includes(catSearchQuery.toLowerCase()) ||
+                          (c.slug || "").toLowerCase().includes(catSearchQuery.toLowerCase())
+                        : true
+                    )
+                    .map((c) => {
+                      const isSelected = category === c.id || category === c.slug;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setCategory(c.slug || c.id);
+                            setManualCategoryOverride(true);
+                            setCategoryModalOpen(false);
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all ${
+                            isSelected
+                              ? "bg-accent text-black shadow-glow font-black"
+                              : "border border-border bg-surface2/60 text-muted hover:text-white hover:border-white/20"
+                          }`}
+                        >
+                          <span className="truncate">{c.name}</span>
+                          {isSelected && <Check size={14} className="stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {manualCategoryOverride && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualCategoryOverride(false);
+                      setCategoryModalOpen(false);
+                      const detected = detectCategory({ title, items });
+                      if (detected && detected.score > 0) {
+                        setCategory(detected.slug || detected.id);
+                      }
+                    }}
+                    className="text-xs text-accent font-bold hover:underline"
+                  >
+                    ↺ Voltar a detetar categoria automaticamente
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-border p-4 flex justify-end bg-surface2/60">
+              <GhostButton small onClick={() => setCategoryModalOpen(false)}>
+                Concluído
+              </GhostButton>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Modal de Duelo 1 vs 1 */}
-      <DuelModeModal
-        isOpen={duelModalOpen}
-        onClose={() => setDuelModalOpen(false)}
-        items={items}
-        tiers={tiers}
-        onApplyPlacements={(duelPlacements) => {
-          setPlacements(duelPlacements);
-        }}
-      />
-
-      {/* Modal de Importação de Texto em Lote */}
+      {/* MODAL 4: Importação de Texto em Lote */}
       {bulkModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
@@ -1681,6 +1778,28 @@ export default function Builder() {
           </div>
         </div>
       )}
+
+      {/* Modal de Partilha */}
+      {savedId && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          title={title || t("builder.defaultTitle")}
+          url={`${window.location.origin}/tier-list/${savedId}`}
+          description={`Classificação por ${profile?.displayName || "Criador TierWorld"}`}
+        />
+      )}
+
+      {/* Modal de Duelo 1 vs 1 */}
+      <DuelModeModal
+        isOpen={duelModalOpen}
+        onClose={() => setDuelModalOpen(false)}
+        items={items}
+        tiers={tiers}
+        onApplyPlacements={(duelPlacements) => {
+          setPlacements(duelPlacements);
+        }}
+      />
 
       {/* Notificação Flutuante ao Colar da Área de Transferência */}
       {pasteToast && (
