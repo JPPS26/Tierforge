@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, Globe } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
+import CountryFlag from "./CountryFlag";
 
 export default function LanguageSelector({ compact = false }) {
   const { language, setLanguage, languages, currentLanguage } = useLanguage();
@@ -22,18 +23,18 @@ export default function LanguageSelector({ compact = false }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-[13px] font-medium text-text transition-colors hover:border-borderStrong hover:bg-surface2 ${
+        className={`flex items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-[13px] font-medium text-text transition-colors hover:border-borderStrong hover:bg-surface2 ${
           compact ? "px-2 py-1 text-[12px]" : ""
         }`}
         aria-label="Selecionar idioma"
       >
-        <span className="text-[15px]">{currentLanguage.flag}</span>
+        <CountryFlag code={currentLanguage.code} size={18} />
         {!compact && <span className="hidden sm:inline font-display">{currentLanguage.label}</span>}
         <ChevronDown size={13} className={`text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[170px] overflow-hidden rounded-2xl border border-borderStrong bg-surface p-1.5 shadow-2xl backdrop-blur-xl">
+        <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[180px] overflow-hidden rounded-2xl border border-borderStrong bg-[#12131A] p-1.5 shadow-2xl backdrop-blur-xl animate-fadeIn">
           <div className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-mutedDim flex items-center gap-1.5">
             <Globe size={11} /> Idioma / Language
           </div>
@@ -54,8 +55,8 @@ export default function LanguageSelector({ compact = false }) {
                       : "text-text hover:bg-surface2"
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="text-[16px]">{lang.flag}</span>
+                  <span className="flex items-center gap-2.5">
+                    <CountryFlag code={lang.code} size={20} />
                     <span>{lang.label}</span>
                   </span>
                   {isActive && <Check size={14} className="text-accent" />}
