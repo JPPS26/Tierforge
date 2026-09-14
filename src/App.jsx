@@ -10,13 +10,12 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Builder from "./pages/Builder";
 import TierListView from "./pages/TierListView";
-import { useLanguage } from "./context/LanguageContext";
+import NotFound from "./pages/NotFound";
 import InSiteNotificationToast from "./components/InSiteNotificationToast";
 import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
 
 export default function App() {
-  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col justify-between">
@@ -28,6 +27,7 @@ export default function App() {
           <Route path="/categories" element={<Categories />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Login />} />
           <Route path="/tier-list/:id" element={<TierListView />} />
 
           {/* O Meu Perfil (requer login) */}
@@ -60,6 +60,9 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Página 404 para Qualquer Rota Inexistente */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
 

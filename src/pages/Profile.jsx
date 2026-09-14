@@ -170,8 +170,8 @@ export default function Profile() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${targetUser.displayName} (@${targetUser.handle}) — Tierforge`,
-          text: `Confere as tier lists e rankings de ${targetUser.displayName} no Tierforge!`,
+          title: `${targetUser.displayName} (@${targetUser.handle}) — TierWorld`,
+          text: `Confere as tier lists e rankings de ${targetUser.displayName} no TierWorld!`,
           url: profileUrl,
         });
         return;
@@ -784,7 +784,7 @@ export default function Profile() {
         onClose={() => setShareModalOpen(false)}
         title={`Perfil de ${targetUser.displayName} (@${targetUser.handle})`}
         url={`${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`}
-        description={`Confere as tier lists criadas por ${targetUser.displayName} no Tierforge.`}
+        description={`Confere as tier lists criadas por ${targetUser.displayName} no TierWorld.`}
       />
 
       {/* Modal de Seguidores e A Seguir (Com lista real e botões diretos de seguir) */}

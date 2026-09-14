@@ -9,7 +9,7 @@ export const BADGE_DEFINITIONS = {
     name: "Pioneiro",
     icon: "👑",
     tone: "amber",
-    description: "Membro da fase inaugural da plataforma Tierforge.",
+    description: "Membro da fase inaugural da plataforma TierWorld.",
   },
   TIER_ARCHITECT: {
     id: "tier_architect",

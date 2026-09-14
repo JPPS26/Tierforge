@@ -40,7 +40,7 @@ export default function ExportModal({
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "-")
         .replace(/-+/g, "-");
-      a.download = `tierforge-${cleanTitle}-${format}.png`;
+      a.download = `tierworld-${cleanTitle}-${format}.png`;
       a.click();
     } catch (err) {
       console.error("Erro ao exportar imagem:", err);
@@ -196,18 +196,18 @@ export default function ExportModal({
                 </h2>
               </div>
 
-              {/* Marca D'Água Tierforge */}
+              {/* Marca D'Água TierWorld */}
               <div className="flex flex-col items-end flex-shrink-0">
                 <div className="flex items-center gap-1.5">
                   <div className="h-5 w-5 rounded-lg bg-gradient-to-tr from-[#7C5CFF] to-[#31D8A8] flex items-center justify-center text-[10px] font-black text-black">
                     T
                   </div>
                   <span className="font-display text-xs font-black tracking-wider text-white">
-                    TIERFORGE
+                    TIERWORLD
                   </span>
                 </div>
                 <span className="text-[9px] font-bold text-mutedDim mt-0.5">
-                  tierforge.app
+                  tierworld.app
                 </span>
               </div>
             </div>
@@ -309,7 +309,7 @@ export default function ExportModal({
                 )}
               </div>
               <span className="text-[10px] text-mutedDim">
-                Cria e vota em tierforge.app
+                Cria e vota em tierworld.app
               </span>
             </div>
           </div>

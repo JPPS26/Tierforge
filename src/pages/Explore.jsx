@@ -111,7 +111,20 @@ export default function Explore() {
   const initialSub = searchParams.get("sub") || "";
   const initialSearch = searchParams.get("search") || "";
 
-  const [tab, setTab] = useState("Trending");
+  // Sincronização inteligente dos parâmetros sort ou tab vindos do rodapé ou links externos
+  const parseTabFromParams = (params) => {
+    const sort = params.get("sort") || "";
+    const tabParam = params.get("tab") || "";
+    if (sort === "most_voted" || sort === "popular" || tabParam.toLowerCase() === "popular") {
+      return "Popular";
+    }
+    if (sort === "newest" || sort === "new" || tabParam.toLowerCase() === "new") {
+      return "New";
+    }
+    return "Trending";
+  };
+
+  const [tab, setTab] = useState(() => parseTabFromParams(searchParams));
   const [cat, setCat] = useState(initialCat);
   const [selectedSub, setSelectedSub] = useState(initialSub);
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -123,8 +136,16 @@ export default function Explore() {
   useEffect(() => {
     const urlCat = searchParams.get("category") || "All";
     const urlSub = searchParams.get("sub") || "";
+    const urlSearch = searchParams.get("search");
     setCat(urlCat);
     setSelectedSub(urlSub);
+    if (urlSearch !== null) {
+      setQueryText(urlSearch);
+    }
+    const computedTab = parseTabFromParams(searchParams);
+    if (searchParams.has("sort") || searchParams.has("tab")) {
+      setTab(computedTab);
+    }
   }, [searchParams]);
 
   // Sincronização ao segundo em tempo real com a base de dados

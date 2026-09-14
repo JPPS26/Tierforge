@@ -503,7 +503,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            <div className="pt-2 border-t border-border/60">
+            <div className="pt-2 border-t border-border/60 flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => navigate("/create")}
@@ -512,6 +512,45 @@ export default function Navbar() {
                 <Plus size={17} />
                 <span>{t("nav.create")}</span>
               </button>
+
+              {user ? (
+                <Link
+                  to={`/profile/${profile?.handle || ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface2/70 p-3 text-[13.5px] font-bold text-white hover:bg-surface2 transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar
+                      name={profile?.displayName || user.displayName || "Criador"}
+                      image={profile?.avatar || user.photoURL}
+                      size={28}
+                    />
+                    <div className="truncate">
+                      <div className="text-[13px] font-bold text-white truncate">
+                        {profile?.displayName || user.displayName || "Criador"}
+                      </div>
+                      <div className="text-[11px] text-accent font-semibold">
+                        #{profile?.handle || "jogador"}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-mutedDim font-semibold">
+                    {t("nav.profile")} →
+                  </span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/login");
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-surface py-2.5 text-[13.5px] font-bold text-white hover:bg-surface2 transition-all"
+                >
+                  <LogIn size={16} className="text-accent" />
+                  <span>{t("nav.login")}</span>
+                </button>
+              )}
             </div>
           </nav>
         )}
