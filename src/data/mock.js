@@ -1,11 +1,11 @@
 export const TIER_COLORS = {
-  "S+": "#FF3B5C",
-  S: "#FF6B7A",
-  A: "#FF9F43",
-  B: "#FFD23F",
-  C: "#6BCB77",
-  D: "#4D96FF",
-  F: "#6E6E7C",
+  "S+": "#FFE9B0",
+  S: "#FFC64D",
+  A: "#F0924B",
+  B: "#C77A4A",
+  C: "#9C5FA0",
+  D: "#5C86A8",
+  F: "#6B6560",
 };
 
 export const CATEGORIES = [

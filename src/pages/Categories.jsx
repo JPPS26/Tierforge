@@ -12,7 +12,7 @@ export default function Categories() {
             key={c.name}
             to="/explore"
             className="rounded-[18px] border border-border p-6"
-            style={{ background: "linear-gradient(160deg, #121218, #191922)" }}
+            style={{ background: "linear-gradient(160deg, #1E1712, #271E17)" }}
           >
             <div className="mb-4 font-display text-[18px] font-semibold">{c.name}</div>
             <div className="text-[13px] text-mutedDim">{c.count} tier lists</div>

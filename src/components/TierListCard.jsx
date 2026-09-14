@@ -22,7 +22,7 @@ function MiniTierPreview({ seedIndex }) {
                 key={ci}
                 className="h-4 w-4 rounded border border-border"
                 style={{
-                  background: `linear-gradient(135deg, ${colorFor(String(seedIndex + ri + ci))}55, #121218)`,
+                  background: `linear-gradient(135deg, ${colorFor(String(seedIndex + ri + ci))}55, #1E1712)`,
                 }}
               />
             ))}
@@ -37,7 +37,7 @@ export default function TierListCard({ list }) {
   return (
     <Link
       to={`/tier-list/${list.id}`}
-      className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-all hover:-translate-y-[3px] hover:border-borderStrong hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.7)]"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 transition-all hover:-translate-y-[3px] hover:border-borderStrong hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.7)]"
     >
       <MiniTierPreview seedIndex={list.id.length} />
       <div>

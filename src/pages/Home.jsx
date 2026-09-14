@@ -18,14 +18,14 @@ function LiveHeroTierList() {
     <div
       className="w-full max-w-[460px] rounded-[22px] border border-borderStrong p-5"
       style={{
-        background: "linear-gradient(160deg, #14141C 0%, #0E0E14 100%)",
-        boxShadow: "0 30px 90px -30px rgba(124,92,255,0.35)",
+        background: "linear-gradient(160deg, #211A14 0%, #15110D 100%)",
+        boxShadow: "0 30px 90px -30px rgba(255,122,61,0.35)",
         transform: "rotate(1.4deg)",
       }}
     >
       <div className="mb-3.5 flex items-center justify-between">
         <span className="font-display text-[13.5px] font-bold">Best PL Midfielders — 2026</span>
-        <span className="flex items-center gap-1 rounded-full border border-[rgba(49,216,168,0.35)] bg-[rgba(49,216,168,0.15)] px-2.5 py-1 text-[11.5px] font-semibold text-teal">
+        <span className="flex items-center gap-1 rounded-full border border-[rgba(95,163,199,0.35)] bg-[rgba(95,163,199,0.15)] px-2.5 py-1 text-[11.5px] font-semibold text-teal">
           <Activity size={11} /> Live
         </span>
       </div>
@@ -46,10 +46,10 @@ function LiveHeroTierList() {
                     key={ci}
                     className="h-7 w-7 rounded-lg border transition-all duration-500"
                     style={{
-                      background: `linear-gradient(135deg, ${colorFor(String(ri + ci))}80, #121218)`,
-                      borderColor: active ? "rgba(124,92,255,0.8)" : "rgba(255,255,255,0.08)",
+                      background: `linear-gradient(135deg, ${colorFor(String(ri + ci))}80, #1E1712)`,
+                      borderColor: active ? "rgba(255,122,61,0.8)" : "rgba(255,255,255,0.08)",
                       transform: active ? "scale(1.12)" : "scale(1)",
-                      boxShadow: active ? "0 0 0 3px rgba(124,92,255,0.25)" : "none",
+                      boxShadow: active ? "0 0 0 3px rgba(255,122,61,0.25)" : "none",
                     }}
                   />
                 );
@@ -73,7 +73,7 @@ function SectionHeader({ icon: Icon, title, to }) {
   return (
     <div className="mb-4.5 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <Icon size={18} className="text-[#B6A5FF]" />
+        <Icon size={18} className="text-[#FFB37D]" />
         <h2 className="font-display text-[19px] font-semibold">{title}</h2>
       </div>
       {to && (
@@ -93,10 +93,10 @@ export default function Home() {
       <section className="mx-auto max-w-[1240px] px-6 pb-14 pt-16">
         <div className="flex flex-wrap items-center gap-14">
           <div className="min-w-[300px] flex-1 basis-[480px]">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(124,92,255,0.35)] bg-accentSoft px-2.5 py-1 text-[11.5px] font-semibold text-[#B6A5FF]">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,122,61,0.35)] bg-accentSoft px-2.5 py-1 text-[11.5px] font-semibold text-[#FFB37D]">
               <Sparkles size={12} /> AI-assisted ranking, built in
             </span>
-            <h1 className="my-5 font-display text-[clamp(40px,5.4vw,64px)] font-bold leading-[1.03] tracking-tighter">
+            <h1 className="my-5 font-display text-[clamp(44px,6vw,72px)] font-extrabold leading-[0.98] tracking-tight">
               Every ranking
               <br />
               has a home here.
@@ -138,7 +138,7 @@ export default function Home() {
             <Link
               key={c.name}
               to="/explore"
-              className="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface p-4 hover:border-borderStrong"
+              className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface p-4 hover:border-borderStrong"
             >
               <div className="font-semibold">{c.name}</div>
               <div className="text-[11.5px] text-mutedDim">{c.count} lists</div>
@@ -156,9 +156,9 @@ export default function Home() {
             { icon: SlidersHorizontal, title: "Head-to-head compare", body: "Drop any two items into the comparison view for stats, form, and community verdicts." },
             { icon: Trophy, title: "Creator progression", body: "XP, streaks and creator scores that reward consistency, not just viral hits." },
           ].map((f) => (
-            <div key={f.title} className="rounded-2xl border border-border bg-surface p-5.5">
+            <div key={f.title} className="rounded-lg border border-border bg-surface p-5.5">
               <div className="mb-3.5 flex h-9.5 w-9.5 items-center justify-center rounded-[10px] bg-accentSoft">
-                <f.icon size={19} className="text-[#B6A5FF]" />
+                <f.icon size={19} className="text-[#FFB37D]" />
               </div>
               <div className="mb-2 font-display font-semibold">{f.title}</div>
               <div className="text-[13.5px] leading-relaxed text-muted">{f.body}</div>

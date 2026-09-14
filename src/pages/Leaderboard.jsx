@@ -9,7 +9,7 @@ export default function Leaderboard() {
     <div className="mx-auto max-w-[900px] px-6 pb-24 pt-10">
       <h1 className="mb-1.5 font-display text-[34px] font-bold">Leaderboard</h1>
       <p className="mb-7 text-muted">Top creators this month, ranked by Creator XP.</p>
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         {rows.slice(0, 10).map((r, i) => (
           <div
             key={i}
