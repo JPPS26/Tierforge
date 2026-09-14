@@ -242,7 +242,7 @@ export function getUserByHandle(handle) {
 }
 
 const RESERVED_HANDLES = [
-  "admin", "administrator", "tierforge", "support", "help",
+  "admin", "administrator", "tierworld", "tierforge", "support", "help",
   "explore", "categories", "login", "register", "create",
   "api", "settings", "leaderboard", "terms", "privacy"
 ];
@@ -431,7 +431,8 @@ export function getGlobalStats() {
   const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   const users = getAllUsers();
 
-  const totalTierLists = lists.length;
+  const publicLists = lists.filter((l) => l.visibility === "public" || !l.visibility);
+  const totalTierLists = publicLists.length;
   // Criadores que criaram pelo menos uma lista ou estão registados
   const totalCreators = users.length;
   const totalVotes = lists.reduce((acc, l) => acc + (l.votes || 0), 0);
@@ -529,16 +530,41 @@ export function slugify(text) {
 export function getCategories() {
   const baseCatalog = getApiCatalog();
   const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
-  const existingIds = new Set(stored.map((c) => c.id || c.slug));
+  const existingIds = new Set(stored.map((c) => (c.id || c.slug || "").toLowerCase()));
   const merged = [...stored];
   for (const baseCat of baseCatalog) {
-    if (!existingIds.has(baseCat.id) && !existingIds.has(baseCat.slug)) {
+    const bId = (baseCat.id || "").toLowerCase();
+    const bSlug = (baseCat.slug || "").toLowerCase();
+    if (!existingIds.has(bId) && !existingIds.has(bSlug)) {
       merged.push(baseCat);
-      existingIds.add(baseCat.id);
+      existingIds.add(bId);
+      if (bSlug) existingIds.add(bSlug);
     }
   }
 
   const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  // Inclui dinamicamente qualquer categoria criada organicamente através de Tier Lists
+  lists.forEach((l) => {
+    if (l.category && (l.visibility === "public" || !l.visibility)) {
+      const rawCat = String(l.category).trim();
+      const catKey = rawCat.toLowerCase();
+      const slugKey = slugify(rawCat);
+      if (!existingIds.has(catKey) && !existingIds.has(slugKey)) {
+        const catName = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
+        merged.push({
+          id: slugKey || catKey,
+          slug: slugKey || catKey,
+          name: catName,
+          description: `Comunidade de ${catName} criada através de Tier Lists.`,
+          icon: "Layers",
+          color: "#7C5CFF",
+        });
+        existingIds.add(catKey);
+        if (slugKey) existingIds.add(slugKey);
+      }
+    }
+  });
 
   // Calcula a contagem estritamente real de tier lists públicas
   return merged.map((cat) => {
@@ -1018,12 +1044,9 @@ export function calculateCommunityConsensus(templateId) {
 
 // Verifica se o utilizador tem permissões de edição/eliminação sobre uma Tier List
 export function canEditTierList(tierList, currentUid = null) {
-  if (!tierList) return false;
-  // Se o utilizador tiver sessão iniciada e for o dono
-  if (currentUid && tierList.ownerId === currentUid) return true;
-  // Se tiver sido criada neste navegador localmente (mesmo como anónimo)
-  const myLists = getStored("tierforge_created_lists", []);
-  if (myLists.includes(tierList.id)) return true;
+  if (!tierList || !currentUid) return false;
+  // Apenas o criador autenticado com a sua respetiva conta pode editar/eliminar
+  if (tierList.ownerId === currentUid) return true;
   return false;
 }
 

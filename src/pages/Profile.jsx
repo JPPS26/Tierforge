@@ -101,15 +101,6 @@ export default function Profile() {
       let foundUser = null;
       if (paramHandle) {
         foundUser = getUserByHandle(paramHandle) || getUserByUid(paramHandle);
-        if (!foundUser && user) {
-          const myProfile = getUserByUid(user.uid);
-          if (myProfile) {
-            foundUser = myProfile;
-            if (foundUser.handle && foundUser.handle !== paramHandle) {
-              navigate(`/profile/${foundUser.handle}`, { replace: true });
-            }
-          }
-        }
       } else if (user) {
         foundUser = getUserByUid(user.uid);
       }

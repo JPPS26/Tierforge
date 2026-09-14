@@ -41,7 +41,7 @@ import {
   deleteTierList,
   canEditTierList,
 } from "../services/db";
-import { searchApiCategories, fetchCategoryDetailsFromApi } from "../services/categoriesApi";
+import { searchApiCategories, fetchCategoryDetailsFromApi, slugifyCategory } from "../services/categoriesApi";
 import ShareModal from "../components/ShareModal";
 import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
@@ -1662,6 +1662,54 @@ export default function Builder() {
               )}
 
               {/* Categorias Disponíveis */}
+              {/* Botão de Criação de Nova Categoria Manual se não houver correspondência exata */}
+              {catSearchQuery.trim() &&
+                !categories.some(
+                  (c) => (c.name || "").toLowerCase() === catSearchQuery.trim().toLowerCase()
+                ) && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const queryClean = catSearchQuery.trim();
+                        try {
+                          const detailed = await fetchCategoryDetailsFromApi(queryClean);
+                          const saved = await saveCategoryWithApiData({
+                            name: queryClean,
+                            slug: slugifyCategory(queryClean),
+                            description: detailed?.description || `Comunidade temática de ${queryClean}.`,
+                            imageUrl: detailed?.imageUrl || "",
+                            icon: "Layers",
+                            color: "#7C5CFF",
+                            subcategories: detailed?.subcategories || [],
+                          });
+                          setCategory(saved.slug || saved.id || slugifyCategory(queryClean));
+                          if (saved.subcategories && saved.subcategories.length > 0) {
+                            setSubcategory(saved.subcategories[0]);
+                          }
+                        } catch {
+                          setCategory(slugifyCategory(queryClean));
+                        }
+                        setManualCategoryOverride(true);
+                        setCategoryModalOpen(false);
+                        setCatSearchQuery("");
+                        setCatApiSuggestions([]);
+                      }}
+                      className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-accent/60 bg-accent/15 hover:bg-accent hover:text-black transition-all group shadow-glow"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <FolderPlus size={18} className="text-accent group-hover:text-black transition-colors" />
+                        <span className="text-[13px] font-bold text-white group-hover:text-black transition-colors">
+                          Criar e usar categoria "{catSearchQuery.trim()}"
+                        </span>
+                      </div>
+                      <span className="text-[11.5px] font-black text-accent group-hover:text-black transition-colors">
+                        + Inaugurar Nicho
+                      </span>
+                    </button>
+                  </div>
+                )}
+
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-wider text-mutedDim mb-2.5">
                   Categorias Disponíveis:

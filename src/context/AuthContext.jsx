@@ -14,6 +14,7 @@ import {
   updateUserProfile as dbUpdateUserProfile,
   deleteUserAccountAndData,
   subscribeToDbSync,
+  notifyDbChange,
 } from "../services/db";
 
 const AuthContext = createContext(null);
@@ -61,6 +62,7 @@ export function AuthProvider({ children }) {
 
     allUsers.push(newUserData);
     localStorage.setItem("tierforge_real_users", JSON.stringify(allUsers));
+    notifyDbChange({ key: "tierforge_real_users", userUid: firebaseUser.uid });
     setProfile(newUserData);
 
     try {
