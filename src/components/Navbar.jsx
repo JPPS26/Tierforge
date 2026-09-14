@@ -93,14 +93,9 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2">
-              <GhostButton small onClick={() => navigate("/login")}>
-                Log in
-              </GhostButton>
-              <PrimaryButton small onClick={() => navigate("/register")}>
-                Sign up
-              </PrimaryButton>
-            </div>
+            <GhostButton small onClick={() => navigate("/login")}>
+              Log in
+            </GhostButton>
           )}
         </div>
       </div>

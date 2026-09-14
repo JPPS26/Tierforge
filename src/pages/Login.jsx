@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { GhostButton } from "../components/UI";
 
@@ -28,8 +28,10 @@ export default function Login() {
   return (
     <div className="mx-auto flex max-w-[400px] flex-col gap-6 px-6 py-20">
       <div>
-        <h1 className="font-display text-[28px] font-bold">Welcome back</h1>
-        <p className="mt-1 text-[14px] text-muted">Log in to keep ranking.</p>
+        <h1 className="font-display text-[28px] font-bold">Welcome to TierForge</h1>
+        <p className="mt-1 text-[14px] text-muted">
+          Sign in with Google to start building and ranking tier lists.
+        </p>
       </div>
 
       {error && <p className="text-[13px] text-[#FF5470]">{error}</p>}
@@ -37,13 +39,6 @@ export default function Login() {
       <GhostButton onClick={handleGoogle} disabled={busy}>
         {busy ? "Signing in…" : "Continue with Google"}
       </GhostButton>
-
-      <p className="text-center text-[13.5px] text-muted">
-        No account yet?{" "}
-        <Link to="/register" className="font-semibold text-text">
-          Sign up
-        </Link>
-      </p>
     </div>
   );
 }

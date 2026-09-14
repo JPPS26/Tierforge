@@ -8,7 +8,6 @@ import Categories from "./pages/Categories";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Builder from "./pages/Builder";
 
 export default function App() {
@@ -21,7 +20,6 @@ export default function App() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route
           path="/profile"
           element={
