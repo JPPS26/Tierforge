@@ -24,7 +24,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { createTierList, searchCatalog, getCategories } from "../services/db";
 import ShareModal from "../components/ShareModal";
-import CategorySelector from "../components/CategorySelector";
+import { detectCategory } from "../services/autoCategory";
 
 const DEFAULT_TIERS = [
   { id: "t1", label: "S", color: "#FF3B5C" },
@@ -274,6 +274,19 @@ export default function Builder() {
   const [saveMsg, setSaveMsg] = useState("");
 
   const categories = getCategories();
+  const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Auto-deteção semântica em tempo real baseada no título e elementos
+  useEffect(() => {
+    if (manualCategoryOverride) return;
+    const detected = detectCategory({ title, items });
+    setCategory(detected.id);
+  }, [title, items, manualCategoryOverride]);
+
+  const currentCategoryObj = categories.find(
+    (c) => c.id === category || c.slug === category
+  ) || categories[0];
 
   const itemsByTier = useCallback(
     (tierId) =>
@@ -559,6 +572,65 @@ export default function Builder() {
                 </button>
               </div>
             </div>
+
+            {/* Categoria Auto-Detetada Inteligente */}
+            <div className="relative flex items-center gap-2">
+              <span className="text-[12.5px] font-bold text-muted">Categoria:</span>
+              <div className="flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft/60 px-3 py-1 text-[12.5px] font-bold text-accent shadow-sm">
+                <Sparkles size={12} className="text-accent animate-pulse" />
+                <span>{currentCategoryObj?.name || category}</span>
+                <span className="text-[10px] text-mutedDim font-normal ml-0.5">
+                  ({manualCategoryOverride ? "manual" : "auto"})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  className="ml-1 text-[11px] font-semibold text-white/70 hover:text-white underline"
+                >
+                  alterar
+                </button>
+              </div>
+
+              {/* Dropdown discreto para alterar se o utilizador quiser */}
+              {showCategoryDropdown && (
+                <div className="absolute top-full left-0 mt-2 z-40 w-60 max-h-64 overflow-y-auto rounded-2xl border border-border bg-[#12131a] p-2 shadow-2xl animate-fade-in">
+                  <div className="text-[11px] font-bold text-mutedDim px-2.5 py-1 mb-1 border-b border-border/50">
+                    Definir categoria:
+                  </div>
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setCategory(c.id);
+                        setManualCategoryOverride(true);
+                        setShowCategoryDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+                        category === c.id
+                          ? "bg-accent text-black font-bold"
+                          : "text-muted hover:bg-surface2 hover:text-white"
+                      }`}
+                    >
+                      <span>{c.name}</span>
+                      {category === c.id && <span>✓</span>}
+                    </button>
+                  ))}
+                  {manualCategoryOverride && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualCategoryOverride(false);
+                        setShowCategoryDropdown(false);
+                      }}
+                      className="w-full text-center mt-1.5 pt-1.5 border-t border-border/50 text-[11px] text-accent font-bold hover:underline"
+                    >
+                      ↺ Voltar a Deteção Automática
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -585,16 +657,6 @@ export default function Builder() {
             {saving ? t("builder.publishing") : t("builder.publish")}
           </PrimaryButton>
         </div>
-      </div>
-
-      {/* Seletor Dinâmico de Categoria & Subcategoria com Pesquisa e Moderação */}
-      <div className="mb-6">
-        <CategorySelector
-          selectedCategory={category}
-          selectedSubcategory={subcategory}
-          onSelectCategory={setCategory}
-          onSelectSubcategory={setSubcategory}
-        />
       </div>
 
       {/* Mensagem de confirmação ao publicar */}
