@@ -15,6 +15,7 @@ import {
   where,
   increment,
   setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { REAL_ITEMS, SEED_TIERLISTS, SEED_USERS } from "../data/realCatalog";
@@ -707,6 +708,13 @@ export async function createTierList(uid, {
 
   setStored(STORAGE_KEY_TIERLISTS, [record, ...existing]);
 
+  // Regista o ID na lista de criações locais para permitir edição/eliminação mesmo como anónimo
+  const myLists = getStored("tierforge_created_lists", []);
+  if (!myLists.includes(newId)) {
+    myLists.push(newId);
+    setStored("tierforge_created_lists", myLists);
+  }
+
   if (isFirebaseConfigured() && uid) {
     try {
       await addDoc(collection(db, "tierlists"), {
@@ -786,6 +794,95 @@ export function calculateCommunityConsensus(templateId) {
     totalSubmissions: submissions.length,
     items,
   };
+}
+
+// Verifica se o utilizador tem permissões de edição/eliminação sobre uma Tier List
+export function canEditTierList(tierList, currentUid = null) {
+  if (!tierList) return false;
+  // Se o utilizador tiver sessão iniciada e for o dono
+  if (currentUid && tierList.ownerId === currentUid) return true;
+  // Se tiver sido criada neste navegador localmente (mesmo como anónimo)
+  const myLists = getStored("tierforge_created_lists", []);
+  if (myLists.includes(tierList.id)) return true;
+  return false;
+}
+
+// Atualizar uma Tier List existente
+export async function updateTierList(id, uid, updates = {}) {
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const index = stored.findIndex((l) => l.id === id);
+  if (index === -1) {
+    throw new Error("Tier List não encontrada.");
+  }
+
+  const existing = stored[index];
+  if (!canEditTierList(existing, uid)) {
+    throw new Error("Não tens permissão para editar esta Tier List.");
+  }
+
+  const updated = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  stored[index] = updated;
+  setStored(STORAGE_KEY_TIERLISTS, stored);
+
+  if (isFirebaseConfigured() && existing.ownerId !== "anon") {
+    try {
+      const ref = doc(db, "tierlists", id);
+      await setDoc(ref, updated, { merge: true });
+    } catch (e) {
+      console.warn("Could not update Firestore document:", e);
+    }
+  }
+
+  return updated;
+}
+
+// Eliminar uma Tier List
+export async function deleteTierList(id, uid) {
+  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  const existing = stored.find((l) => l.id === id);
+  if (!existing) {
+    throw new Error("Tier List não encontrada.");
+  }
+
+  if (!canEditTierList(existing, uid)) {
+    throw new Error("Não tens permissão para eliminar esta Tier List.");
+  }
+
+  // Remove da lista
+  const filtered = stored.filter((l) => l.id !== id);
+  setStored(STORAGE_KEY_TIERLISTS, filtered);
+
+  // Remove dos meus IDs criados
+  const myLists = getStored("tierforge_created_lists", []);
+  setStored(
+    "tierforge_created_lists",
+    myLists.filter((x) => x !== id)
+  );
+
+  // Remove comentários e votos associados
+  const comments = getStored(STORAGE_KEY_COMMENTS, {});
+  delete comments[id];
+  setStored(STORAGE_KEY_COMMENTS, comments);
+
+  const votes = getStored(STORAGE_KEY_USER_VOTES, {});
+  delete votes[id];
+  setStored(STORAGE_KEY_USER_VOTES, votes);
+
+  if (isFirebaseConfigured() && existing.ownerId !== "anon") {
+    try {
+      const ref = doc(db, "tierlists", id);
+      await deleteDoc(ref);
+    } catch (e) {
+      console.warn("Could not delete from Firestore:", e);
+    }
+  }
+
+  return true;
 }
 
 // Obter tier lists criadas por um utilizador (com filtro de privadas)

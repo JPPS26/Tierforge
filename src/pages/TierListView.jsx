@@ -16,6 +16,8 @@ import {
   Sparkles,
   Users,
   User,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import {
   getTierListById,
@@ -26,6 +28,8 @@ import {
   addCommentToTierList,
   getRemixesForTemplate,
   calculateCommunityConsensus,
+  canEditTierList,
+  deleteTierList,
 } from "../services/db";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -48,6 +52,7 @@ export default function TierListView() {
   const [shareOpen, setShareOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [duelOpen, setDuelOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState("author"); // "author" | "consensus"
   const [remixes, setRemixes] = useState([]);
   const [consensusData, setConsensusData] = useState(null);
@@ -105,6 +110,25 @@ export default function TierListView() {
     setCommentText("");
   }
 
+  async function handleDelete() {
+    if (!tierList) return;
+    const confirmed = window.confirm(
+      "Tens a certeza que desejas eliminar permanentemente esta Tier List? Esta ação não pode ser desfeita."
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteTierList(tierList.id, user?.uid);
+      alert("Tier List eliminada com sucesso.");
+      navigate("/explore");
+    } catch (err) {
+      console.error("Erro ao eliminar tier list:", err);
+      alert("Erro ao eliminar a Tier List. Tenta novamente.");
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-[1080px] px-6 py-28 text-center text-muted">
@@ -134,6 +158,7 @@ export default function TierListView() {
     );
   }
 
+  const canEdit = canEditTierList(tierList, user?.uid);
   const displayMode = tierList.itemDisplayMode || "both";
   const items = tierList.items || [];
   const currentTiers = viewMode === "consensus" && consensusData ? consensusData.tiers : (tierList.tiers || []);
@@ -190,6 +215,32 @@ export default function TierListView() {
             <Share2 size={14} className="text-accent" />
             <span>{t("tierListView.share")}</span>
           </button>
+
+          {/* Editar e Eliminar se for o criador */}
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                onClick={() => navigate(`/edit/${tierList.id}`)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+                title="Editar esta Tier List"
+              >
+                <Edit2 size={14} className="text-accent" />
+                <span>Editar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[13px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-sm disabled:opacity-50"
+                title="Eliminar permanentemente esta Tier List"
+              >
+                <Trash2 size={14} />
+                <span>{deleting ? "A eliminar..." : "Eliminar"}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

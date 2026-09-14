@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link, useSearchParams, useParams } from "react-router-dom";
 import {
   Plus,
   Palette,
@@ -25,7 +25,15 @@ import {
 import { PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { createTierList, searchCatalog, getCategories, getTierListById } from "../services/db";
+import {
+  createTierList,
+  searchCatalog,
+  getCategories,
+  getTierListById,
+  updateTierList,
+  deleteTierList,
+  canEditTierList,
+} from "../services/db";
 import ShareModal from "../components/ShareModal";
 import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
@@ -291,7 +299,14 @@ export default function Builder() {
 
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
+  const { id: paramEditId } = useParams();
+  const editId = paramEditId || searchParams.get("edit");
   const remixId = searchParams.get("remix");
+
+  // Estado de Edição de Tier List Existente
+  const [isEditing, setIsEditing] = useState(false);
+  const [editListId, setEditListId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Estado de Remix de Template
   const [parentTemplateId, setParentTemplateId] = useState(null);
@@ -314,10 +329,41 @@ export default function Builder() {
   const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
+  // Carregar Dados se for Modo de Edição
+  useEffect(() => {
+    async function loadEditData() {
+      if (!editId) return;
+      try {
+        const data = await getTierListById(editId, user?.uid);
+        if (data) {
+          if (!canEditTierList(data, user?.uid)) {
+            alert("Não tens permissão para editar esta Tier List.");
+            navigate(`/tier-list/${editId}`);
+            return;
+          }
+          setIsEditing(true);
+          setEditListId(data.id);
+          setTitle(data.title || "");
+          setCategory(data.category || "gaming");
+          setSubcategory(data.subcategory || "");
+          setVisibility(data.visibility || "public");
+          if (data.itemDisplayMode) setDisplayMode(data.itemDisplayMode);
+          if (data.tiers && data.tiers.length > 0) setTiers(data.tiers);
+          if (data.items) setItems(data.items);
+          if (data.placements) setPlacements(data.placements);
+          setManualCategoryOverride(true);
+        }
+      } catch (err) {
+        console.warn("Could not load tier list for edit:", err);
+      }
+    }
+    loadEditData();
+  }, [editId, user?.uid, navigate]);
+
   // Carregar Template se for Remix (?remix=...)
   useEffect(() => {
     async function loadRemixTemplate() {
-      if (!remixId) return;
+      if (!remixId || editId) return;
       setIsRemixLoading(true);
       try {
         const tmpl = await getTierListById(remixId);
@@ -344,7 +390,7 @@ export default function Builder() {
       }
     }
     loadRemixTemplate();
-  }, [remixId]);
+  }, [remixId, editId]);
 
   // Listener Global para Colar Imagens (Ctrl + V)
   useEffect(() => {
@@ -628,34 +674,89 @@ export default function Builder() {
       const creatorHandle = profile?.handle || (user ? `user_${user.uid.slice(0, 6)}` : "anon");
       const creatorAvatar = profile?.avatar || user?.photoURL || "";
 
-      const result = await createTierList(user?.uid || null, {
-        title: title.trim() || t("builder.defaultTitle"),
-        category,
-        subcategory,
-        visibility,
-        language,
-        tiers,
-        items,
-        placements,
-        itemDisplayMode: displayMode,
-        creatorName,
-        creatorHandle,
-        creatorAvatar,
-        parentTemplateId,
-        parentTemplateTitle,
-      });
+      if (isEditing && editListId) {
+        await updateTierList(editListId, user?.uid, {
+          title: title.trim() || t("builder.defaultTitle"),
+          category,
+          subcategory,
+          visibility,
+          language,
+          tiers,
+          items,
+          placements,
+          itemDisplayMode: displayMode,
+        });
 
-      setSavedId(result.id);
-      setSaveMsg(t("builder.savedSuccess"));
+        setSavedId(editListId);
+        setSaveMsg("Tier List atualizada com sucesso!");
+      } else {
+        const result = await createTierList(user?.uid || null, {
+          title: title.trim() || t("builder.defaultTitle"),
+          category,
+          subcategory,
+          visibility,
+          language,
+          tiers,
+          items,
+          placements,
+          itemDisplayMode: displayMode,
+          creatorName,
+          creatorHandle,
+          creatorAvatar,
+          parentTemplateId,
+          parentTemplateTitle,
+        });
+
+        setSavedId(result.id);
+        setSaveMsg(t("builder.savedSuccess"));
+      }
     } catch (err) {
-      setSaveMsg(t("builder.saveError"));
+      setSaveMsg(isEditing ? "Erro ao atualizar a Tier List" : t("builder.saveError"));
     } finally {
       setSaving(false);
     }
   }
 
+  async function handleDelete() {
+    if (!isEditing || !editListId) return;
+    const confirmed = window.confirm(
+      "Tens a certeza que desejas eliminar permanentemente esta Tier List? Esta ação não pode ser desfeita."
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteTierList(editListId, user?.uid);
+      alert("Tier List eliminada com sucesso.");
+      navigate("/explore");
+    } catch (err) {
+      console.error("Erro ao eliminar tier list:", err);
+      alert("Erro ao eliminar a Tier List. Tenta novamente.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[1140px] px-4 sm:px-6 pb-28 pt-8">
+      {/* Banner se estiver em Modo de Edição */}
+      {isEditing && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accentSoft/40 px-4 py-3 text-xs font-semibold text-accent shadow-sm">
+          <div className="flex items-center gap-2">
+            <Edit2 size={16} />
+            <span>
+              <strong>Modo de Edição:</strong> Estás a editar a Tier List &ldquo;{title}&rdquo;.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(`/tier-list/${editListId}`)}
+            className="rounded-lg bg-surface px-2.5 py-1 text-[11px] font-bold text-text hover:bg-surface2 transition-colors"
+          >
+            Ver Página Pública →
+          </button>
+        </div>
+      )}
+
       {/* Barra de Título, Tema e Visibilidade */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
         <div className="flex-1 min-w-[280px]">
@@ -774,8 +875,21 @@ export default function Builder() {
           </div>
         </div>
 
-        {/* Ações: Publicar e Partilhar */}
-        <div className="flex items-center gap-2.5">
+        {/* Ações: Eliminar, Partilhar e Guardar/Publicar */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[13px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors shadow-sm disabled:opacity-50"
+              title="Eliminar permanentemente esta Tier List"
+            >
+              <Trash2 size={14} />
+              <span>{deleting ? "A eliminar..." : "Eliminar Lista"}</span>
+            </button>
+          )}
+
           {savedId && (
             <>
               <button
@@ -794,7 +908,13 @@ export default function Builder() {
           )}
 
           <PrimaryButton small icon={Check} onClick={handlePublish} disabled={saving}>
-            {saving ? t("builder.publishing") : t("builder.publish")}
+            {saving
+              ? isEditing
+                ? "A guardar…"
+                : t("builder.publishing")
+              : isEditing
+              ? "Guardar Alterações"
+              : t("builder.publish")}
           </PrimaryButton>
         </div>
       </div>
