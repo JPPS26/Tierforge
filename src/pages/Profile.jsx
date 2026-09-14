@@ -22,6 +22,7 @@ import TierListCard from "../components/TierListCard";
 import ProfileEditModal from "../components/ProfileEditModal";
 import ShareModal from "../components/ShareModal";
 import FollowersModal from "../components/FollowersModal";
+import AuthRequiredModal from "../components/AuthRequiredModal";
 import {
   getUserByHandle,
   getUserByUid,
@@ -46,6 +47,7 @@ export default function Profile() {
   const [followersModalTab, setFollowersModalTab] = useState("followers");
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Determina se o utilizador está a ver o seu próprio perfil
   const isOwnProfile =
@@ -86,7 +88,7 @@ export default function Profile() {
 
   function handleFollowToggle() {
     if (!user) {
-      alert("Inicia sessão para seguir criadores.");
+      setAuthModalOpen(true);
       return;
     }
     if (!targetUser || isOwnProfile) return;
@@ -461,6 +463,14 @@ export default function Profile() {
         targetUser={targetUser}
         initialTab={followersModalTab}
         onFollowChange={loadProfile}
+      />
+
+      {/* Modal de Autenticação para Seguir Criadores */}
+      <AuthRequiredModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        title="Inicia sessão para seguir criadores"
+        description="Para seguir os teus criadores favoritos e acompanhar os seus novos rankings, precisas de iniciar sessão com uma conta."
       />
     </div>
   );

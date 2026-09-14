@@ -10,7 +10,12 @@ export default function Login() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
+  const fromState = location.state?.from;
+  const from = fromState
+    ? typeof fromState === "string"
+      ? fromState
+      : fromState.pathname + (fromState.search || "")
+    : "/";
 
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

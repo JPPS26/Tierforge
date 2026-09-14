@@ -5,6 +5,7 @@ import { Avatar, Badge } from "./UI";
 import { getUserFollowers, getUserFollowing, toggleFollowUser } from "../services/db";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import AuthRequiredModal from "./AuthRequiredModal";
 
 export default function FollowersModal({
   isOpen,
@@ -20,6 +21,7 @@ export default function FollowersModal({
   const [followersList, setFollowersList] = useState([]);
   const [followingList, setFollowingList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -58,7 +60,7 @@ export default function FollowersModal({
 
   const handleToggleFollow = (itemUser) => {
     if (!user) {
-      alert("Inicia sessão para seguir criadores.");
+      setAuthModalOpen(true);
       return;
     }
     if (user.uid === itemUser.uid) return;
@@ -267,6 +269,14 @@ export default function FollowersModal({
           </button>
         </div>
       </div>
+
+      {/* Modal de Autenticação para Seguir */}
+      <AuthRequiredModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        title="Inicia sessão para seguir criadores"
+        description="Para seguir os teus criadores favoritos e acompanhar os seus rankings, precisas de iniciar sessão com uma conta."
+      />
     </div>
   );
 }

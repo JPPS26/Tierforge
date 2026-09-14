@@ -23,12 +23,12 @@ import {
   Check,
   X,
   Search,
+  LogIn,
 } from "lucide-react";
 import {
   getTierListById,
   voteTierList,
   getUserVoteForList,
-  getGuestClientId,
   incrementViews,
   getCommentsForTierList,
   addCommentToTierList,
@@ -50,6 +50,7 @@ import { Avatar, Badge, PrimaryButton, GhostButton, colorFor } from "../componen
 import ShareModal from "../components/ShareModal";
 import ExportModal from "../components/ExportModal";
 import DuelModeModal from "../components/DuelModeModal";
+import AuthRequiredModal from "../components/AuthRequiredModal";
 
 function FormattedCommentText({ text }) {
   if (!text) return null;
@@ -102,8 +103,11 @@ export default function TierListView() {
   const [remixes, setRemixes] = useState([]);
   const [consensusData, setConsensusData] = useState(null);
 
-  const guestId = getGuestClientId();
-  const voterId = user?.uid || guestId;
+  const [authModalConfig, setAuthModalConfig] = useState({
+    isOpen: false,
+    title: "",
+    description: "",
+  });
 
   useEffect(() => {
     async function loadData() {
@@ -116,8 +120,12 @@ export default function TierListView() {
           incrementViews(id);
           const comms = getCommentsForTierList(id);
           setComments(comms);
-          const initialVote = getUserVoteForList(id, voterId);
-          setUserVote(initialVote);
+          if (user?.uid) {
+            const initialVote = getUserVoteForList(id, user.uid);
+            setUserVote(initialVote);
+          } else {
+            setUserVote(0);
+          }
 
           // Carregar remixes e consenso da comunidade
           const rmx = getRemixesForTemplate(id);
@@ -137,13 +145,29 @@ export default function TierListView() {
   }, [id, user?.uid]);
 
   async function handleVote(direction) {
-    const res = await voteTierList(id, voterId, direction);
+    if (!user) {
+      setAuthModalConfig({
+        isOpen: true,
+        title: "Inicia sessão para votar",
+        description: "Precisas de ter conta para dar like ou votar nas Tier Lists da comunidade.",
+      });
+      return;
+    }
+    const res = await voteTierList(id, user.uid, direction);
     setUserVote(res.userVote);
     setTierList((prev) => (prev ? { ...prev, votes: res.votes } : null));
   }
 
   function handleAddComment(e) {
     e.preventDefault();
+    if (!user) {
+      setAuthModalConfig({
+        isOpen: true,
+        title: "Inicia sessão para comentar",
+        description: "Precisas de ter conta para publicar comentários e participar nas discussões.",
+      });
+      return;
+    }
     setCommentError("");
     if (!commentText.trim()) return;
 
@@ -155,10 +179,10 @@ export default function TierListView() {
 
     try {
       addCommentToTierList(id, {
-        userUid: user?.uid || null,
-        userName: profile?.displayName || user?.displayName || "Visitante",
-        userHandle: profile?.handle || (user ? `user_${user.uid.slice(0, 5)}` : ""),
-        userAvatar: profile?.avatar || user?.photoURL || "",
+        userUid: user.uid,
+        userName: profile?.displayName || user.displayName || "Criador",
+        userHandle: profile?.handle || `user_${user.uid.slice(0, 5)}`,
+        userAvatar: profile?.avatar || user.photoURL || "",
         text: commentText.trim(),
         tierListOwnerId: tierList.ownerId,
         tierListTitle: tierList.title,
@@ -172,8 +196,15 @@ export default function TierListView() {
   }
 
   function handleReact(commentId, replyId = null, reactionType = "like") {
-    const reactionVoterId = user?.uid || guestId;
-    reactToComment(id, commentId, replyId, reactionVoterId, reactionType);
+    if (!user) {
+      setAuthModalConfig({
+        isOpen: true,
+        title: "Inicia sessão para reagir",
+        description: "Precisas de ter conta para dar gosto ou reagir aos comentários.",
+      });
+      return;
+    }
+    reactToComment(id, commentId, replyId, user.uid, reactionType);
     setComments(getCommentsForTierList(id));
   }
 
@@ -227,6 +258,14 @@ export default function TierListView() {
 
   function handleAddReplySubmit(parentCommentId, e) {
     e.preventDefault();
+    if (!user) {
+      setAuthModalConfig({
+        isOpen: true,
+        title: "Inicia sessão para responder",
+        description: "Precisas de uma conta para responder a comentários nesta Tier List.",
+      });
+      return;
+    }
     setReplyError("");
     if (!replyText.trim()) return;
 
@@ -238,10 +277,10 @@ export default function TierListView() {
 
     try {
       addReplyToComment(id, parentCommentId, {
-        userUid: user?.uid || null,
-        userName: profile?.displayName || user?.displayName || "Visitante",
-        userHandle: profile?.handle || (user ? `user_${user.uid.slice(0, 5)}` : ""),
-        userAvatar: profile?.avatar || user?.photoURL || "",
+        userUid: user.uid,
+        userName: profile?.displayName || user.displayName || "Criador",
+        userHandle: profile?.handle || `user_${user.uid.slice(0, 5)}`,
+        userAvatar: profile?.avatar || user.photoURL || "",
         text: replyText.trim(),
         tierListTitle: tierList.title,
       });
@@ -607,42 +646,69 @@ export default function TierListView() {
         </div>
 
         {/* Formulário Principal de Comentário */}
-        <form onSubmit={handleAddComment} className="mb-8">
-          {commentError && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[13px] text-red-400">
-              <AlertCircle size={16} className="flex-shrink-0" />
-              <span>{commentError}</span>
+        {!user ? (
+          <div className="mb-8 rounded-3xl border border-border bg-surface/70 p-6 sm:p-8 text-center backdrop-blur-sm">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
+              <MessageCircle size={22} />
             </div>
-          )}
+            <h4 className="mb-1.5 font-display text-[17px] font-bold text-white">
+              Participa na discussão desta Tier List
+            </h4>
+            <p className="mb-5 text-[13px] text-muted max-w-md mx-auto leading-relaxed">
+              Inicia sessão com a tua conta para comentar, partilhar a tua opinião com o criador e responder aos outros membros da comunidade.
+            </p>
+            <PrimaryButton
+              small
+              icon={LogIn}
+              onClick={() =>
+                setAuthModalConfig({
+                  isOpen: true,
+                  title: "Inicia sessão para comentar",
+                  description: "Precisas de ter conta para publicar comentários e participar nos debates do TierForge.",
+                })
+              }
+            >
+              Entrar para Comentar
+            </PrimaryButton>
+          </div>
+        ) : (
+          <form onSubmit={handleAddComment} className="mb-8">
+            {commentError && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[13px] text-red-400">
+                <AlertCircle size={16} className="flex-shrink-0" />
+                <span>{commentError}</span>
+              </div>
+            )}
 
-          <div className="flex gap-3">
-            <Avatar
-              name={profile?.displayName || user?.displayName || "Visitante"}
-              image={profile?.avatar || user?.photoURL}
-              size={36}
-            />
-            <div className="flex-1">
-              <textarea
-                value={commentText}
-                onChange={(e) => {
-                  setCommentText(e.target.value);
-                  if (commentError) setCommentError("");
-                }}
-                placeholder="Escreve a tua opinião… Podes mencionar criadores com @handle"
-                rows={3}
-                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
+            <div className="flex gap-3">
+              <Avatar
+                name={profile?.displayName || user?.displayName || "Criador"}
+                image={profile?.avatar || user?.photoURL}
+                size={36}
               />
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] text-mutedDim">
-                  💡 Dica: podes identificar criadores com <strong className="text-accent font-semibold">@handle</strong>. {!user && <span className="text-muted">(A comentar livremente como visitante)</span>}
-                </span>
-                <PrimaryButton small icon={Send} type="submit" disabled={!commentText.trim()}>
-                  {t("tierListView.submitComment")}
-                </PrimaryButton>
+              <div className="flex-1">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => {
+                    setCommentText(e.target.value);
+                    if (commentError) setCommentError("");
+                  }}
+                  placeholder="Escreve a tua opinião… Podes mencionar criadores com @handle"
+                  rows={3}
+                  className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
+                />
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] text-mutedDim">
+                    💡 Dica: podes identificar criadores com <strong className="text-accent font-semibold">@handle</strong>.
+                  </span>
+                  <PrimaryButton small icon={Send} type="submit" disabled={!commentText.trim()}>
+                    {t("tierListView.submitComment")}
+                  </PrimaryButton>
+                </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
+        )}
 
         {/* Lista de Comentários */}
         <div className="flex flex-col gap-4">
@@ -806,6 +872,14 @@ export default function TierListView() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (!user) {
+                            setAuthModalConfig({
+                              isOpen: true,
+                              title: "Inicia sessão para responder",
+                              description: "Precisas de ter conta para responder a comentários nesta Tier List.",
+                            });
+                            return;
+                          }
                           if (replyingTo === c.id) {
                             setReplyingTo(null);
                             setReplyText("");
@@ -1066,6 +1140,14 @@ export default function TierListView() {
         onApplyPlacements={() => {
           navigate(`/create?remix=${tierList.id}`);
         }}
+      />
+
+      {/* Modal de Autenticação para Interações */}
+      <AuthRequiredModal
+        isOpen={authModalConfig.isOpen}
+        onClose={() => setAuthModalConfig({ ...authModalConfig, isOpen: false })}
+        title={authModalConfig.title}
+        description={authModalConfig.description}
       />
     </div>
   );

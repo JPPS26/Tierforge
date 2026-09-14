@@ -33,6 +33,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import AuthRequiredModal from "../components/AuthRequiredModal";
 
 const ICON_MAP = {
   football: Trophy,
@@ -60,6 +61,7 @@ export default function Categories() {
   const [popularCategories, setPopularCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Form states
   const [newCatName, setNewCatName] = useState("");
@@ -137,7 +139,13 @@ export default function Categories() {
 
         <button
           type="button"
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            if (!user) {
+              setAuthModalOpen(true);
+              return;
+            }
+            setShowCreateModal(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-accent text-black font-bold text-sm hover:opacity-90 transition-all shadow-glow"
         >
           <Plus size={16} />
@@ -235,6 +243,10 @@ export default function Categories() {
                 <button
                   type="button"
                   onClick={() => {
+                    if (!user) {
+                      setAuthModalOpen(true);
+                      return;
+                    }
                     setNewCatName(searchQuery);
                     setShowCreateModal(true);
                   }}
@@ -424,6 +436,14 @@ export default function Categories() {
           </div>
         </div>
       )}
+
+      {/* Modal de Autenticação para Propor Categorias */}
+      <AuthRequiredModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        title="Inicia sessão para propor categorias"
+        description="Para sugerir e criar novas categorias para a comunidade do TierForge, precisas de iniciar sessão com uma conta."
+      />
     </div>
   );
 }

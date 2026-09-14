@@ -666,6 +666,11 @@ export default function Builder() {
   }
 
   async function handlePublish() {
+    if (!user) {
+      alert("Precisas de ter sessão iniciada para criar ou publicar uma Tier List.");
+      navigate("/login");
+      return;
+    }
     setSaving(true);
     setSaveMsg("");
     try {

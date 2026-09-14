@@ -41,9 +41,23 @@ export default function App() {
           {/* Perfil Público Partilhável com #handle (ex: /profile/rodrigomatos) */}
           <Route path="/profile/:handle" element={<Profile />} />
 
-          {/* Criação e Edição de Tier Lists */}
-          <Route path="/create" element={<Builder />} />
-          <Route path="/edit/:id" element={<Builder />} />
+          {/* Criação e Edição de Tier Lists (Apenas com Conta) */}
+          <Route
+            path="/create"
+            element={
+              <ProtectedRoute>
+                <Builder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit/:id"
+            element={
+              <ProtectedRoute>
+                <Builder />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
 
