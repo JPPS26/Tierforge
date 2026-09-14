@@ -120,14 +120,15 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
   const cleanHandle = handle.replace(/^#/, "").replace(/^@/, "").toLowerCase().trim();
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="relative flex max-h-[90vh] w-full max-w-[560px] flex-col rounded-3xl border border-white/10 bg-[#111218] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9),0_0_30px_-10px_rgba(124,92,255,0.25)] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
+        onClick={onClose}
       >
+        <div
+          className="relative flex max-h-[90vh] w-full max-w-[560px] flex-col rounded-3xl border border-white/10 bg-[#111218] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9),0_0_30px_-10px_rgba(124,92,255,0.25)] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Glow de ambientação no topo */}
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-80 rounded-full bg-accent/20 blur-[80px]" />
 
@@ -398,12 +399,14 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
           </PrimaryButton>
         </div>
       </div>
+    </div>
 
       {/* Modal de Confirmação de Eliminação de Conta */}
       <DeleteAccountModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
+        onAccountDeleted={onClose}
       />
-    </div>
+    </>
   );
 }

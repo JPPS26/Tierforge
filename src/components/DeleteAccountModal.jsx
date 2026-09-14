@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { GhostButton } from "./UI";
 
-export default function DeleteAccountModal({ isOpen, onClose }) {
+export default function DeleteAccountModal({ isOpen, onClose, onAccountDeleted }) {
   const { user, profile, deleteAccount } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ export default function DeleteAccountModal({ isOpen, onClose }) {
     try {
       await deleteAccount();
       onClose();
+      if (onAccountDeleted) onAccountDeleted();
       alert("A tua conta e todos os teus dados foram permanentemente eliminados.");
       navigate("/");
     } catch (err) {
@@ -37,8 +38,14 @@ export default function DeleteAccountModal({ isOpen, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-[500px] rounded-3xl border border-red-500/40 bg-[#121118] p-6 shadow-2xl relative overflow-hidden">
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[500px] rounded-3xl border border-red-500/40 bg-[#121118] p-6 shadow-2xl relative overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Glow de fundo */}
         <div className="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-red-500/15 blur-3xl pointer-events-none" />
 
