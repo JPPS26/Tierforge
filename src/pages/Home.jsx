@@ -21,11 +21,95 @@ import {
   MessageSquare,
   CheckCircle2,
   ArrowRight,
+  Gamepad2,
+  Film,
+  Tv,
+  Music,
+  Cpu,
+  Utensils,
+  Car,
+  Globe,
+  Dumbbell,
+  Briefcase,
+  GraduationCap,
+  Shield,
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
 import { getTierLists, getActiveCategories, getGlobalStats } from "../services/db";
+
+const CATEGORY_ICONS = {
+  gaming: Gamepad2,
+  football: Trophy,
+  sports: Flame,
+  movies: Film,
+  tvshows: Tv,
+  anime: Sparkles,
+  music: Music,
+  tech: Cpu,
+  food: Utensils,
+  vehicles: Car,
+  culture: Globe,
+  lifestyle: Dumbbell,
+  business: Briefcase,
+  science: GraduationCap,
+  creators: Zap,
+  geek: Shield,
+  Gamepad2,
+  Trophy,
+  Flame,
+  Film,
+  Tv,
+  Music,
+  Cpu,
+  Sparkles,
+};
+
+const CATEGORY_COLORS = {
+  gaming: "#7C5CFF",
+  football: "#FF3B5C",
+  sports: "#FF9F43",
+  movies: "#FF5252",
+  tvshows: "#31D8A8",
+  anime: "#FF6B7A",
+  music: "#FFD23F",
+  tech: "#00E5A3",
+  food: "#FFAA00",
+  vehicles: "#38B6FF",
+  culture: "#9A7CFF",
+  lifestyle: "#2EC4B6",
+  business: "#6B7280",
+  science: "#8B5CF6",
+  creators: "#F59E0B",
+  geek: "#6366F1",
+};
+
+function getCatVisuals(cat) {
+  const key = (cat.id || cat.slug || "").toLowerCase();
+  const IconComponent = CATEGORY_ICONS[key] || CATEGORY_ICONS[cat.icon] || Layers;
+  const color = cat.color || CATEGORY_COLORS[key] || "#7C5CFF";
+  return { IconComponent, color };
+}
+
+const RANK_STYLES = [
+  {
+    badge: "👑 #1 TOP",
+    style: "bg-gradient-to-r from-[#FFD166]/25 to-[#FF9F43]/20 border-amber-400/50 text-[#FFD166] shadow-[0_0_15px_rgba(255,209,102,0.3)]",
+  },
+  {
+    badge: "🥈 #2",
+    style: "bg-gradient-to-r from-[#00E5A3]/25 to-[#38B6FF]/20 border-[#00E5A3]/50 text-[#5CFFCF] shadow-[0_0_15px_rgba(0,229,163,0.3)]",
+  },
+  {
+    badge: "🥉 #3",
+    style: "bg-gradient-to-r from-[#FF5470]/25 to-[#FF6B7A]/20 border-[#FF5470]/50 text-[#FFA4B2] shadow-[0_0_15px_rgba(255,84,112,0.3)]",
+  },
+  {
+    badge: "⚡ #4",
+    style: "bg-[#1A1828]/90 border-accent/40 text-[#B6A5FF] shadow-md",
+  },
+];
 
 function LiveHeroTierList({ t }) {
   const [likes, setLikes] = useState(342);
@@ -174,16 +258,39 @@ function LiveHeroTierList({ t }) {
   );
 }
 
-function SectionHeader({ icon: Icon, title, to, seeAllText }) {
+function SectionHeader({ icon: Icon, badgeText, title, subtitle, to, seeAllText, badgeTone = "accent" }) {
+  const badgeStyles = {
+    accent: "border-accent/30 bg-accent/10 text-[#B6A5FF]",
+    flame: "border-[#FF5470]/30 bg-[#FF5470]/10 text-[#FF8599]",
+    emerald: "border-[#00E5A3]/30 bg-[#00E5A3]/10 text-[#5CFFCF]",
+    amber: "border-[#FFD166]/30 bg-[#FFD166]/10 text-[#FFE299]",
+  }[badgeTone] || "border-accent/30 bg-accent/10 text-[#B6A5FF]";
+
   return (
-    <div className="mb-5 flex items-center justify-between">
-      <div className="flex items-center gap-2.5">
-        <Icon size={20} className="text-[#B6A5FF]" />
-        <h2 className="font-display text-[21px] font-bold text-text">{title}</h2>
+    <div className="mb-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-5">
+      <div>
+        {badgeText && (
+          <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-[11px] font-bold mb-2 shadow-sm ${badgeStyles}`}>
+            {Icon && <Icon size={13} />}
+            <span>{badgeText}</span>
+          </div>
+        )}
+        <h2 className="font-display text-[22px] sm:text-[28px] font-black text-white tracking-tight leading-tight">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="mt-1 text-[13.5px] text-muted font-normal max-w-xl">
+            {subtitle}
+          </p>
+        )}
       </div>
       {to && (
-        <Link to={to} className="text-[13.5px] font-semibold text-muted hover:text-text transition-colors">
-          {seeAllText}
+        <Link
+          to={to}
+          className="group inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-white/10 bg-surface/80 px-4 py-2 text-[13px] font-bold text-white backdrop-blur-md transition-all duration-200 hover:border-accent/60 hover:bg-surface2 hover:text-white hover:shadow-glow shrink-0"
+        >
+          <span>{seeAllText || "Ver tudo"}</span>
+          <ArrowRight size={14} className="text-accent transition-transform duration-200 group-hover:translate-x-1" />
         </Link>
       )}
     </div>
@@ -321,66 +428,126 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Em Destaque (Dados Reais) com Empty State elegante */}
-      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-16">
+      {/* Em Destaque (Dados Reais) */}
+      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-20">
         <SectionHeader
-          icon={TrendingUp}
-          title={t("home.trendingTitle")}
+          icon={Flame}
+          badgeTone="flame"
+          badgeText="Em Alta nas Últimas 24h"
+          title={t("home.trendingTitle") || "Em destaque agora"}
+          subtitle="As tier lists com mais votos, debates acirrados e atividade da comunidade."
           to="/explore"
-          seeAllText={t("home.seeAll")}
+          seeAllText={t("home.seeAll") || "Ver Todas as Listas"}
         />
         {trendingLists.length === 0 ? (
-          <EmptyState
-            icon={Sparkles}
-            title="🚀 Ainda não existem Tier Lists em destaque."
-            body="Cria a primeira tier list da plataforma e sê o pioneiro a aparecer aqui!"
-            cta={
-              <Link to="/create" className="inline-block mt-2">
-                <PrimaryButton small icon={Plus}>{t("home.createBtn")}</PrimaryButton>
+          <div className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] p-10 sm:p-12 text-center shadow-xl backdrop-blur-xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#FF5470]/30 bg-[#FF5470]/10 text-[#FF5470] shadow-[0_0_20px_rgba(255,84,112,0.15)]">
+              <Flame size={26} />
+            </div>
+            <h3 className="font-display text-[20px] font-bold text-white">
+              Ainda não existem Tier Lists em destaque
+            </h3>
+            <p className="mt-2 text-[14px] text-muted max-w-md mx-auto leading-relaxed">
+              Cria a tua própria tier list agora e sê o pioneiro a conquistar o topo do ranking comunitário!
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Link to="/create">
+                <PrimaryButton icon={Plus}>{t("home.createBtn") || "Criar Tier List"}</PrimaryButton>
               </Link>
-            }
-          />
+            </div>
+          </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
-            {trendingLists.map((l) => (
-              <TierListCard key={l.id} list={l} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+            {trendingLists.map((l, index) => {
+              const rankInfo = RANK_STYLES[index];
+              return (
+                <div key={l.id} className="relative group/rank flex flex-col">
+                  {rankInfo && (
+                    <div
+                      className={`absolute -top-2.5 left-4 z-20 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-black backdrop-blur-md transition-all duration-200 group-hover/rank:scale-105 pointer-events-none ${rankInfo.style}`}
+                    >
+                      {rankInfo.badge}
+                    </div>
+                  )}
+                  <TierListCard list={l} />
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* Categorias Temáticas */}
-      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-16">
+      {/* Explorar por Categoria */}
+      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-24">
         <SectionHeader
-          icon={SlidersHorizontal}
-          title={t("home.categoriesTitle")}
+          icon={Layers}
+          badgeTone="accent"
+          badgeText="Comunidades & Nichos"
+          title={t("home.categoriesTitle") || "Explorar por categoria"}
+          subtitle="Navega pelas comunidades ativas e encontra tier lists do teu universo favorito."
           to="/categories"
-          seeAllText={t("home.seeAll")}
+          seeAllText={t("home.seeAll") || "Todas as Categorias"}
         />
         {categories.length === 0 ? (
-          <EmptyState
-            icon={SlidersHorizontal}
-            title="Ainda não existem categorias"
-            body="As categorias surgirão aqui automaticamente."
-            actionLabel={t("home.createBtn")}
-            onAction={() => (window.location.href = "/create")}
-          />
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-            {categories.slice(0, 12).map((c) => (
-              <Link
-                key={c.id}
-                to={`/explore?category=${c.id}`}
-                className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-all hover:border-accent hover:bg-surface2 hover:-translate-y-0.5 shadow-sm"
-              >
-                <div className="font-display text-[15px] font-bold text-text group-hover:text-accent transition-colors">
-                  {t(`categories.${c.id}`) || c.name}
-                </div>
-                <div className="text-[12px] font-semibold text-mutedDim">
-                  {c.count > 0 ? t("home.listsCount", { count: c.count }) : "Explorar temas"}
-                </div>
+          <div className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] p-10 sm:p-12 text-center shadow-xl backdrop-blur-xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent shadow-inner">
+              <Layers size={26} />
+            </div>
+            <h3 className="font-display text-[20px] font-bold text-white">
+              Ainda não existem categorias ativas
+            </h3>
+            <p className="mt-2 text-[14px] text-muted max-w-md mx-auto leading-relaxed">
+              As categorias surgirão aqui automaticamente à medida que os criadores publicarem listas.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Link to="/create">
+                <PrimaryButton icon={Plus}>{t("home.createBtn") || "Criar Tier List"}</PrimaryButton>
               </Link>
-            ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
+            {categories.slice(0, 12).map((c) => {
+              const { IconComponent, color } = getCatVisuals(c);
+              return (
+                <Link
+                  key={c.id}
+                  to={`/explore?category=${c.id}`}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/[0.08] bg-[#14141F]/80 p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-[#1A1A28] hover:shadow-xl hover:shadow-black/50"
+                >
+                  {/* Glow ambiente colorido no hover */}
+                  <div
+                    className="absolute -top-10 -right-10 h-24 w-24 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none"
+                    style={{ background: color }}
+                  />
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 shadow-sm"
+                      style={{
+                        background: `${color}18`,
+                        border: `1px solid ${color}35`,
+                        color: color,
+                      }}
+                    >
+                      <IconComponent size={20} />
+                    </div>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/[0.05] text-mutedDim border border-white/[0.06] group-hover:border-white/15 group-hover:text-white transition-colors">
+                      {c.count || 0}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="font-display text-[15px] font-bold text-white group-hover:text-[#B6A5FF] transition-colors tracking-tight truncate">
+                      {t(`categories.${c.id}`) || c.name}
+                    </div>
+                    <p className="mt-0.5 text-[11.5px] font-medium text-mutedDim group-hover:text-muted transition-colors">
+                      {c.count > 0 ? t("home.listsCount", { count: c.count }) : "Explorar"}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
