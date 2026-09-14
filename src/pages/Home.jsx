@@ -13,6 +13,14 @@ import {
   Database,
   Layers,
   Sparkles,
+  Target,
+  Swords,
+  Users,
+  Compass,
+  Download,
+  MessageSquare,
+  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
@@ -238,41 +246,136 @@ export default function Home() {
         )}
       </section>
 
-      {/* Funcionalidades Principais */}
-      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-24">
-        <SectionHeader icon={Zap} title={t("home.featuresTitle")} />
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+      {/* Secção: O Objetivo e as Principais Funções do TierWorld */}
+      <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-28">
+        {/* Cabeçalho de Secção com Badge */}
+        <div className="mb-10 text-center max-w-[760px] mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accentSoft px-3.5 py-1 text-[12px] font-bold text-[#B6A5FF] mb-3 shadow-sm">
+            <Target size={14} className="text-accent" />
+            <span>{t("home.featuresBadge") || "Missão & Funcionalidades"}</span>
+          </div>
+          <h2 className="font-display text-[26px] sm:text-[34px] font-black text-white tracking-tight leading-tight">
+            {t("home.featuresTitle") || "O Objetivo e as Principais Funções do TierWorld"}
+          </h2>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-muted">
+            {t("home.featuresSubtitle") || "Criado para ser a casa definitiva dos rankings comunitários com ferramentas modernas, livres e 100% autênticas."}
+          </p>
+        </div>
+
+        {/* Card em Destaque: O Nosso Objetivo */}
+        <div className="relative overflow-hidden rounded-[28px] border border-borderStrong bg-gradient-to-br from-[#181824] via-[#12121A] to-[#0D0D12] p-6 sm:p-9 shadow-2xl mb-8 group">
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="max-w-[720px]">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent mb-2">
+                <Sparkles size={13} /> Missão Global da Plataforma
+              </span>
+              <h3 className="font-display text-[20px] sm:text-[24px] font-bold text-white mb-3">
+                {t("home.missionTitle") || "O Nosso Objetivo: Unir a Comunidade Através de Rankings Reais"}
+              </h3>
+              <p className="text-[14px] leading-relaxed text-muted">
+                {t("home.missionDesc") || "O TierWorld nasceu com uma missão clara: substituir as ferramentas lentas e ultrapassadas por uma plataforma rápida, elegante e interativa. Aqui qualquer pessoa pode criar rankings sobre qualquer assunto — de jogos e futebol a cinema, música e tecnologia — debater com a comunidade e explorar opiniões apoiadas em dados reais e votos autênticos."}
+              </p>
+
+              {/* 3 Pilares com Badges */}
+              <div className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-white">
+                  <CheckCircle2 size={14} className="text-[#00E5A3]" />
+                  <span>{t("home.missionPillar1") || "100% Gratuito & Aberto"}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-white">
+                  <CheckCircle2 size={14} className="text-[#00E5A3]" />
+                  <span>{t("home.missionPillar2") || "Sem Bots nem Votos Falsos"}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-white">
+                  <CheckCircle2 size={14} className="text-[#00E5A3]" />
+                  <span>{t("home.missionPillar3") || "Comunidade & Perfis #ID"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0">
+              <Link
+                to="/create"
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-6 py-3.5 font-display text-[14px] font-bold text-white shadow-glow hover:from-[#8B6EFA] hover:to-[#7954F5] transition-all hover:scale-105 active:scale-95"
+              >
+                <span>Experimentar Agora</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Grelha de 6 Funções Chave do Site */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[
             {
-              icon: Database,
+              icon: Layers,
               title: t("home.feature1Title"),
               body: t("home.feature1Desc"),
+              tag: "Criação",
+              color: "#7C5CFF",
             },
             {
-              icon: Layers,
+              icon: Swords,
               title: t("home.feature2Title"),
               body: t("home.feature2Desc"),
+              tag: "Minijogo",
+              color: "#FF5470",
             },
             {
-              icon: Activity,
+              icon: Compass,
               title: t("home.feature3Title"),
               body: t("home.feature3Desc"),
+              tag: "Descoberta",
+              color: "#00E5A3",
             },
             {
-              icon: Trophy,
+              icon: Users,
               title: t("home.feature4Title"),
               body: t("home.feature4Desc"),
+              tag: "Social",
+              color: "#FFD166",
+            },
+            {
+              icon: MessageSquare,
+              title: t("home.feature5Title"),
+              body: t("home.feature5Desc"),
+              tag: "Comunidade",
+              color: "#38B6FF",
+            },
+            {
+              icon: Download,
+              title: t("home.feature6Title"),
+              body: t("home.feature6Desc"),
+              tag: "Exportação",
+              color: "#A855F7",
             },
           ].map((f) => (
             <div
               key={f.title}
-              className="rounded-3xl border border-border bg-surface p-6 transition-all hover:border-borderStrong hover:shadow-subtle"
+              className="relative flex flex-col justify-between rounded-3xl border border-border bg-surface/80 p-6 transition-all duration-300 hover:border-borderStrong hover:bg-surface hover:shadow-xl hover:-translate-y-1 group"
             >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
-                <f.icon size={21} />
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-inner transition-transform group-hover:scale-110"
+                    style={{
+                      background: `${f.color}15`,
+                      color: f.color,
+                      border: `1px solid ${f.color}35`,
+                    }}
+                  >
+                    <f.icon size={22} />
+                  </div>
+                  <span className="rounded-lg border border-border bg-surface2 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-muted">
+                    {f.tag}
+                  </span>
+                </div>
+                <h4 className="mb-2 font-display text-[17px] font-bold text-white group-hover:text-accent transition-colors">
+                  {f.title}
+                </h4>
+                <p className="text-[13.5px] leading-relaxed text-muted">{f.body}</p>
               </div>
-              <div className="mb-2 font-display text-[16.5px] font-bold text-white">{f.title}</div>
-              <div className="text-[13.5px] leading-relaxed text-muted">{f.body}</div>
             </div>
           ))}
         </div>
