@@ -371,7 +371,24 @@ export function getLeaderboard() {
   const users = getAllUsers();
   const allLists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
-  const creators = users.map((u) => {
+  const knownUids = new Set(users.map((u) => u.uid));
+  const combinedUsers = [...users];
+
+  // Garante que criadores que criaram listas com UID válido constam no ranking
+  allLists.forEach((l) => {
+    if (l.ownerId && l.ownerId !== "anon" && !knownUids.has(l.ownerId)) {
+      knownUids.add(l.ownerId);
+      combinedUsers.push({
+        uid: l.ownerId,
+        displayName: l.creator || "Criador",
+        handle: l.creatorHandle || `user_${l.ownerId.slice(0, 6)}`,
+        avatar: l.creatorAvatar || "",
+        followers: [],
+      });
+    }
+  });
+
+  const creators = combinedUsers.map((u) => {
     const userLists = allLists.filter((l) => l.ownerId === u.uid);
     const totalVotes = userLists.reduce((acc, l) => acc + (l.votes || 0), 0);
     const totalViews = userLists.reduce((acc, l) => acc + (l.views || 0), 0);
@@ -400,6 +417,7 @@ export function getLeaderboard() {
       xp: score,
       listsCount: userLists.length,
       votesCount: totalVotes,
+      viewsCount: totalViews,
       followersCount,
     };
   });
