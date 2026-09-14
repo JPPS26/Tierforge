@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Each user can only create/edit their own profile document.
     // Perfis de utilizador
     match /users/{userId} {
       allow read: if true;
@@ -9,10 +10,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Tier lists are publicly readable, but only their owner can write them.
     // Tier lists são públicas para leitura; criação pelo autor ou anónimo;
     // Atualizações permitidas para votos/visualizações ou pelo proprietário.
     match /tierlists/{listId} {
       allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
       allow create: if true;
       allow update: if true;
       allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;

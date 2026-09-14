@@ -2,8 +2,11 @@ import React from "react";
 import { Heart, Eye, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, Badge, colorFor } from "./UI";
+import { TIER_COLORS } from "../data/mock";
 import { useLanguage } from "../context/LanguageContext";
 
+function MiniTierPreview({ seedIndex }) {
+  const rows = ["S", "A", "B", "C"];
 const TIER_COLORS = {
   "S+": "#FF3B5C",
   S: "#FF6B7A",
@@ -24,6 +27,14 @@ function MiniTierPreview({ list }) {
   const placements = list.placements || {};
 
   return (
+    <div className="flex w-full flex-col gap-[3px]">
+      {rows.map((r, ri) => (
+        <div key={r} className="flex h-[22px] overflow-hidden rounded-md">
+          <div
+            className="flex w-[26px] items-center justify-center font-display text-[10.5px] font-extrabold text-[#0A0A0D]"
+            style={{ background: TIER_COLORS[r] }}
+          >
+            {r}
     <div className="flex w-full flex-col gap-[3px] overflow-hidden rounded-lg bg-surface2/60 p-1">
       {tiers.map((t) => {
         // Obter os itens colocados nesta tier
@@ -65,6 +76,19 @@ function MiniTierPreview({ list }) {
               )}
             </div>
           </div>
+          <div className="flex flex-1 items-center gap-[3px] bg-surface2 px-1">
+            {Array.from({ length: 5 - ri }).map((_, ci) => (
+              <div
+                key={ci}
+                className="h-4 w-4 rounded border border-border"
+                style={{
+                  background: `linear-gradient(135deg, ${colorFor(String(seedIndex + ri + ci))}55, #121218)`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
         );
       })}
     </div>
@@ -77,11 +101,16 @@ export default function TierListCard({ list }) {
   return (
     <Link
       to={`/tier-list/${list.id}`}
+      className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-all hover:-translate-y-[3px] hover:border-borderStrong hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.7)]"
       className="group flex flex-col justify-between gap-3.5 rounded-2xl border border-border bg-surface p-4 transition-all duration-200 hover:-translate-y-1 hover:border-borderStrong hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)]"
     >
+      <MiniTierPreview seedIndex={list.id.length} />
       <MiniTierPreview list={list} />
 
       <div>
+        <div className="mb-2 flex gap-1.5">
+          <Badge>{list.category}</Badge>
+          {list.createdDaysAgo < 2 && <Badge tone="teal">New</Badge>}
         <div className="mb-2 flex items-center gap-1.5">
           <Badge tone="accent">
             {t(`categories.${list.category}`) || list.category?.toUpperCase() || "GERAL"}
@@ -90,6 +119,10 @@ export default function TierListCard({ list }) {
             <Badge tone="teal">Novo</Badge>
           )}
         </div>
+        <div className="mb-2 font-display text-[15px] font-semibold leading-snug">{list.title}</div>
+        <div className="mb-2.5 flex items-center gap-1.5">
+          <Avatar name={list.creator} size={20} />
+          <span className="text-[12.5px] text-muted">{list.creator}</span>
 
         <h3 className="mb-2 font-display text-[15.5px] font-bold leading-snug text-text group-hover:text-accent transition-colors line-clamp-2">
           {list.title}
@@ -101,6 +134,10 @@ export default function TierListCard({ list }) {
             {list.creator || "Anónimo"}
           </span>
         </div>
+        <div className="flex items-center justify-between text-[12px] text-mutedDim">
+          <span className="flex items-center gap-1"><Heart size={13} /> {list.votes.toLocaleString()}</span>
+          <span className="flex items-center gap-1"><Eye size={13} /> {(list.views / 1000).toFixed(1)}k</span>
+          <span className="flex items-center gap-1"><MessageCircle size={13} /> {list.comments}</span>
 
         <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-[12px] text-mutedDim">
           <span className="flex items-center gap-1 font-semibold">

@@ -17,6 +17,33 @@ export default function App() {
   const { t } = useLanguage();
 
   return (
+    <div className="min-h-screen bg-bg text-text">
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create"
+          element={
+            <ProtectedRoute>
+              <Builder />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <footer className="border-t border-border px-6 py-8 text-center text-[12.5px] text-mutedDim">
+        TierForge — rank everything, argue respectfully.
     <div className="min-h-screen bg-bg text-text flex flex-col justify-between">
       <div>
         <Navbar />
