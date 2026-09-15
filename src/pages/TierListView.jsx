@@ -1144,6 +1144,7 @@ export default function TierListView() {
         title={tierList.title}
         url={window.location.href}
         description={tierList.description || "Classificação completa no TierWorld"}
+        onOpenExport={() => setExportOpen(true)}
       />
 
       {/* Modal de Exportação Social (Feed 16:9 & Stories 9:16) */}

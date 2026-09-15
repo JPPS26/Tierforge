@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   RefreshCw,
   FolderPlus,
+  Download,
 } from "lucide-react";
 import { PrimaryButton, GhostButton, colorFor } from "../components/UI";
 import { useAuth } from "../context/AuthContext";
@@ -43,6 +44,7 @@ import {
 } from "../services/db";
 import { searchApiCategories, fetchCategoryDetailsFromApi, slugifyCategory } from "../services/categoriesApi";
 import ShareModal from "../components/ShareModal";
+import ExportModal from "../components/ExportModal";
 import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
 import { compressImage } from "../services/imageOptimizer";
@@ -303,6 +305,7 @@ export default function Builder() {
   const [editingItem, setEditingItem] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   // Form states para adição / edição manual
@@ -922,6 +925,17 @@ export default function Builder() {
               <span>{deleting ? "A eliminar..." : "Eliminar"}</span>
             </button>
           )}
+
+          {/* Exportar Card de Partilha */}
+          <button
+            type="button"
+            onClick={() => setExportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-colors hover:border-accent shadow-sm"
+            title="Exportar Card de Partilha em Imagem (PNG)"
+          >
+            <Download size={14} className="text-teal" />
+            <span>Exportar Card</span>
+          </button>
 
           {savedId && (
             <>
@@ -1882,8 +1896,28 @@ export default function Builder() {
           title={title || t("builder.defaultTitle")}
           url={`${window.location.origin}/tier-list/${savedId}`}
           description={`Classificação por ${profile?.displayName || "Criador TierWorld"}`}
+          onOpenExport={() => setExportModalOpen(true)}
         />
       )}
+
+      {/* Modal de Exportação do Card de Partilha */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        tierList={{
+          title: title || t("builder.defaultTitle"),
+          category,
+          subcategory,
+          itemDisplayMode: displayMode,
+          creator: profile?.displayName || user?.displayName || "Criador",
+          creatorHandle: profile?.handle || "",
+        }}
+        tiers={tiers}
+        items={items}
+        placements={placements}
+        creatorName={profile?.displayName || user?.displayName || "Criador"}
+        creatorHandle={profile?.handle || ""}
+      />
 
       {/* Modal de Duelo 1 vs 1 */}
       <DuelModeModal

@@ -1,7 +1,20 @@
-import React, { useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import { X, Download, Copy, Check, Sparkles, Smartphone, Monitor } from "lucide-react";
-import { colorFor } from "./UI";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  X,
+  Download,
+  Copy,
+  Check,
+  Sparkles,
+  Smartphone,
+  Monitor,
+  Square,
+  Loader2,
+  Share2,
+} from "lucide-react";
+import {
+  renderTierListToCanvas,
+  SHARE_FORMATS,
+} from "../services/shareCardGenerator";
 
 export default function ExportModal({
   isOpen,
@@ -13,72 +26,93 @@ export default function ExportModal({
   creatorName = "Criador",
   creatorHandle = "",
 }) {
-  const [format, setFormat] = useState("feed"); // "feed" | "story"
-  const [generating, setGenerating] = useState(false);
+  const [format, setFormat] = useState("feed"); // "feed" | "square" | "story"
+  const [rendering, setRendering] = useState(true);
   const [copied, setCopied] = useState(false);
-  const exportRef = useRef(null);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const canvasRef = useRef(null);
+
+  const displayMode = tierList?.itemDisplayMode || "both";
+
+  // Renderiza o canvas sempre que o modal abre ou o formato é alterado
+  useEffect(() => {
+    if (!isOpen || !tierList || !canvasRef.current) return;
+
+    let isMounted = true;
+    setRendering(true);
+
+    renderTierListToCanvas(canvasRef.current, {
+      tierList,
+      tiers: tiers.length > 0 ? tiers : (tierList.tiers || []),
+      items: items.length > 0 ? items : (tierList.items || []),
+      placements: Object.keys(placements).length > 0 ? placements : (tierList.placements || {}),
+      creatorName: creatorName || tierList.creator || "Criador TierWorld",
+      creatorHandle: creatorHandle || tierList.creatorHandle || "",
+      format,
+      displayMode,
+    }).then(() => {
+      if (isMounted) setRendering(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, format, tierList, tiers, items, placements, creatorName, creatorHandle, displayMode]);
 
   if (!isOpen || !tierList) return null;
 
-  const displayMode = tierList.itemDisplayMode || "both";
+  function handleDownload() {
+    if (!canvasRef.current) return;
 
-  async function handleDownload() {
-    if (!exportRef.current) return;
-    setGenerating(true);
-    try {
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#0A0A0D",
-        logging: false,
-      });
+    const cleanTitle = (tierList.title || "tier-list")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-");
 
-      const image = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = image;
-      const cleanTitle = (tierList.title || "tier-list")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "-")
-        .replace(/-+/g, "-");
-      a.download = `tierworld-${cleanTitle}-${format}.png`;
-      a.click();
-    } catch (err) {
-      console.error("Erro ao exportar imagem:", err);
-      alert("Não foi possível gerar a imagem. Tenta novamente.");
-    } finally {
-      setGenerating(false);
-    }
+    canvasRef.current.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `tierworld-${cleanTitle}-${format}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+        setDownloadSuccess(true);
+        setTimeout(() => setDownloadSuccess(false), 2500);
+      },
+      "image/png"
+    );
   }
 
-  async function handleCopy() {
-    if (!exportRef.current) return;
-    setGenerating(true);
-    try {
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#0A0A0D",
-        logging: false,
-      });
+  function handleCopy() {
+    if (!canvasRef.current) return;
 
-      canvas.toBlob(async (blob) => {
+    canvasRef.current.toBlob(
+      async (blob) => {
         if (!blob) return;
         try {
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2500);
+          if (navigator.clipboard && window.ClipboardItem) {
+            await navigator.clipboard.write([
+              new window.ClipboardItem({ "image/png": blob }),
+            ]);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+          } else {
+            handleDownload();
+          }
         } catch (err) {
-          console.warn("Clipboard write failed, fallback download:", err);
+          console.warn("Clipboard copy fallback to download:", err);
           handleDownload();
         }
-      });
-    } catch (err) {
-      console.error("Erro ao copiar imagem:", err);
-    } finally {
-      setGenerating(false);
-    }
+      },
+      "image/png"
+    );
   }
 
   return (
@@ -87,48 +121,68 @@ export default function ExportModal({
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col w-full max-w-4xl max-h-[90vh] rounded-3xl border border-border bg-[#0e0f14] shadow-2xl overflow-hidden"
+        className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-3xl border border-white/10 bg-[#0E0E15] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between border-b border-border/80 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accentSoft text-accent">
-              <Sparkles size={18} />
+        {/* =========================================================
+            1. CABEÇALHO DO MODAL
+           ========================================================= */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4 bg-[#12121D]/70">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/15 border border-accent/40 text-accent">
+              <Sparkles size={20} />
             </div>
             <div>
-              <h3 className="font-display text-base font-bold text-white">
-                Exportar Tier List para Redes Sociais
+              <h3 className="font-display text-[17px] font-bold text-white">
+                Exportar Card de Partilha
               </h3>
               <p className="text-xs text-mutedDim">
-                Gera uma imagem de alta resolução otimizada para partilhar.
+                Gera uma imagem de ultra alta resolução (HD/2K) pronta para redes sociais.
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-mutedDim hover:bg-surface2 hover:text-white transition-colors"
+            className="rounded-full p-2 text-mutedDim hover:bg-white/10 hover:text-white transition-colors"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Seleção de Formato */}
-        <div className="flex items-center justify-between border-b border-border/60 bg-surface/50 px-6 py-3">
+        {/* =========================================================
+            2. SELETOR DE FORMATO & BOTÕES DE AÇÃO
+           ========================================================= */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] bg-[#141422]/60 px-6 py-3.5">
+          {/* Formatos: Feed, Quadrado, Story */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-mutedDim mr-2">Formato:</span>
+            <span className="text-xs font-bold text-mutedDim mr-1">Formato:</span>
+
             <button
               type="button"
               onClick={() => setFormat("feed")}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 format === "feed"
-                  ? "bg-accent text-black shadow-glow"
-                  : "bg-surface2 text-mutedDim hover:text-white"
+                  ? "bg-accent text-black shadow-glow font-black"
+                  : "bg-surface text-mutedDim hover:text-white border border-white/5"
               }`}
             >
               <Monitor size={14} />
-              <span>Feed / Clássico (16:9)</span>
+              <span>Feed / Twitter (16:9)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFormat("square")}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                format === "square"
+                  ? "bg-accent text-black shadow-glow font-black"
+                  : "bg-surface text-mutedDim hover:text-white border border-white/5"
+              }`}
+            >
+              <Square size={13} />
+              <span>Post / Insta (1:1)</span>
             </button>
 
             <button
@@ -136,186 +190,92 @@ export default function ExportModal({
               onClick={() => setFormat("story")}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 format === "story"
-                  ? "bg-accent text-black shadow-glow"
-                  : "bg-surface2 text-mutedDim hover:text-white"
+                  ? "bg-accent text-black shadow-glow font-black"
+                  : "bg-surface text-mutedDim hover:text-white border border-white/5"
               }`}
             >
               <Smartphone size={14} />
-              <span>Stories / TikTok (9:16)</span>
+              <span>Story / TikTok (9:16)</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Ações de Descarregar e Copiar */}
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={handleCopy}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-white hover:bg-surface2 hover:border-accent transition-all disabled:opacity-50"
+              disabled={rendering}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/15 bg-surface text-xs font-bold text-white hover:bg-surface2 hover:border-accent transition-all disabled:opacity-40"
             >
-              {copied ? <Check size={14} className="text-teal" /> : <Copy size={14} />}
-              <span>{copied ? "Copiado!" : "Copiar Imagem"}</span>
+              {copied ? (
+                <>
+                  <Check size={14} className="text-emerald-400" />
+                  <span className="text-emerald-400">Copiado para Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span>Copiar Imagem</span>
+                </>
+              )}
             </button>
 
             <button
               type="button"
               onClick={handleDownload}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-xs font-bold text-black hover:opacity-90 transition-all shadow-glow disabled:opacity-50"
+              disabled={rendering}
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-accent text-xs font-black text-black hover:opacity-90 transition-all shadow-glow disabled:opacity-40"
             >
-              <Download size={14} />
-              <span>{generating ? "A gerar…" : "Descarregar PNG"}</span>
+              {downloadSuccess ? (
+                <>
+                  <Check size={14} />
+                  <span>Guardado com Sucesso!</span>
+                </>
+              ) : (
+                <>
+                  <Download size={14} />
+                  <span>Descarregar PNG</span>
+                </>
+              )}
             </button>
           </div>
         </div>
 
-        {/* Área de Pré-visualização com Scroll */}
-        <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-[#070709]">
-          <div
-            ref={exportRef}
-            className={`transition-all bg-[#0A0A0D] text-white p-6 sm:p-8 flex flex-col justify-between border border-border/80 rounded-3xl shadow-2xl ${
+        {/* =========================================================
+            3. ÁREA DE PRÉ-VISUALIZAÇÃO DO CANVAS (PIXEL-PERFECT)
+           ========================================================= */}
+        <div className="relative flex-1 overflow-auto p-6 flex items-center justify-center bg-[#07070B] min-h-[380px]">
+          {rendering && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#07070B]/85 backdrop-blur-sm text-white">
+              <Loader2 size={32} className="animate-spin text-accent" />
+              <span className="text-sm font-bold">A desenhar card em alta resolução…</span>
+            </div>
+          )}
+
+          {/* O próprio Canvas HTML5 renderizado com proporção correta */}
+          <canvas
+            ref={canvasRef}
+            className={`max-w-full rounded-2xl shadow-2xl border border-white/10 transition-all duration-300 ${
               format === "story"
-                ? "w-[380px] min-h-[640px]"
-                : "w-full max-w-[760px] min-h-[420px]"
+                ? "max-h-[62vh] aspect-[9/16]"
+                : format === "square"
+                ? "max-h-[60vh] aspect-square"
+                : "max-h-[58vh] aspect-[16/9]"
             }`}
-          >
-            {/* Topo do Cartão de Exportação */}
-            <div className="mb-6 flex items-start justify-between gap-4 border-b border-border/60 pb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-accent bg-accentSoft px-2 py-0.5 rounded-full">
-                    {tierList.category || "TIER LIST"}
-                  </span>
-                  {tierList.parentTemplateTitle && (
-                    <span className="text-[10px] text-mutedDim">
-                      via {tierList.parentTemplateTitle}
-                    </span>
-                  )}
-                </div>
-                <h2 className="font-display font-black text-xl sm:text-2xl text-white tracking-tight leading-tight">
-                  {tierList.title}
-                </h2>
-              </div>
+          />
+        </div>
 
-              {/* Marca D'Água TierWorld */}
-              <div className="flex flex-col items-end flex-shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-5 w-5 rounded-lg bg-gradient-to-tr from-[#7C5CFF] to-[#31D8A8] flex items-center justify-center text-[10px] font-black text-black">
-                    T
-                  </div>
-                  <span className="font-display text-xs font-black tracking-wider text-white">
-                    TIERWORLD
-                  </span>
-                </div>
-                <span className="text-[9px] font-bold text-mutedDim mt-0.5">
-                  tierworld.app
-                </span>
-              </div>
-            </div>
-
-            {/* Tabela de Tiers */}
-            <div className="flex-1 overflow-hidden rounded-2xl border border-borderStrong bg-[#121218] mb-6">
-              {tiers.map((tier) => {
-                const tierItems = Object.entries(placements)
-                  .filter(([, tId]) => tId === tier.id)
-                  .map(([itemId]) => items.find((i) => i.id === itemId))
-                  .filter(Boolean);
-
-                return (
-                  <div
-                    key={tier.id}
-                    className="flex border-b border-border/60 last:border-b-0 min-h-[68px]"
-                  >
-                    {/* Rótulo do Tier */}
-                    <div
-                      className="flex w-[68px] sm:w-[78px] flex-shrink-0 items-center justify-center p-2 text-center"
-                      style={{ background: tier.color }}
-                    >
-                      <span className="font-display text-xl sm:text-2xl font-black text-[#0A0A0D]">
-                        {tier.label}
-                      </span>
-                    </div>
-
-                    {/* Itens do Tier */}
-                    <div className="flex flex-1 flex-wrap items-center gap-2 p-2 bg-[#121218]">
-                      {tierItems.length === 0 ? (
-                        <span className="text-[11px] text-mutedDim italic px-2">—</span>
-                      ) : (
-                        tierItems.map((it) => {
-                          const hasImage = Boolean(it.imageUrl);
-                          const mode =
-                            it.displayMode && it.displayMode !== "auto"
-                              ? it.displayMode
-                              : displayMode;
-                          const showImage = hasImage && (mode === "image" || mode === "both");
-                          const showText = mode === "text" || mode === "both" || !hasImage;
-
-                          return (
-                            <div
-                              key={it.id}
-                              className={`relative flex items-center justify-center overflow-hidden rounded-lg border border-border/80 ${
-                                mode === "image" && hasImage
-                                  ? "h-14 w-14 flex-shrink-0 bg-[#161622]"
-                                  : mode === "both" && hasImage
-                                  ? "h-14 w-14 flex-shrink-0 bg-[#161622] flex-col justify-end"
-                                  : "h-12 min-w-[60px] max-w-[90px] flex-shrink-0 px-2 py-1 text-center"
-                              }`}
-                              style={{
-                                background:
-                                  showImage && !showText
-                                    ? "#101016"
-                                    : showImage && showText
-                                    ? "#12121c"
-                                    : `linear-gradient(145deg, ${colorFor(it.name)}40, #14141e)`,
-                              }}
-                            >
-                              {showImage && (
-                                <img
-                                  src={it.imageUrl}
-                                  alt={it.name}
-                                  className={`h-full w-full object-cover ${
-                                    showText ? "absolute inset-0 z-0 opacity-75" : ""
-                                  }`}
-                                  crossOrigin="anonymous"
-                                />
-                              )}
-                              {showText && (
-                                <div
-                                  className={`z-10 font-display text-center font-bold leading-tight ${
-                                    showImage
-                                      ? "w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent pb-1 pt-2 px-1 text-[8.5px] text-white"
-                                      : "text-[10px] text-white"
-                                  }`}
-                                >
-                                  <span className="line-clamp-1">{it.name}</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Rodapé do Cartão */}
-            <div className="flex items-center justify-between border-t border-border/60 pt-3 text-[11px] text-mutedDim font-semibold">
-              <div className="flex items-center gap-1.5">
-                <span>Criado por</span>
-                <span className="font-bold text-white">{creatorName}</span>
-                {creatorHandle && (
-                  <span className="text-accent">#{creatorHandle}</span>
-                )}
-              </div>
-              <span className="text-[10px] text-mutedDim">
-                Cria e vota em tierworld.app
-              </span>
-            </div>
+        {/* =========================================================
+            4. RODAPÉ DE AJUDA
+           ========================================================= */}
+        <div className="flex items-center justify-between border-t border-white/[0.08] px-6 py-3 bg-[#0E0E15] text-[11.5px] text-mutedDim">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+            <span>Resolução nativa: {SHARE_FORMATS[format].width} × {SHARE_FORMATS[format].height} px (PNG Lossless)</span>
           </div>
+          <span>Pronto para publicar no Instagram, Twitter/X, TikTok, WhatsApp e Discord</span>
         </div>
       </div>
     </div>
   );
 }
-

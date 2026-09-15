@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { X, Check, Copy, Share2 } from "lucide-react";
+import { X, Check, Copy, Share2, Download, Sparkles } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { GhostButton, PrimaryButton } from "./UI";
 
-export default function ShareModal({ isOpen, onClose, title, url, description = "" }) {
+export default function ShareModal({
+  isOpen,
+  onClose,
+  title,
+  url,
+  description = "",
+  onOpenExport = null,
+}) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
@@ -93,6 +100,28 @@ export default function ShareModal({ isOpen, onClose, title, url, description = 
             <span>{copied ? t("share.copied") : t("share.copyLink")}</span>
           </button>
         </div>
+
+        {/* Botão para Gerar e Descarregar Card Visual */}
+        {onOpenExport && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenExport();
+              }}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-accent/40 bg-accent/10 hover:bg-accent hover:text-black text-white transition-all group shadow-sm"
+            >
+              <div className="flex items-center gap-2.5">
+                <Download size={16} className="text-accent group-hover:text-black transition-colors" />
+                <span className="text-[13px] font-bold">Descarregar Card Visual (PNG)</span>
+              </div>
+              <span className="text-[11px] font-bold text-accent group-hover:text-black transition-colors bg-accent/20 group-hover:bg-black/20 px-2 py-0.5 rounded-md">
+                HD / 2K
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Partilha Direta nas Redes Sociais */}
         <div>
