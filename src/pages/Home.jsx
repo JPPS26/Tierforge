@@ -37,7 +37,7 @@ import {
 import { PrimaryButton, GhostButton, colorFor, EmptyState } from "../components/UI";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierLists, getActiveCategories, getGlobalStats } from "../services/db";
+import { getTierLists, getCategories, getGlobalStats, getCategoryDisplayName } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 
 const CATEGORY_ICONS = {
@@ -309,7 +309,9 @@ export default function Home() {
     getTierLists({ tab: "Trending" }).then((lists) => {
       setTrendingLists(lists.slice(0, 4));
     });
-    setCategories(getActiveCategories());
+    const all = getCategories();
+    all.sort((a, b) => (b.count || 0) - (a.count || 0));
+    setCategories(all.slice(0, 12));
     setStats(getGlobalStats());
   }, []);
 
@@ -540,7 +542,7 @@ export default function Home() {
 
                   <div>
                     <div className="font-display text-[15px] font-bold text-white group-hover:text-[#B6A5FF] transition-colors tracking-tight truncate">
-                      {t(`categories.${c.id}`) || c.name}
+                      {c.name || getCategoryDisplayName(c.id)}
                     </div>
                     <p className="mt-0.5 text-[11.5px] font-medium text-mutedDim group-hover:text-muted transition-colors">
                       {c.count > 0 ? t("home.listsCount", { count: c.count }) : "Explorar"}

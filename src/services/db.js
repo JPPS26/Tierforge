@@ -900,6 +900,123 @@ export function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
+// Mapeamento bidirecional de contingência e sinónimos (ID <-> Slug <-> Nomes)
+export const CATEGORY_ALIASES = {
+  football: ["futebol", "football", "futebol & lendas", "soccer"],
+  futebol: ["futebol", "football", "futebol & lendas", "soccer"],
+  gaming: ["gaming", "jogos", "videojogos", "gaming & videojogos", "jogos & rpgs"],
+  movies: ["movies", "cinema", "cinema & filmes", "cinema & séries", "filmes"],
+  cinema: ["movies", "cinema", "cinema & filmes", "cinema & séries", "filmes"],
+  tvshows: ["tvshows", "series-tv", "series", "séries & televisão", "séries & tv"],
+  "series-tv": ["tvshows", "series-tv", "series", "séries & televisão", "séries & tv"],
+  sports: ["sports", "desportos", "outros desportos", "desporto"],
+  desportos: ["sports", "desportos", "outros desportos", "desporto"],
+  anime: ["anime", "anime-manga", "anime & manga", "anime & mangá", "manga"],
+  "anime-manga": ["anime", "anime-manga", "anime & manga", "anime & mangá", "manga"],
+  music: ["music", "musica", "música & artistas", "música & álbuns", "música"],
+  musica: ["music", "musica", "música & artistas", "música & álbuns", "música"],
+  tech: ["tech", "tecnologia", "tecnologia & ia", "tecnologia & setup"],
+  tecnologia: ["tech", "tecnologia", "tecnologia & ia", "tecnologia & setup"],
+  geek: ["geek", "universo-geek", "universo geek & pop", "cultura pop & geek", "cultura pop"],
+  "universo-geek": ["geek", "universo-geek", "universo geek & pop", "cultura pop & geek"],
+  food: ["food", "gastronomia", "gastronomia & comida", "comida"],
+  gastronomia: ["food", "gastronomia", "gastronomia & comida", "comida"],
+  vehicles: ["vehicles", "automoveis-motores", "automóveis & motores", "motores", "carros"],
+  "automoveis-motores": ["vehicles", "automoveis-motores", "automóveis & motores", "motores", "carros"],
+  science: ["science", "ciencia-natureza", "ciência & natureza", "ciência"],
+  "ciencia-natureza": ["science", "ciencia-natureza", "ciência & natureza", "ciência"],
+  culture: ["culture", "cultura-viagens", "cultura, países & viagens", "cultura"],
+  "cultura-viagens": ["culture", "cultura-viagens", "cultura, países & viagens", "cultura"],
+  lifestyle: ["lifestyle", "lifestyle-fitness", "lifestyle & fitness", "fitness"],
+  "lifestyle-fitness": ["lifestyle", "lifestyle-fitness", "lifestyle & fitness", "fitness"],
+  business: ["business", "negocios-financas", "negócios & finanças", "negócios"],
+  "negocios-financas": ["business", "negocios-financas", "negócios & finanças", "negócios"],
+  creators: ["creators", "criadores-internet", "criadores & internet", "criadores"],
+  "criadores-internet": ["creators", "criadores-internet", "criadores & internet", "criadores"],
+};
+
+/**
+ * Converte qualquer identificador de categoria (ID, slug ou nome) num Set de
+ * chaves equivalentes para garantir correspondência bidirecional total.
+ */
+export function getCategoryAcceptedKeys(categoryQuery) {
+  if (!categoryQuery || categoryQuery === "All" || categoryQuery === "all") {
+    return null;
+  }
+  const clean = String(categoryQuery).toLowerCase().trim();
+  const slugClean = slugify(clean);
+  const keys = new Set([clean, slugClean]);
+
+  const aliasList = CATEGORY_ALIASES[clean] || CATEGORY_ALIASES[slugClean];
+  if (aliasList) {
+    aliasList.forEach((a) => {
+      keys.add(a.toLowerCase());
+      keys.add(slugify(a));
+    });
+  }
+
+  const baseCatalog = getApiCatalog();
+  const match = baseCatalog.find((c) => {
+    const cId = (c.id || "").toLowerCase();
+    const cSlug = (c.slug || "").toLowerCase();
+    const cName = (c.name || "").toLowerCase();
+    const cNameSlug = slugify(c.name || "");
+    return (
+      cId === clean ||
+      cSlug === clean ||
+      cName === clean ||
+      cNameSlug === clean ||
+      keys.has(cId) ||
+      keys.has(cSlug)
+    );
+  });
+
+  if (match) {
+    if (match.id) keys.add(match.id.toLowerCase());
+    if (match.slug) keys.add(match.slug.toLowerCase());
+    if (match.name) {
+      keys.add(match.name.toLowerCase());
+      keys.add(slugify(match.name));
+    }
+  }
+
+  return keys;
+}
+
+/**
+ * Retorna o nome oficial formatado e legível de qualquer categoria
+ */
+export function getCategoryDisplayName(categoryKey) {
+  if (!categoryKey || categoryKey === "All" || categoryKey === "all") {
+    return "Todas as Categorias";
+  }
+  const clean = String(categoryKey).toLowerCase().trim();
+  const slugClean = slugify(clean);
+
+  const baseCatalog = getApiCatalog();
+  const match = baseCatalog.find((c) => {
+    const cId = (c.id || "").toLowerCase();
+    const cSlug = (c.slug || "").toLowerCase();
+    const cName = (c.name || "").toLowerCase();
+    const cNameSlug = slugify(c.name || "");
+    return (
+      cId === clean ||
+      cSlug === clean ||
+      cName === clean ||
+      cNameSlug === clean ||
+      cId === slugClean ||
+      cSlug === slugClean
+    );
+  });
+
+  if (match && match.name) return match.name;
+
+  return clean
+    .split(/[-_]/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function getCategories() {
   const baseCatalog = getApiCatalog();
   const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
@@ -932,6 +1049,7 @@ export function getCategories() {
           description: `Comunidade de ${catName} criada através de Tier Lists.`,
           icon: "Layers",
           color: "#7C5CFF",
+          domain: "general",
         });
         existingIds.add(catKey);
         if (slugKey) existingIds.add(slugKey);
@@ -939,13 +1057,15 @@ export function getCategories() {
     }
   });
 
-  // Calcula a contagem estritamente real de tier lists públicas
+  // Calcula a contagem estritamente real de tier lists públicas com correspondência unificada
   return merged.map((cat) => {
+    const acceptedKeys = getCategoryAcceptedKeys(cat.id || cat.slug || cat.name);
+
     const realCount = lists.filter((l) => {
-      const isMatch =
-        l.category === cat.id ||
-        l.category === cat.slug ||
-        (l.category && l.category.toLowerCase() === (cat.name || "").toLowerCase());
+      if (!l.category) return false;
+      const lCat = String(l.category).toLowerCase().trim();
+      const lSlug = slugify(l.category);
+      const isMatch = acceptedKeys ? (acceptedKeys.has(lCat) || acceptedKeys.has(lSlug)) : false;
       return isMatch && (l.visibility === "public" || !l.visibility);
     }).length;
 
@@ -972,18 +1092,18 @@ export function getGuestClientId() {
 }
 
 // Categorias populares calculadas estritamente com base na atividade real de listas e votos
-// REGRA ESTRITA: Só aparecem categorias que tenham pelo menos 1 Tier List criada
 export function getPopularCategories(limit = 6) {
   const categories = getCategories();
   const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
   const populated = categories
     .map((cat) => {
+      const acceptedKeys = getCategoryAcceptedKeys(cat.id || cat.slug || cat.name);
       const catLists = lists.filter((l) => {
-        const isMatch =
-          l.category === cat.id ||
-          l.category === cat.slug ||
-          (l.category && l.category.toLowerCase() === (cat.name || "").toLowerCase());
+        if (!l.category) return false;
+        const lCat = String(l.category).toLowerCase().trim();
+        const lSlug = slugify(l.category);
+        const isMatch = acceptedKeys ? (acceptedKeys.has(lCat) || acceptedKeys.has(lSlug)) : false;
         return isMatch && (l.visibility === "public" || !l.visibility);
       });
 
@@ -998,10 +1118,20 @@ export function getPopularCategories(limit = 6) {
         popularityScore: score,
       };
     })
-    .filter((c) => c.tierListsCount > 0) // REGRA ESTRITA: só é popular se houver listas reais criadas
+    .filter((c) => c.tierListsCount > 0)
     .sort((a, b) => b.popularityScore - a.popularityScore);
 
-  return populated.slice(0, limit);
+  if (populated.length > 0) {
+    return populated.slice(0, limit);
+  }
+
+  // Fallback se não houver listas criadas: apresenta as principais categorias do catálogo
+  return categories.slice(0, limit).map((c) => ({
+    ...c,
+    tierListsCount: c.count || 0,
+    totalVotes: 0,
+    popularityScore: 0,
+  }));
 }
 
 export function searchCategories(queryText) {
@@ -1217,11 +1347,17 @@ export async function getTierLists({
     return false; // unlisted não aparece no feed geral
   });
 
-  // Filtragem por categoria
+  // Filtragem por categoria com correspondência bidirecional unificada
   if (category && category !== "All" && category !== "all") {
-    lists = lists.filter(
-      (l) => (l.category || "").toLowerCase() === category.toLowerCase()
-    );
+    const acceptedKeys = getCategoryAcceptedKeys(category);
+    if (acceptedKeys) {
+      lists = lists.filter((l) => {
+        if (!l.category) return false;
+        const lCat = String(l.category).toLowerCase().trim();
+        const lSlug = slugify(l.category);
+        return acceptedKeys.has(lCat) || acceptedKeys.has(lSlug);
+      });
+    }
   }
 
   // Filtragem por pesquisa de texto
@@ -1315,6 +1451,7 @@ export async function getTierListById(id, requestingUid = null) {
 export async function createTierList(uid, {
   title,
   category,
+  subcategory = "",
   description = "",
   language = "pt",
   tiers,
@@ -1355,6 +1492,7 @@ export async function createTierList(uid, {
     id: newId,
     title: title || "A Minha Tier List",
     category: category || "football",
+    subcategory: subcategory || "",
     description,
     language,
     tiers: tiers || [],

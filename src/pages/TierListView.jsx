@@ -42,6 +42,7 @@ import {
   calculateCommunityConsensus,
   canEditTierList,
   deleteTierList,
+  getCategoryDisplayName,
 } from "../services/db";
 import { checkContentSafety } from "../services/safetyFilter";
 import { useAuth } from "../context/AuthContext";
@@ -450,10 +451,19 @@ export default function TierListView() {
       {/* Cabeçalho da Tier List */}
       <div className="mb-8 flex flex-wrap items-start justify-between gap-6 border-b border-border pb-7">
         <div className="flex-1 min-w-[280px]">
-          <div className="mb-2.5 flex items-center gap-2">
-            <Badge tone="accent">
-              {t(`categories.${tierList.category}`) || tierList.category?.toUpperCase() || "GERAL"}
-            </Badge>
+          <div className="mb-2.5 flex flex-wrap items-center gap-2">
+            <Link to={`/explore?category=${tierList.category}`}>
+              <Badge tone="accent">
+                {getCategoryDisplayName(tierList.category)}
+              </Badge>
+            </Link>
+            {tierList.subcategory && (
+              <Link to={`/explore?category=${tierList.category}&sub=${encodeURIComponent(tierList.subcategory)}`}>
+                <Badge tone="neutral">
+                  {tierList.subcategory}
+                </Badge>
+              </Link>
+            )}
             {tierList.visibility === "private" && (
               <Badge tone="rose">
                 <Lock size={11} /> Privada

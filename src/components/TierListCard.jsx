@@ -3,6 +3,7 @@ import { Heart, Eye, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, Badge, colorFor } from "./UI";
 import { useLanguage } from "../context/LanguageContext";
+import { getCategoryDisplayName } from "../services/db";
 
 const TIER_COLORS = {
   "S+": "#FF3B5C",
@@ -83,8 +84,13 @@ export default function TierListCard({ list }) {
       <div>
         <div className="mb-2 flex items-center gap-1.5">
           <Badge tone="accent">
-            {t(`categories.${list.category}`) || list.category?.toUpperCase() || "GERAL"}
+            {getCategoryDisplayName(list.category)}
           </Badge>
+          {list.subcategory && (
+            <span className="text-[11px] font-semibold text-mutedDim truncate max-w-[120px]">
+              • {list.subcategory}
+            </span>
+          )}
           {list.visibility === "unlisted" && <Badge tone="amber">Não Listada</Badge>}
         </div>
 

@@ -32,7 +32,7 @@ export function LanguageProvider({ children }) {
   }
 
   // Helper to translate nested keys like "nav.explore" or "home.statLists"
-  function t(path, params = {}) {
+  function t(path, params = {}, fallbackValue = null) {
     const keys = path.split(".");
     let current = translations[language];
 
@@ -50,7 +50,7 @@ export function LanguageProvider({ children }) {
             break;
           }
         }
-        current = fallback ?? path;
+        current = fallback !== undefined && fallback !== null ? fallback : null;
         break;
       }
     }
@@ -61,6 +61,10 @@ export function LanguageProvider({ children }) {
         result = result.replace(new RegExp(`\\{${pKey}\\}`, "g"), String(pVal));
       }
       return result;
+    }
+
+    if (fallbackValue !== null && fallbackValue !== undefined) {
+      return fallbackValue;
     }
 
     return path;

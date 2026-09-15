@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierLists, getActiveCategories, getGlobalStats, getLeaderboard } from "../services/db";
+import { getTierLists, getCategories, getCategoryDisplayName, getGlobalStats, getLeaderboard } from "../services/db";
+import { slugify } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 import { Avatar, Badge, PrimaryButton, GhostButton } from "../components/UI";
 import {
@@ -141,7 +142,7 @@ function CompactTierListRow({ list }) {
         <div className="min-w-0">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[11px] font-extrabold text-accent border border-accent/30">
-              {t(`categories.${list.category}`) || list.category?.toUpperCase() || "GERAL"}
+              {getCategoryDisplayName(list.category)}
             </span>
             {list.subcategory && (
               <span className="text-[11.5px] font-semibold text-mutedDim">
@@ -282,7 +283,9 @@ export default function Explore() {
 
   // Sincronização em tempo real da base de dados e métricas
   useRealtimeDb(() => {
-    setCategories(getActiveCategories());
+    const all = getCategories();
+    all.sort((a, b) => (b.count || 0) - (a.count || 0));
+    setCategories(all);
     setStats(getGlobalStats());
     setTopCreators(getLeaderboard().slice(0, 4));
 
@@ -310,7 +313,13 @@ export default function Explore() {
   }, [tab, cat, selectedSub, debouncedQuery, minItemsFilter]);
 
   const activeCategories = categories;
-  const activeCatObj = categories.find((c) => c.id === cat || c.slug === cat);
+  const activeCatObj = categories.find(
+    (c) =>
+      c.id === cat ||
+      c.slug === cat ||
+      (c.name && c.name.toLowerCase() === (cat || "").toLowerCase()) ||
+      slugify(c.name || "") === cat
+  );
 
   const filteredPillCategories = useMemo(() => {
     if (!categorySearchQuery.trim()) return activeCategories;
@@ -659,7 +668,11 @@ export default function Explore() {
 
             {/* Pílulas de Cada Categoria */}
             {filteredPillCategories.map((c) => {
-              const isSelected = cat === c.id || cat === c.slug;
+              const isSelected =
+                cat === c.id ||
+                cat === c.slug ||
+                (cat && cat.toLowerCase() === (c.name || "").toLowerCase()) ||
+                (c.slug && slugify(cat) === c.slug);
               const { IconComponent, color } = getCatVisuals(c);
               return (
                 <button
@@ -681,16 +694,18 @@ export default function Explore() {
                     style={{ color: isSelected ? color : undefined }}
                     className={isSelected ? "" : "opacity-70 group-hover:opacity-100 transition-opacity"}
                   />
-                  <span>{t(`categories.${c.id}`) || c.name}</span>
-                  <span
-                    className={`text-[10.5px] font-bold px-1.5 py-0.2 rounded-full transition-colors ${
-                      isSelected
-                        ? "bg-white/20 text-white"
-                        : "bg-white/[0.06] text-mutedDim group-hover:text-muted"
-                    }`}
-                  >
-                    {c.count}
-                  </span>
+                  <span>{c.name || getCategoryDisplayName(c.id)}</span>
+                  {c.count > 0 && (
+                    <span
+                      className={`text-[10.5px] font-bold px-1.5 py-0.2 rounded-full transition-colors ${
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-white/[0.06] text-mutedDim group-hover:text-muted"
+                      }`}
+                    >
+                      {c.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -883,7 +898,7 @@ export default function Explore() {
             {selectedSub
               ? `Ainda não existem listas na subcategoria "${selectedSub}". Sê o pioneiro a inaugurá-la!`
               : cat !== "All"
-              ? `Ainda não existem listas nesta categoria. Sê o primeiro criador a publicar aqui!`
+              ? `Ainda não existem listas na categoria "${activeCatObj?.name || getCategoryDisplayName(cat)}". Sê o primeiro criador a inaugurar este tema!`
               : queryText
               ? `Não foram encontrados resultados para a pesquisa "${queryText}". Tenta outros termos ou cria a primeira lista!`
               : "Nenhuma tier list encontrada com os filtros selecionados."}

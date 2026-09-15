@@ -498,13 +498,33 @@ export default function Builder() {
 
     const detected = detectCategory({ title, items });
     if (detected && detected.score > 0) {
-      setCategory(detected.slug || detected.id);
+      const newCat = detected.slug || detected.id;
+      if (newCat !== category) {
+        setCategory(newCat);
+        setSubcategory("");
+      }
     }
-  }, [title, items, manualCategoryOverride]);
+  }, [title, items, manualCategoryOverride, category]);
 
-  const currentCategoryObj = categories.find(
-    (c) => c.id === category || c.slug === category
-  ) || categories[0];
+  const currentCategoryObj =
+    categories.find(
+      (c) =>
+        c.id === category ||
+        c.slug === category ||
+        (c.name && c.name.toLowerCase() === (category || "").toLowerCase())
+    ) || categories[0];
+
+  // Validação contínua da subcategoria pertencente à categoria ativa
+  useEffect(() => {
+    if (subcategory && currentCategoryObj?.subcategories) {
+      const exists = currentCategoryObj.subcategories.some(
+        (sub) => (typeof sub === "string" ? sub : sub.name) === subcategory
+      );
+      if (!exists) {
+        setSubcategory("");
+      }
+    }
+  }, [category, currentCategoryObj, subcategory]);
 
   function applyTheme(themeKey) {
     const preset = THEME_PRESETS[themeKey];
@@ -1756,6 +1776,7 @@ export default function Builder() {
                           type="button"
                           onClick={() => {
                             setCategory(c.slug || c.id);
+                            setSubcategory("");
                             setManualCategoryOverride(true);
                             setCategoryModalOpen(false);
                           }}
