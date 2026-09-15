@@ -84,7 +84,6 @@ export default function Navbar() {
   useEffect(() => {
     if (!q.trim() || q.trim().length < 2) {
       setSearchResults({ creators: [], tierlists: [] });
-      setSearchOpen(false);
       return;
     }
 
@@ -164,16 +163,14 @@ export default function Navbar() {
           </div>
 
           {/* Centro: Barra de Pesquisa Omni-Search (Desktop) */}
-          <div className="relative hidden max-w-[320px] xl:max-w-[390px] flex-1 lg:block" ref={searchContainerRef}>
+          <div className="relative hidden max-w-[320px] xl:max-w-[400px] flex-1 lg:block" ref={searchContainerRef}>
             <div className="relative flex items-center rounded-2xl border border-white/[0.08] bg-[#12121D]/75 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#151525] focus-within:shadow-[0_0_24px_rgba(124,92,255,0.25)]">
               <Search size={15} className="pointer-events-none absolute left-3.5 text-mutedDim" />
               <input
                 ref={searchInputRef}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onFocus={() => {
-                  if (q.trim().length >= 2) setSearchOpen(true);
-                }}
+                onFocus={() => setSearchOpen(true)}
                 onKeyDown={handleSearchSubmit}
                 placeholder={t("nav.searchPlaceholder")}
                 className="w-full bg-transparent py-2.5 pl-9 pr-14 text-[13px] text-text outline-none transition-all placeholder:text-mutedDim"
@@ -198,10 +195,63 @@ export default function Navbar() {
 
             {/* Dropdown de Resultados da Pesquisa Omni */}
             {searchOpen && (
-              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-borderStrong bg-[#12131A] p-2 shadow-2xl backdrop-blur-2xl animate-fadeIn">
-                {!hasResults ? (
-                  <div className="py-6 text-center text-[13px] text-mutedDim">
-                    {t("search.noResults", { query: q })}
+              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#12131F]/95 p-2 shadow-2xl backdrop-blur-2xl animate-fadeIn">
+                {q.trim().length < 2 ? (
+                  /* Estado Inicial: Sugestões Rápidas & Tópicos Populares */
+                  <div className="p-2">
+                    <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-mutedDim">
+                      <Sparkles size={12} className="text-amber-400" />
+                      <span>Sugestões Populares</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {[
+                        { label: "Gaming", tag: "gaming" },
+                        { label: "Futebol", tag: "futebol" },
+                        { label: "Cinema & Séries", tag: "cinema" },
+                        { label: "Anime", tag: "anime" },
+                        { label: "Tecnologia", tag: "tech" },
+                        { label: "Música", tag: "musica" },
+                      ].map((item) => (
+                        <button
+                          key={item.tag}
+                          type="button"
+                          onClick={() => {
+                            setSearchOpen(false);
+                            navigate(`/explore?search=${encodeURIComponent(item.label)}`);
+                          }}
+                          className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11.5px] font-medium text-muted hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
+                        >
+                          #{item.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Link
+                      to="/explore"
+                      onClick={() => setSearchOpen(false)}
+                      className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-surface2/50 px-3 py-2 text-[12px] font-semibold text-text hover:bg-surface2 hover:text-accent transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Compass size={13} className="text-accent" />
+                        <span>Ver catálogo completo no Explorar</span>
+                      </span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                ) : !hasResults ? (
+                  <div className="py-6 px-3 text-center">
+                    <p className="text-[13px] text-mutedDim">
+                      {t("search.noResults", { query: q })}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        navigate(`/explore?search=${encodeURIComponent(q.trim())}`);
+                      }}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/15 px-3 py-1.5 text-[11.5px] font-bold text-white hover:bg-accent/25 transition-all"
+                    >
+                      Procurar no Explorar
+                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto p-1">
@@ -209,32 +259,37 @@ export default function Navbar() {
                     {searchResults.creators.length > 0 && (
                       <div>
                         <div className="mb-1.5 px-2.5 text-[11px] font-bold uppercase tracking-wider text-mutedDim flex items-center gap-1.5">
-                          <Users size={12} /> {t("search.creators")}
+                          <Users size={12} className="text-accent" /> {t("search.creators")}
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          {searchResults.creators.map((c) => (
-                            <Link
-                              key={c.uid}
-                              to={`/profile/${c.handle}`}
-                              onClick={() => setSearchOpen(false)}
-                              className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <Avatar name={c.displayName} image={c.avatar} size={28} />
-                                <div className="truncate">
-                                  <div className="text-[13px] font-bold text-text truncate">
-                                    {c.displayName}
-                                  </div>
-                                  <div className="text-[11.5px] text-accent font-semibold">
-                                    #{c.handle}
+                          {searchResults.creators.map((c) => {
+                            const cLevel = getCreatorLevelInfo(c.creatorXp || 0);
+                            return (
+                              <Link
+                                key={c.uid}
+                                to={`/profile/${c.handle}`}
+                                onClick={() => setSearchOpen(false)}
+                                className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors group"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <Avatar name={c.displayName} image={c.avatar} size={30} />
+                                  <div className="truncate">
+                                    <div className="text-[13px] font-bold text-text group-hover:text-white truncate">
+                                      {c.displayName}
+                                    </div>
+                                    <div className="text-[11px] text-accent font-semibold flex items-center gap-1">
+                                      <span>#{c.handle}</span>
+                                      <span className="text-mutedDim">•</span>
+                                      <span className="text-mutedDim font-normal">{cLevel.name}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <span className="text-[11px] font-semibold text-mutedDim">
-                                {c.creatorXp || 0} XP
-                              </span>
-                            </Link>
-                          ))}
+                                <span className="font-mono text-[11.5px] font-bold text-mutedDim group-hover:text-accent transition-colors">
+                                  {c.creatorXp || 0} XP
+                                </span>
+                              </Link>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -243,7 +298,7 @@ export default function Navbar() {
                     {searchResults.tierlists.length > 0 && (
                       <div>
                         <div className="mb-1.5 px-2.5 text-[11px] font-bold uppercase tracking-wider text-mutedDim flex items-center gap-1.5">
-                          <Layers size={12} /> {t("search.tierlists")}
+                          <Layers size={12} className="text-[#00E5A3]" /> {t("search.tierlists")}
                         </div>
                         <div className="flex flex-col gap-0.5">
                           {searchResults.tierlists.map((l) => (
@@ -251,13 +306,13 @@ export default function Navbar() {
                               key={l.id}
                               to={`/tier-list/${l.id}`}
                               onClick={() => setSearchOpen(false)}
-                              className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors"
+                              className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors group"
                             >
                               <div className="truncate pr-2">
-                                <div className="text-[13px] font-bold text-text truncate">
+                                <div className="text-[13px] font-bold text-text group-hover:text-white truncate">
                                   {l.title}
                                 </div>
-                                <div className="text-[11.5px] text-mutedDim">
+                                <div className="text-[11px] text-mutedDim">
                                   {l.creator} • {l.votes || 0} {t("home.statVotes").toLowerCase()}
                                 </div>
                               </div>
@@ -267,6 +322,21 @@ export default function Navbar() {
                         </div>
                       </div>
                     )}
+
+                    {/* Rodapé do Dropdown: Ver mais no Explorar */}
+                    <div className="border-t border-white/[0.06] pt-1.5 px-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          navigate(`/explore?search=${encodeURIComponent(q.trim())}`);
+                        }}
+                        className="flex w-full items-center justify-between rounded-xl p-2 text-[12px] font-medium text-muted hover:bg-white/[0.04] hover:text-white transition-all"
+                      >
+                        <span>Ver todos os resultados no Explorar</span>
+                        <span className="text-accent font-bold">↵ Enter</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -452,30 +522,106 @@ export default function Navbar() {
             </div>
 
             {/* Resultados de Pesquisa no Mobile */}
-            {hasResults && (
-              <div className="mt-2 max-h-[260px] overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-lg">
-                {searchResults.creators.map((c) => (
-                  <Link
-                    key={c.uid}
-                    to={`/profile/${c.handle}`}
-                    onClick={() => setMobileSearchOpen(false)}
-                    className="flex items-center gap-2.5 rounded-lg p-2 hover:bg-surface2"
+            {q.trim().length < 2 ? (
+              <div className="mt-2.5 rounded-2xl border border-white/[0.08] bg-[#12131F] p-3 shadow-lg">
+                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-mutedDim">
+                  <Sparkles size={12} className="text-amber-400" />
+                  <span>Sugestões Populares</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  {[
+                    { label: "Gaming", tag: "gaming" },
+                    { label: "Futebol", tag: "futebol" },
+                    { label: "Cinema & Séries", tag: "cinema" },
+                    { label: "Anime", tag: "anime" },
+                    { label: "Tecnologia", tag: "tech" },
+                    { label: "Música", tag: "musica" },
+                  ].map((item) => (
+                    <button
+                      key={item.tag}
+                      type="button"
+                      onClick={() => {
+                        setMobileSearchOpen(false);
+                        navigate(`/explore?search=${encodeURIComponent(item.label)}`);
+                      }}
+                      className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11.5px] font-medium text-muted hover:text-white"
+                    >
+                      #{item.label}
+                    </button>
+                  ))}
+                </div>
+                <Link
+                  to="/explore"
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-surface2/50 px-3 py-2 text-[12px] font-semibold text-text hover:text-accent"
+                >
+                  <span>Explorar todas as listas</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            ) : hasResults ? (
+              <div className="mt-2 max-h-[280px] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#12131F] p-2 shadow-lg divide-y divide-white/[0.04]">
+                {searchResults.creators.length > 0 && (
+                  <div className="pb-1.5">
+                    <div className="mb-1 px-2 text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">
+                      Criadores
+                    </div>
+                    {searchResults.creators.map((c) => (
+                      <Link
+                        key={c.uid}
+                        to={`/profile/${c.handle}`}
+                        onClick={() => setMobileSearchOpen(false)}
+                        className="flex items-center justify-between rounded-xl p-2 hover:bg-surface2"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar name={c.displayName} image={c.avatar} size={26} />
+                          <div className="truncate">
+                            <span className="text-[13px] font-semibold text-white truncate block">
+                              {c.displayName}
+                            </span>
+                            <span className="text-[11px] text-accent">#{c.handle}</span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-mono text-mutedDim">{c.creatorXp || 0} XP</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {searchResults.tierlists.length > 0 && (
+                  <div className="pt-1.5">
+                    <div className="mb-1 px-2 text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">
+                      Tier Lists
+                    </div>
+                    {searchResults.tierlists.map((l) => (
+                      <Link
+                        key={l.id}
+                        to={`/tier-list/${l.id}`}
+                        onClick={() => setMobileSearchOpen(false)}
+                        className="flex items-center justify-between rounded-xl p-2 text-[13px] font-medium text-text hover:bg-surface2"
+                      >
+                        <span className="truncate pr-2">{l.title}</span>
+                        <Badge tone="accent">{l.category?.toUpperCase()}</Badge>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <div className="pt-1.5 px-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileSearchOpen(false);
+                      navigate(`/explore?search=${encodeURIComponent(q.trim())}`);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl p-2 text-[11.5px] font-medium text-muted hover:text-white"
                   >
-                    <Avatar name={c.displayName} image={c.avatar} size={26} />
-                    <span className="text-[13px] font-semibold text-white">{c.displayName}</span>
-                    <span className="text-[11.5px] text-accent">#{c.handle}</span>
-                  </Link>
-                ))}
-                {searchResults.tierlists.map((l) => (
-                  <Link
-                    key={l.id}
-                    to={`/tier-list/${l.id}`}
-                    onClick={() => setMobileSearchOpen(false)}
-                    className="block rounded-lg p-2 text-[13px] font-medium text-text hover:bg-surface2"
-                  >
-                    {l.title}
-                  </Link>
-                ))}
+                    <span>Ver no Explorar</span>
+                    <span className="text-accent font-bold">↵</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 rounded-2xl border border-white/[0.08] bg-[#12131F] p-4 text-center text-[12.5px] text-mutedDim">
+                Nenhum resultado encontrado para "{q}".
               </div>
             )}
           </div>

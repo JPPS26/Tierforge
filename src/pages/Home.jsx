@@ -317,10 +317,11 @@ export default function Home() {
 
   return (
     <div className="relative overflow-hidden">
-      {/* Luzes Ambientais de Fundo (Glow Effect) */}
-      <div className="pointer-events-none absolute -top-28 left-1/2 -z-10 h-[550px] w-full max-w-[1200px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.22),transparent_65%)]" />
-      <div className="pointer-events-none absolute top-48 right-0 -z-10 h-[380px] w-[380px] rounded-full bg-[#00E5A3]/10 blur-[120px]" />
-      <div className="pointer-events-none absolute top-32 left-0 -z-10 h-[320px] w-[320px] rounded-full bg-[#7C5CFF]/15 blur-[100px]" />
+      {/* Luzes Ambientais de Fundo e Padrão de Grelha Moderno */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      <div className="pointer-events-none absolute -top-36 left-1/2 -z-10 h-[600px] w-full max-w-[1240px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.25),transparent_70%)]" />
+      <div className="pointer-events-none absolute top-48 right-0 -z-10 h-[420px] w-[420px] rounded-full bg-[#00E5A3]/10 blur-[130px]" />
+      <div className="pointer-events-none absolute top-32 left-0 -z-10 h-[380px] w-[380px] rounded-full bg-[#7C5CFF]/15 blur-[120px]" />
 
       {/* Secção Hero Principal */}
       <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-20 pt-12 sm:pt-16">
@@ -329,14 +330,14 @@ export default function Home() {
           <div className="min-w-[300px] flex-1 basis-[480px]">
             {/* Badges de Topo */}
             <div className="flex flex-wrap items-center gap-2.5 mb-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accentSoft px-3.5 py-1.5 text-[12px] font-bold text-[#C2B5FF] shadow-sm backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accentSoft/70 px-3.5 py-1.5 text-[12px] font-bold text-[#C2B5FF] shadow-[0_0_20px_rgba(124,92,255,0.2)] backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E5A3] opacity-75"></span>
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[#00E5A3]"></span>
                 </span>
                 <span>TierWorld 2.0 • A Casa Global dos Rankings</span>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-[12px] font-medium text-mutedDim backdrop-blur-md">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12px] font-medium text-mutedDim backdrop-blur-md">
                 <Database size={13} className="text-[#00E5A3]" /> 100% Base de Dados Real
               </span>
             </div>
@@ -366,7 +367,7 @@ export default function Home() {
               </Link>
               <Link
                 to="/explore"
-                className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-borderStrong bg-surface/80 px-6 py-3.5 text-[14.5px] font-semibold text-text backdrop-blur-md transition-all hover:border-accent/40 hover:bg-surface2 hover:text-white hover:scale-105 active:scale-95"
+                className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.04] px-6 py-3.5 text-[14.5px] font-semibold text-text backdrop-blur-md transition-all hover:border-accent/40 hover:bg-white/[0.08] hover:text-white hover:scale-105 active:scale-95"
               >
                 <Flame size={18} className="text-[#FF5470]" />
                 <span>{t("home.exploreBtn")}</span>
@@ -380,46 +381,52 @@ export default function Home() {
                 <Link
                   key={tag}
                   to={`/explore?search=${encodeURIComponent(tag)}`}
-                  className="rounded-lg border border-border/60 bg-surface/60 px-2.5 py-1 text-muted transition-all hover:border-accent/50 hover:bg-surface2 hover:text-white"
+                  className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-muted transition-all hover:border-accent/50 hover:bg-white/[0.07] hover:text-white"
                 >
                   #{tag}
                 </Link>
               ))}
             </div>
 
-            {/* Estatísticas REAIS em Glass Dock */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 rounded-3xl border border-borderStrong bg-surface/50 p-4 sm:p-5 backdrop-blur-xl shadow-xl">
-              <div className="flex flex-col gap-1">
+            {/* Estatísticas REAIS em Glass Dock Elevado */}
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3 rounded-3xl border border-white/[0.08] bg-white/[0.02] p-3 sm:p-4 backdrop-blur-2xl shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
+              <div className="flex flex-col gap-1 rounded-2xl bg-white/[0.02] p-2.5 sm:p-3 transition-colors hover:bg-white/[0.04] border border-white/[0.03]">
                 <div className="flex items-center gap-1.5">
-                  <Layers size={14} className="text-accent" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Tier Lists</span>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                    <Layers size={13} />
+                  </div>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">Listas</span>
                 </div>
                 <div className="font-display text-[22px] sm:text-[28px] font-black text-white">
                   {stats.totalTierLists}
                 </div>
-                <span className="text-[11px] text-mutedDim">listas ativas</span>
+                <span className="text-[11px] text-mutedDim">publicadas</span>
               </div>
 
-              <div className="flex flex-col gap-1 border-l border-border/70 pl-3 sm:pl-4">
+              <div className="flex flex-col gap-1 rounded-2xl bg-white/[0.02] p-2.5 sm:p-3 transition-colors hover:bg-white/[0.04] border border-white/[0.03]">
                 <div className="flex items-center gap-1.5">
-                  <Users size={14} className="text-[#00E5A3]" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Criadores</span>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#00E5A3]/15 text-[#00E5A3]">
+                    <Users size={13} />
+                  </div>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">Criadores</span>
                 </div>
                 <div className="font-display text-[22px] sm:text-[28px] font-black text-white">
                   {stats.totalCreators}
                 </div>
-                <span className="text-[11px] text-mutedDim">comunidade</span>
+                <span className="text-[11px] text-mutedDim">ativos</span>
               </div>
 
-              <div className="flex flex-col gap-1 border-l border-border/70 pl-3 sm:pl-4">
+              <div className="flex flex-col gap-1 rounded-2xl bg-white/[0.02] p-2.5 sm:p-3 transition-colors hover:bg-white/[0.04] border border-white/[0.03]">
                 <div className="flex items-center gap-1.5">
-                  <Zap size={14} className="text-[#FFD166]" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Votos</span>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#FFD166]/15 text-[#FFD166]">
+                    <Zap size={13} />
+                  </div>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">Votos</span>
                 </div>
-                <div className="font-display text-[22px] sm:text-[28px] font-black text-accent">
+                <div className="font-display text-[22px] sm:text-[28px] font-black text-[#00E5A3]">
                   {stats.totalVotes}
                 </div>
-                <span className="text-[11px] text-mutedDim">calculados</span>
+                <span className="text-[11px] text-mutedDim">comunitários</span>
               </div>
             </div>
           </div>
@@ -662,12 +669,18 @@ export default function Home() {
           ].map((f) => (
             <div
               key={f.title}
-              className="relative flex flex-col justify-between rounded-3xl border border-border bg-surface/80 p-6 transition-all duration-300 hover:border-borderStrong hover:bg-surface hover:shadow-xl hover:-translate-y-1 group"
+              className="relative flex flex-col justify-between overflow-hidden rounded-[26px] border border-white/[0.08] bg-[#12121C]/80 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-[#161624] hover:shadow-2xl hover:-translate-y-1.5 group"
             >
-              <div>
+              {/* Glow sutil ao passar o rato */}
+              <div
+                className="absolute -top-12 -right-12 h-28 w-28 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none"
+                style={{ background: f.color }}
+              />
+
+              <div className="relative z-10">
                 <div className="mb-4 flex items-center justify-between">
                   <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-inner transition-transform group-hover:scale-110"
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-inner transition-transform duration-300 group-hover:scale-110"
                     style={{
                       background: `${f.color}15`,
                       color: f.color,
@@ -676,14 +689,14 @@ export default function Home() {
                   >
                     <f.icon size={22} />
                   </div>
-                  <span className="rounded-lg border border-border bg-surface2 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-muted">
+                  <span className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] font-bold text-mutedDim">
                     {f.tag}
                   </span>
                 </div>
-                <h4 className="mb-2 font-display text-[17px] font-bold text-white group-hover:text-accent transition-colors">
+                <h4 className="mb-2 font-display text-[17px] font-bold text-white group-hover:text-white transition-colors">
                   {f.title}
                 </h4>
-                <p className="text-[13.5px] leading-relaxed text-muted">{f.body}</p>
+                <p className="text-[13.5px] leading-relaxed text-muted font-normal">{f.body}</p>
               </div>
             </div>
           ))}

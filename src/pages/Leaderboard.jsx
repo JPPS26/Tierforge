@@ -20,6 +20,7 @@ import {
 import { Avatar, EmptyState, PrimaryButton } from "../components/UI";
 import { useLanguage } from "../context/LanguageContext";
 import { getLeaderboard } from "../services/db";
+import { getCreatorLevelInfo } from "../services/badges";
 import useRealtimeDb from "../hooks/useRealtimeDb";
 
 function getPatentBadge(badge) {
@@ -188,46 +189,69 @@ export default function Leaderboard() {
           {/* KPI Stats Rápidos */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             {/* Card 1: Líder Atual */}
-            <div className="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-br from-[#1E1912] via-[#14110E] to-[#0D0B0A] p-4.5 shadow-lg flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-300 shadow-[0_0_15px_rgba(255,209,102,0.25)] shrink-0">
-                <Crown size={24} />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400/80">Líder Atual</span>
-                <div className="font-display text-[16px] font-bold text-white truncate">
-                  {creators[0]?.name || "Nenhum"}
+            {creators[0] ? (
+              <Link
+                to={`/profile/${creators[0].handle}`}
+                className="relative overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-br from-[#20180F] via-[#14110E] to-[#0D0B0A] p-4 shadow-lg flex items-center justify-between gap-3 group transition-all duration-300 hover:border-amber-400/60 hover:shadow-[0_0_25px_rgba(255,209,102,0.15)]"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="p-0.5 rounded-full border-2 border-amber-400 shadow-[0_0_12px_rgba(255,209,102,0.35)]">
+                      <Avatar name={creators[0].name} image={creators[0].avatar} size={44} />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-black shadow-md">
+                      <Crown size={12} className="stroke-[2.5]" />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                      <span>Líder Atual</span>
+                      <span className="text-white/40">• #1</span>
+                    </span>
+                    <div className="font-display text-[15px] font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                      {creators[0].name}
+                    </div>
+                    <div className="text-[12px] font-bold text-amber-300">
+                      {creators[0].xp.toLocaleString()} XP
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[12.5px] font-black text-amber-300">
-                  {(creators[0]?.xp || 0).toLocaleString()} XP
-                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300 shrink-0 group-hover:border-amber-400/50 transition-all">
+                  <ArrowUpRight size={15} />
+                </div>
+              </Link>
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-surface/50 p-4 shadow-lg flex items-center gap-4">
+                <Crown size={24} className="text-amber-400" />
+                <span className="text-muted text-sm">Sem líder ativo</span>
               </div>
-            </div>
+            )}
 
             {/* Card 2: Total de Criadores */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161622] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/40 bg-accent/10 text-accent shadow-sm shrink-0">
-                <Users size={24} />
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12121C]/90 p-4 shadow-lg flex items-center gap-3.5 backdrop-blur-xl transition-all duration-300 hover:border-white/20">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-accent/40 bg-accent/10 text-accent shadow-sm shrink-0">
+                <Users size={22} />
               </div>
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">Criadores Registados</span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">Criadores Registados</span>
                 <div className="font-display text-[22px] font-black text-white">
                   {creators.length}
                 </div>
-                <span className="text-[12px] font-medium text-mutedDim">Perfis com pontuação ativa</span>
+                <span className="text-[11.5px] font-medium text-mutedDim">Perfis com pontuação ativa</span>
               </div>
             </div>
 
             {/* Card 3: Total XP Conquistado */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161622] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00E5A3]/40 bg-[#00E5A3]/10 text-[#00E5A3] shadow-sm shrink-0">
-                <Zap size={24} />
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12121C]/90 p-4 shadow-lg flex items-center gap-3.5 backdrop-blur-xl transition-all duration-300 hover:border-white/20">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#00E5A3]/40 bg-[#00E5A3]/10 text-[#00E5A3] shadow-sm shrink-0">
+                <Zap size={22} />
               </div>
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">XP Total Distribuído</span>
-                <div className="font-display text-[22px] font-black text-white">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">XP Total Distribuído</span>
+                <div className="font-display text-[22px] font-black text-[#00E5A3]">
                   {creators.reduce((acc, c) => acc + (c.xp || 0), 0).toLocaleString()} XP
                 </div>
-                <span className="text-[12px] font-medium text-mutedDim">Mérito comunitário calculado</span>
+                <span className="text-[11.5px] font-medium text-mutedDim">Mérito comunitário calculado</span>
               </div>
             </div>
           </div>
@@ -244,88 +268,115 @@ export default function Leaderboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 items-end">
                 {/* 2º LUGAR (Prata) */}
-                <Link
-                  to={`/profile/${creators[1].handle}`}
-                  className="group relative overflow-hidden rounded-[26px] border border-teal-500/30 bg-gradient-to-b from-[#142220]/90 to-[#0D1514] p-5 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-400/60 hover:shadow-[0_0_30px_rgba(0,229,163,0.15)] flex flex-col items-center order-2 sm:order-1"
-                >
-                  <div className="absolute top-3.5 left-3.5 flex items-center gap-1 rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[11px] font-black text-teal-300">
-                    🥈 #2 Lugar
-                  </div>
-                  <div className="mt-6 mb-3 relative">
-                    <div className="p-1 rounded-full border-2 border-teal-400/50 shadow-[0_0_15px_rgba(0,229,163,0.3)]">
-                      <Avatar name={creators[1].name} image={creators[1].avatar} size={54} />
-                    </div>
-                  </div>
-                  <div className="font-display text-[16px] font-bold text-white group-hover:text-teal-300 transition-colors truncate max-w-full">
-                    {creators[1].name}
-                  </div>
-                  <div className="text-[12px] font-bold text-teal-300/80 mb-2">#{creators[1].handle}</div>
-                  <div className="font-display text-[20px] font-black text-white">
-                    {creators[1].xp.toLocaleString()} <span className="text-[12px] font-bold text-teal-300">XP</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-center gap-3 border-t border-teal-500/20 pt-3 text-[11.5px] text-mutedDim w-full font-semibold">
-                    <span>{creators[1].listsCount} Listas</span>
-                    <span>•</span>
-                    <span>{creators[1].votesCount} Votos</span>
-                  </div>
-                </Link>
+                {(() => {
+                  const c2Level = getCreatorLevelInfo(creators[1].xp || 0);
+                  return (
+                    <Link
+                      to={`/profile/${creators[1].handle}`}
+                      className="group relative overflow-hidden rounded-[26px] border border-teal-500/30 bg-gradient-to-b from-[#142220]/90 to-[#0D1514] p-5 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-400/60 hover:shadow-[0_0_30px_rgba(0,229,163,0.15)] flex flex-col items-center order-2 sm:order-1"
+                    >
+                      <div className="absolute top-3.5 left-3.5 flex items-center gap-1 rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[11px] font-black text-teal-300">
+                        🥈 #2 Lugar
+                      </div>
+                      <div className="mt-6 mb-3 relative">
+                        <div className="p-1 rounded-full border-2 border-teal-400/50 shadow-[0_0_15px_rgba(0,229,163,0.3)]">
+                          <Avatar name={creators[1].name} image={creators[1].avatar} size={54} />
+                        </div>
+                      </div>
+                      <div className="font-display text-[16px] font-bold text-white group-hover:text-teal-300 transition-colors truncate max-w-full">
+                        {creators[1].name}
+                      </div>
+                      <div className="text-[12px] font-bold text-teal-300/80 mb-1">#{creators[1].handle}</div>
+                      <div className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold text-mutedDim">
+                        <span>{c2Level.icon}</span>
+                        <span>{c2Level.name}</span>
+                      </div>
+                      <div className="font-display text-[20px] font-black text-white">
+                        {creators[1].xp.toLocaleString()} <span className="text-[12px] font-bold text-teal-300">XP</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-center gap-3 border-t border-teal-500/20 pt-3 text-[11.5px] text-mutedDim w-full font-semibold">
+                        <span>{creators[1].listsCount} Listas</span>
+                        <span>•</span>
+                        <span>{creators[1].votesCount} Votos</span>
+                      </div>
+                    </Link>
+                  );
+                })()}
 
                 {/* 1º LUGAR (Ouro / Campeão) */}
-                <Link
-                  to={`/profile/${creators[0].handle}`}
-                  className="group relative overflow-hidden rounded-[30px] border-2 border-amber-400/60 bg-gradient-to-b from-[#281E10]/95 via-[#1E170C] to-[#120E07] p-6 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:border-amber-400 hover:shadow-[0_0_40px_rgba(255,209,102,0.25)] flex flex-col items-center order-1 sm:order-2 sm:-translate-y-3 z-10"
-                >
-                  <div className="absolute top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-amber-400/60 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-0.5 text-[11.5px] font-black text-amber-300 shadow-md">
-                    <Crown size={13} className="text-amber-300" />
-                    <span>#1 CAMPEÃO</span>
-                  </div>
-                  <div className="mt-7 mb-3 relative">
-                    <div className="p-1 rounded-full border-2 border-amber-400 shadow-[0_0_20px_rgba(255,209,102,0.4)]">
-                      <Avatar name={creators[0].name} image={creators[0].avatar} size={64} />
-                    </div>
-                  </div>
-                  <div className="font-display text-[18px] font-black text-white group-hover:text-amber-300 transition-colors truncate max-w-full">
-                    {creators[0].name}
-                  </div>
-                  <div className="text-[12.5px] font-bold text-amber-400/90 mb-2">#{creators[0].handle}</div>
-                  <div className="font-display text-[24px] font-black text-white">
-                    {creators[0].xp.toLocaleString()} <span className="text-[13px] font-bold text-amber-300">XP</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-center gap-3.5 border-t border-amber-400/20 pt-3 text-[12px] text-amber-200/70 w-full font-semibold">
-                    <span>{creators[0].listsCount} Listas</span>
-                    <span>•</span>
-                    <span>{creators[0].votesCount} Votos</span>
-                    <span>•</span>
-                    <span>{creators[0].followersCount} Seg.</span>
-                  </div>
-                </Link>
+                {(() => {
+                  const c1Level = getCreatorLevelInfo(creators[0].xp || 0);
+                  return (
+                    <Link
+                      to={`/profile/${creators[0].handle}`}
+                      className="group relative overflow-hidden rounded-[30px] border-2 border-amber-400/60 bg-gradient-to-b from-[#281E10]/95 via-[#1E170C] to-[#120E07] p-6 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:border-amber-400 hover:shadow-[0_0_40px_rgba(255,209,102,0.25)] flex flex-col items-center order-1 sm:order-2 sm:-translate-y-3 z-10"
+                    >
+                      <div className="absolute top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-amber-400/60 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-0.5 text-[11.5px] font-black text-amber-300 shadow-md">
+                        <Crown size={13} className="text-amber-300" />
+                        <span>#1 CAMPEÃO</span>
+                      </div>
+                      <div className="mt-7 mb-3 relative">
+                        <div className="p-1 rounded-full border-2 border-amber-400 shadow-[0_0_20px_rgba(255,209,102,0.4)]">
+                          <Avatar name={creators[0].name} image={creators[0].avatar} size={64} />
+                        </div>
+                      </div>
+                      <div className="font-display text-[18px] font-black text-white group-hover:text-amber-300 transition-colors truncate max-w-full">
+                        {creators[0].name}
+                      </div>
+                      <div className="text-[12.5px] font-bold text-amber-400/90 mb-1">#{creators[0].handle}</div>
+                      <div className="mb-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-amber-200/80">
+                        <span>{c1Level.icon}</span>
+                        <span>{c1Level.name}</span>
+                      </div>
+                      <div className="font-display text-[24px] font-black text-white">
+                        {creators[0].xp.toLocaleString()} <span className="text-[13px] font-bold text-amber-300">XP</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-center gap-3.5 border-t border-amber-400/20 pt-3 text-[12px] text-amber-200/70 w-full font-semibold">
+                        <span>{creators[0].listsCount} Listas</span>
+                        <span>•</span>
+                        <span>{creators[0].votesCount} Votos</span>
+                        <span>•</span>
+                        <span>{creators[0].followersCount} Seg.</span>
+                      </div>
+                    </Link>
+                  );
+                })()}
 
                 {/* 3º LUGAR (Bronze) */}
-                <Link
-                  to={`/profile/${creators[2].handle}`}
-                  className="group relative overflow-hidden rounded-[26px] border border-rose-500/30 bg-gradient-to-b from-[#24151B]/90 to-[#140D11] p-5 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-rose-400/60 hover:shadow-[0_0_30px_rgba(255,84,112,0.15)] flex flex-col items-center order-3 sm:order-3"
-                >
-                  <div className="absolute top-3.5 left-3.5 flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-400/10 px-2.5 py-0.5 text-[11px] font-black text-rose-300">
-                    🥉 #3 Lugar
-                  </div>
-                  <div className="mt-6 mb-3 relative">
-                    <div className="p-1 rounded-full border-2 border-rose-400/50 shadow-[0_0_15px_rgba(255,84,112,0.3)]">
-                      <Avatar name={creators[2].name} image={creators[2].avatar} size={54} />
-                    </div>
-                  </div>
-                  <div className="font-display text-[16px] font-bold text-white group-hover:text-rose-300 transition-colors truncate max-w-full">
-                    {creators[2].name}
-                  </div>
-                  <div className="text-[12px] font-bold text-rose-300/80 mb-2">#{creators[2].handle}</div>
-                  <div className="font-display text-[20px] font-black text-white">
-                    {creators[2].xp.toLocaleString()} <span className="text-[12px] font-bold text-rose-300">XP</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-center gap-3 border-t border-rose-500/20 pt-3 text-[11.5px] text-mutedDim w-full font-semibold">
-                    <span>{creators[2].listsCount} Listas</span>
-                    <span>•</span>
-                    <span>{creators[2].votesCount} Votos</span>
-                  </div>
-                </Link>
+                {(() => {
+                  const c3Level = getCreatorLevelInfo(creators[2].xp || 0);
+                  return (
+                    <Link
+                      to={`/profile/${creators[2].handle}`}
+                      className="group relative overflow-hidden rounded-[26px] border border-rose-500/30 bg-gradient-to-b from-[#24151B]/90 to-[#140D11] p-5 text-center backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-rose-400/60 hover:shadow-[0_0_30px_rgba(255,84,112,0.15)] flex flex-col items-center order-3 sm:order-3"
+                    >
+                      <div className="absolute top-3.5 left-3.5 flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-400/10 px-2.5 py-0.5 text-[11px] font-black text-rose-300">
+                        🥉 #3 Lugar
+                      </div>
+                      <div className="mt-6 mb-3 relative">
+                        <div className="p-1 rounded-full border-2 border-rose-400/50 shadow-[0_0_15px_rgba(255,84,112,0.3)]">
+                          <Avatar name={creators[2].name} image={creators[2].avatar} size={54} />
+                        </div>
+                      </div>
+                      <div className="font-display text-[16px] font-bold text-white group-hover:text-rose-300 transition-colors truncate max-w-full">
+                        {creators[2].name}
+                      </div>
+                      <div className="text-[12px] font-bold text-rose-300/80 mb-1">#{creators[2].handle}</div>
+                      <div className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold text-mutedDim">
+                        <span>{c3Level.icon}</span>
+                        <span>{c3Level.name}</span>
+                      </div>
+                      <div className="font-display text-[20px] font-black text-white">
+                        {creators[2].xp.toLocaleString()} <span className="text-[12px] font-bold text-rose-300">XP</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-center gap-3 border-t border-rose-500/20 pt-3 text-[11.5px] text-mutedDim w-full font-semibold">
+                        <span>{creators[2].listsCount} Listas</span>
+                        <span>•</span>
+                        <span>{creators[2].votesCount} Votos</span>
+                      </div>
+                    </Link>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -427,6 +478,7 @@ export default function Leaderboard() {
                   const PatentIcon = patent.icon;
                   const rankVisuals = getRankVisuals(c.rank);
                   const RankIcon = rankVisuals.icon;
+                  const level = getCreatorLevelInfo(c.xp || 0);
                   const pct = Math.min(100, Math.max(8, Math.round((c.xp / maxXP) * 100)));
 
                   return (
@@ -456,14 +508,18 @@ export default function Leaderboard() {
                             {c.rank === 1 && <Crown size={14} className="text-amber-400 shrink-0" />}
                           </div>
 
-                          <div className="flex items-center gap-2 text-[11.5px] mt-0.5">
+                          <div className="flex items-center gap-2 text-[11.5px] mt-0.5 flex-wrap">
                             <span className="font-bold text-accent">#{c.handle}</span>
                             <span className="text-mutedDim">•</span>
                             <span
-                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.2 text-[10px] font-bold ${patent.classes}`}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${patent.classes}`}
                             >
                               <PatentIcon size={10} />
                               <span>{patent.label}</span>
+                            </span>
+                            <span className="text-mutedDim hidden sm:inline">•</span>
+                            <span className="text-mutedDim text-[11px] font-medium hidden sm:inline">
+                              {level.icon} {level.name}
                             </span>
                           </div>
                         </div>
