@@ -85,20 +85,20 @@ export default function NotFound() {
             </div>
           </Link>
 
-          {/* Card 3: Categorias Ativas */}
+          {/* Card 3: Criar Tier List */}
           <Link
-            to="/categories"
+            to="/create"
             className="group relative flex flex-col justify-between p-4.5 rounded-2xl border border-white/[0.08] bg-[#161624]/80 hover:border-[#FFD166]/60 hover:bg-[#1A1A2C] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFD166]/10 border border-[#FFD166]/30 text-[#FFD166] mb-3 group-hover:scale-110 transition-transform">
-              <Layers size={18} />
+              <Plus size={18} />
             </div>
             <div>
               <div className="font-display text-[14.5px] font-bold text-white group-hover:text-[#FFD166] transition-colors">
-                {t("notFound.categoriesBtn") || "Ver Categorias"}
+                {t("home.createBtn") || "Criar Tier List"}
               </div>
               <p className="text-[12px] text-mutedDim mt-0.5 leading-snug">
-                Futebol, gaming, cinema, música e mais.
+                Constrói e publica o teu próprio ranking.
               </p>
             </div>
           </Link>

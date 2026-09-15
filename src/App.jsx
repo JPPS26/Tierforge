@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
-import Categories from "./pages/Categories";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
@@ -28,7 +27,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
-          <Route path="/categories" element={<Categories />} />
+          <Route path="/categories" element={<Navigate to="/explore" replace />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Login />} />

@@ -488,8 +488,8 @@ export default function Home() {
           badgeText="Comunidades & Nichos"
           title={t("home.categoriesTitle") || "Explorar por categoria"}
           subtitle="Navega pelas comunidades ativas e encontra tier lists do teu universo favorito."
-          to="/categories"
-          seeAllText={t("home.seeAll") || "Todas as Categorias"}
+          to="/explore"
+          seeAllText={t("nav.explore") || "Explorar Todas as Listas"}
         />
         {categories.length === 0 ? (
           <div className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] p-10 sm:p-12 text-center shadow-xl backdrop-blur-xl">

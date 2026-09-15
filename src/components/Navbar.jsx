@@ -139,20 +139,6 @@ export default function Navbar() {
                 <span>{t("nav.explore")}</span>
               </Link>
               <Link
-                to="/categories"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-[13.5px] font-medium transition-all ${
-                  location.pathname === "/categories"
-                    ? "bg-accent/20 text-white font-semibold shadow-sm border border-accent/40"
-                    : "text-muted hover:text-white hover:bg-surface2/60"
-                }`}
-              >
-                <Layers
-                  size={15}
-                  className={location.pathname === "/categories" ? "text-accent" : "text-mutedDim"}
-                />
-                <span>{t("nav.categories")}</span>
-              </Link>
-              <Link
                 to="/leaderboard"
                 className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-[13.5px] font-medium transition-all ${
                   location.pathname === "/leaderboard"
@@ -472,20 +458,6 @@ export default function Navbar() {
               >
                 <Compass size={17} className={location.pathname === "/explore" ? "text-accent" : ""} />
                 <span>{t("nav.explore")}</span>
-              </Link>
-              <Link
-                to="/categories"
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[14px] font-medium transition-all ${
-                  location.pathname === "/categories"
-                    ? "bg-accent/20 text-white font-bold border border-accent/40"
-                    : "text-muted hover:bg-surface hover:text-white"
-                }`}
-              >
-                <Layers
-                  size={17}
-                  className={location.pathname === "/categories" ? "text-accent" : ""}
-                />
-                <span>{t("nav.categories")}</span>
               </Link>
               <Link
                 to="/leaderboard"

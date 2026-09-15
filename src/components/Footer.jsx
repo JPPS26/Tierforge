@@ -69,14 +69,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to="/categories"
-                  className="transition-colors hover:text-text hover:translate-x-0.5 inline-block"
-                >
-                  {t("nav.categories") || "Categorias Ativas"}
-                </Link>
-              </li>
-              <li>
-                <Link
                   to="/leaderboard"
                   className="transition-colors hover:text-text hover:translate-x-0.5 inline-block"
                 >
