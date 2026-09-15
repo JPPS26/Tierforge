@@ -40,6 +40,7 @@ import {
   toggleFollowUser,
 } from "../services/db";
 import { calculateUserBadges } from "../services/badges";
+import { updatePageMeta } from "../services/seo";
 
 // Helper de Níveis de Criador e Patamares de Experiência
 function getCreatorLevelInfo(xp = 0) {
@@ -128,6 +129,17 @@ export default function Profile() {
         if (user && foundUser.followers) {
           setIsFollowing(foundUser.followers.includes(user.uid));
         }
+
+        const handleStr = foundUser.handle ? `@${foundUser.handle}` : "";
+        const desc = foundUser.bio?.trim()
+          ? `${foundUser.bio.trim()} • Confere as ${userLists.length} Tier Lists e classificações de ${foundUser.displayName} no TierWorld!`
+          : `Explora o perfil de ${foundUser.displayName}${handleStr ? ` (${handleStr})` : ""} no TierWorld com ${userLists.length} Tier Lists criadas pela comunidade.`;
+
+        updatePageMeta({
+          title: `Perfil de ${foundUser.displayName}${handleStr ? ` (${handleStr})` : ""}`,
+          description: desc,
+          image: foundUser.avatar || null,
+        });
       }
     } catch (e) {
       console.error("Error loading profile:", e);
@@ -168,30 +180,9 @@ export default function Profile() {
     });
   }
 
-  const handleShareProfile = async () => {
+  const handleShareProfile = () => {
     if (!targetUser) return;
-    const profileUrl = `${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${targetUser.displayName} (@${targetUser.handle}) — TierWorld`,
-          text: `Confere as tier lists e rankings de ${targetUser.displayName} no TierWorld!`,
-          url: profileUrl,
-        });
-        return;
-      } catch {
-        // Ignora cancelamento nativo
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(profileUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    } catch {
-      setShareModalOpen(true);
-    }
+    setShareModalOpen(true);
   };
 
   const handleCopyHandle = async () => {
@@ -788,13 +779,19 @@ export default function Profile() {
       />
 
       {/* Modal de Partilha do Perfil */}
-      <ShareModal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        title={`Perfil de ${targetUser.displayName} (@${targetUser.handle})`}
-        url={`${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`}
-        description={`Confere as tier lists criadas por ${targetUser.displayName} no TierWorld.`}
-      />
+      {targetUser && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          title={`Perfil de ${targetUser.displayName} (@${targetUser.handle || targetUser.uid})`}
+          url={`${window.location.origin}/profile/${targetUser.handle || targetUser.uid}`}
+          description={
+            targetUser.bio?.trim()
+              ? `${targetUser.bio.trim()} • Confere as ${lists.length} Tier Lists e classificações de ${targetUser.displayName} no TierWorld!`
+              : `Explora o perfil e as ${lists.length} Tier Lists criadas por ${targetUser.displayName} (@${targetUser.handle || targetUser.uid}) no TierWorld. Confere os rankings e vota!`
+          }
+        />
+      )}
 
       {/* Modal de Seguidores e A Seguir (Com lista real e botões diretos de seguir) */}
       <FollowersModal

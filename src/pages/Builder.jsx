@@ -1905,7 +1905,7 @@ export default function Builder() {
           onClose={() => setShareModalOpen(false)}
           title={title || t("builder.defaultTitle")}
           url={`${window.location.origin}/tier-list/${savedId}`}
-          description={`Classificação por ${profile?.displayName || "Criador TierWorld"}`}
+          description={`Tier List de "${title || t("builder.defaultTitle")}" com ${items.length} elementos, criada por ${profile?.displayName || user?.displayName || "Criador"} no TierWorld. Confere a classificação completa e vota!`}
           onOpenExport={() => setExportModalOpen(true)}
         />
       )}

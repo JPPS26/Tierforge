@@ -53,6 +53,7 @@ import ShareModal from "../components/ShareModal";
 import ExportModal from "../components/ExportModal";
 import DuelModeModal from "../components/DuelModeModal";
 import AuthRequiredModal from "../components/AuthRequiredModal";
+import { updatePageMeta } from "../services/seo";
 
 function FormattedCommentText({ text }) {
   if (!text) return null;
@@ -142,6 +143,17 @@ export default function TierListView() {
             const consensus = calculateCommunityConsensus(id);
             setConsensusData(consensus);
           }
+
+          const catName = data.category ? getCategoryDisplayName(data.category) : "";
+          const metaDesc = data.description?.trim()
+            ? data.description.trim()
+            : `Vê a classificação de "${data.title}"${catName ? ` (${catName})` : ""} criada por ${data.creator || "um criador"} no TierWorld com ${(data.items || []).length} elementos. Confere o ranking e vota!`;
+
+          updatePageMeta({
+            title: data.title,
+            description: metaDesc,
+            image: data.items?.[0]?.imageUrl || null,
+          });
         }
       } catch (err) {
         console.error("Error loading tier list in realtime:", err);
@@ -1142,8 +1154,12 @@ export default function TierListView() {
         isOpen={shareOpen}
         onClose={() => setShareOpen(false)}
         title={tierList.title}
-        url={window.location.href}
-        description={tierList.description || "Classificação completa no TierWorld"}
+        url={typeof window !== "undefined" ? window.location.href : ""}
+        description={
+          tierList.description?.trim()
+            ? tierList.description.trim()
+            : `Vê a classificação de "${tierList.title}"${tierList.category ? ` na categoria ${getCategoryDisplayName(tierList.category)}` : ""} criada por ${tierList.creator || "um criador"} no TierWorld com ${items.length} elementos. Confere o ranking e vota!`
+        }
         onOpenExport={() => setExportOpen(true)}
       />
 
