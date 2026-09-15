@@ -45,6 +45,7 @@ import { searchApiCategories, fetchCategoryDetailsFromApi, slugifyCategory } fro
 import ShareModal from "../components/ShareModal";
 import DuelModeModal from "../components/DuelModeModal";
 import { detectCategory } from "../services/autoCategory";
+import { compressImage } from "../services/imageOptimizer";
 
 const DEFAULT_TIERS = [
   { id: "t1", label: "S", color: "#FF3B5C" },
@@ -332,6 +333,7 @@ export default function Builder() {
   const [parentTemplateId, setParentTemplateId] = useState(null);
   const [parentTemplateTitle, setParentTemplateTitle] = useState("");
   const [isRemixLoading, setIsRemixLoading] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   // Novos Modais e Ferramentas
   const [duelModalOpen, setDuelModalOpen] = useState(false);
@@ -594,31 +596,36 @@ export default function Builder() {
     setDraggingId(null);
   }
 
-  function handleFilesUpload(fileList) {
+  async function handleFilesUpload(fileList) {
     if (!fileList || fileList.length === 0) return;
+    const validFiles = Array.from(fileList).filter((f) => f.type && f.type.startsWith("image/"));
+    if (validFiles.length === 0) return;
 
-    Array.from(fileList).forEach((file) => {
-      if (!file.type.startsWith("image/")) return;
+    setIsProcessingImages(true);
+    try {
+      const newItems = await Promise.all(
+        validFiles.map(async (file, idx) => {
+          const compressedUrl = await compressImage(file, 360, 360, 0.82);
+          const cleanName = file.name
+            .replace(/\.[^/.]+$/, "")
+            .replace(/[-_]/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Url = e.target.result;
-        const cleanName = file.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[-_]/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
+          return {
+            id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 6)}`,
+            name: cleanName,
+            imageUrl: compressedUrl,
+            displayMode: "auto",
+          };
+        })
+      );
 
-        const newItem = {
-          id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-          name: cleanName,
-          imageUrl: base64Url,
-          displayMode: "auto",
-        };
-
-        setItems((prev) => [...prev, newItem]);
-      };
-      reader.readAsDataURL(file);
-    });
+      setItems((prev) => [...prev, ...newItems]);
+    } catch (err) {
+      console.error("Erro ao processar imagens da bancada:", err);
+    } finally {
+      setIsProcessingImages(false);
+    }
   }
 
   function handleBenchFileDrop(e) {
@@ -744,6 +751,12 @@ export default function Builder() {
       navigate("/login");
       return;
     }
+
+    if (items.length === 0) {
+      alert("Adiciona pelo menos um elemento à tua Tier List antes de publicar.");
+      return;
+    }
+
     setSaving(true);
     setSaveMsg("");
     try {
@@ -786,9 +799,15 @@ export default function Builder() {
         });
 
         setSavedId(result.id);
-        setSaveMsg(t("builder.savedSuccess"));
+        setSaveMsg("Tier list publicada com sucesso! ✓ A redirecionar para a tua página...");
+
+        // Redireciona suavemente para a página da tier list criada
+        setTimeout(() => {
+          navigate(`/tier-list/${result.id}`);
+        }, 1200);
       }
     } catch (err) {
+      console.error("Erro ao guardar tier list:", err);
       setSaveMsg(isEditing ? "Erro ao atualizar a Tier List" : t("builder.saveError"));
     } finally {
       setSaving(false);
@@ -1200,6 +1219,12 @@ export default function Builder() {
             <span className="text-xs font-semibold text-mutedDim">
               ({placedCount} de {items.length} colocados)
             </span>
+            {isProcessingImages && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-3 py-0.5 text-xs font-bold text-amber-300 border border-amber-500/30 animate-pulse">
+                <RefreshCw size={12} className="animate-spin" />
+                <span>A otimizar imagens...</span>
+              </span>
+            )}
           </div>
 
           {/* Ferramentas de Ação do Estúdio */}
@@ -1396,19 +1421,20 @@ export default function Builder() {
                   type="file"
                   id="modal-file-upload"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      setFormImageUrl(ev.target.result);
+                    try {
+                      const compressedUrl = await compressImage(file, 360, 360, 0.82);
+                      setFormImageUrl(compressedUrl);
                       if (!formName.trim()) {
                         setFormName(
                           file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
                         );
                       }
-                    };
-                    reader.readAsDataURL(file);
+                    } catch (err) {
+                      console.error("Erro ao comprimir imagem do elemento:", err);
+                    }
                   }}
                   className="hidden"
                 />

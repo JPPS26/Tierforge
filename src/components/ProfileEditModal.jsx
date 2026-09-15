@@ -19,6 +19,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { checkHandleAvailable } from "../services/db";
 import { Avatar, PrimaryButton, GhostButton } from "./UI";
 import DeleteAccountModal from "./DeleteAccountModal";
+import { compressImage } from "../services/imageOptimizer";
 
 export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
   const { user, profile, updateProfile } = useAuth();
@@ -69,7 +70,7 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
 
   if (!isOpen) return null;
 
-  function handleFileUpload(e) {
+  async function handleFileUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -78,12 +79,14 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setAvatar(ev.target.result);
+    try {
+      const compressed = await compressImage(file, 280, 280, 0.85);
+      setAvatar(compressed);
       setErrorMsg("");
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Erro ao comprimir avatar:", err);
+      setErrorMsg("Erro ao processar imagem. Tenta novamente.");
+    }
   }
 
   function handleRestoreGooglePhoto() {

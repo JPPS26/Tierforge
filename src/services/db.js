@@ -23,6 +23,17 @@ import { BASE_CATEGORIES } from "../data/categoriesData";
 import { getApiCatalog, slugifyCategory } from "./categoriesApi";
 import { searchWikimediaEntities } from "./wikipediaApi";
 import { checkContentSafety, extractMentions } from "./safetyFilter";
+import {
+  idbSaveTierList,
+  idbSaveTierLists,
+  idbGetTierList,
+  idbGetAllTierLists,
+  idbDeleteTierList,
+  idbSaveUser,
+  idbSaveUsers,
+  idbGetAllUsers,
+} from "./idb";
+import { compressImage } from "./imageOptimizer";
 
 const STORAGE_KEY_TIERLISTS = "tierforge_real_tierlists";
 const STORAGE_KEY_USERS = "tierforge_real_users";
@@ -44,6 +55,95 @@ const SEED_USER_UIDS = new Set([
   "user-beatriz",
   "user-marco",
 ]);
+
+// Cache em memória para acesso síncrono instantâneo sem restrição de quota
+let memoryTierLists = null;
+let memoryUsers = null;
+
+function initMemoryCache() {
+  if (memoryTierLists === null) {
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY_TIERLISTS) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        memoryTierLists = Array.isArray(parsed)
+          ? parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id))
+          : [];
+      } else {
+        memoryTierLists = [];
+      }
+    } catch {
+      memoryTierLists = [];
+    }
+  }
+
+  if (memoryUsers === null) {
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY_USERS) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        memoryUsers = Array.isArray(parsed)
+          ? parsed.filter((u) => !SEED_USER_UIDS.has(u.uid))
+          : [];
+      } else {
+        memoryUsers = [];
+      }
+    } catch {
+      memoryUsers = [];
+    }
+  }
+}
+
+// Hidrata a cache síncrona a partir do IndexedDB para carregar listas que excederam o limite do localStorage
+async function hydrateFromIndexedDb() {
+  if (typeof window === "undefined") return;
+  try {
+    initMemoryCache();
+    const idbLists = await idbGetAllTierLists();
+    if (Array.isArray(idbLists) && idbLists.length > 0) {
+      const currentMap = new Map(memoryTierLists.map((l) => [l.id, l]));
+      let added = false;
+      for (const l of idbLists) {
+        if (l && l.id && !SEED_TIERLIST_IDS.has(l.id)) {
+          if (!currentMap.has(l.id)) {
+            currentMap.set(l.id, l);
+            added = true;
+          } else {
+            // Se o registo no IndexedDB tiver mais itens/imagens completas, atualiza
+            const existing = currentMap.get(l.id);
+            if ((l.items?.length || 0) >= (existing.items?.length || 0)) {
+              currentMap.set(l.id, { ...existing, ...l });
+            }
+          }
+        }
+      }
+      if (added) {
+        memoryTierLists = Array.from(currentMap.values());
+        notifyDbChange({ key: STORAGE_KEY_TIERLISTS });
+      }
+    }
+
+    const idbUsers = await idbGetAllUsers();
+    if (Array.isArray(idbUsers) && idbUsers.length > 0) {
+      const currentUsersMap = new Map(memoryUsers.map((u) => [u.uid, u]));
+      let addedUsers = false;
+      for (const u of idbUsers) {
+        if (u && u.uid && !SEED_USER_UIDS.has(u.uid)) {
+          if (!currentUsersMap.has(u.uid)) {
+            currentUsersMap.set(u.uid, u);
+            addedUsers = true;
+          }
+        }
+      }
+      if (addedUsers) {
+        memoryUsers = Array.from(currentUsersMap.values());
+        notifyDbChange({ key: STORAGE_KEY_USERS });
+      }
+    }
+  } catch (err) {
+    console.warn("Hydration from IndexedDB error:", err);
+  }
+}
 
 function purgeSeedData() {
   try {
@@ -71,23 +171,47 @@ function purgeSeedData() {
 
 if (typeof window !== "undefined") {
   purgeSeedData();
+  hydrateFromIndexedDb().catch(() => {});
   syncDbFromRemote().catch(() => {});
 }
 
 // Helper de persistência segura com fallback sem retenção de caches obsoletos
 function getStored(key, initialFallback) {
+  initMemoryCache();
+  if (key === STORAGE_KEY_TIERLISTS) {
+    if (memoryTierLists && memoryTierLists.length > 0) {
+      return memoryTierLists;
+    }
+  } else if (key === STORAGE_KEY_USERS) {
+    if (memoryUsers && memoryUsers.length > 0) {
+      return memoryUsers;
+    }
+  }
+
   try {
-    const raw = localStorage.getItem(key);
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
     if (!raw) {
-      localStorage.setItem(key, JSON.stringify(initialFallback));
+      if (initialFallback && typeof localStorage !== "undefined") {
+        try {
+          localStorage.setItem(key, JSON.stringify(initialFallback));
+        } catch {}
+      }
       return initialFallback;
     }
     const parsed = JSON.parse(raw);
     if (key === STORAGE_KEY_TIERLISTS) {
-      return parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id));
+      const clean = Array.isArray(parsed) ? parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id)) : [];
+      if (!memoryTierLists || memoryTierLists.length === 0) {
+        memoryTierLists = clean;
+      }
+      return clean;
     }
     if (key === STORAGE_KEY_USERS) {
-      return parsed.filter((u) => !SEED_USER_UIDS.has(u.uid));
+      const clean = Array.isArray(parsed) ? parsed.filter((u) => !SEED_USER_UIDS.has(u.uid)) : [];
+      if (!memoryUsers || memoryUsers.length === 0) {
+        memoryUsers = clean;
+      }
+      return clean;
     }
     return parsed;
   } catch {
@@ -174,13 +298,43 @@ export function subscribeToDbSync(callback) {
 }
 
 function setStored(key, value, skipNotify = false) {
+  initMemoryCache();
+  if (key === STORAGE_KEY_TIERLISTS) {
+    memoryTierLists = Array.isArray(value) ? value : [];
+    idbSaveTierLists(memoryTierLists).catch(() => {});
+  } else if (key === STORAGE_KEY_USERS) {
+    memoryUsers = Array.isArray(value) ? value : [];
+    idbSaveUsers(memoryUsers).catch(() => {});
+  }
+
+  // Tenta persistir no localStorage (com fallback se exceder a quota)
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-    if (!skipNotify) {
-      notifyDbChange({ key });
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(key, JSON.stringify(value));
     }
   } catch (e) {
-    console.warn(`Could not save ${key} to storage`, e);
+    console.warn(`LocalStorage quota reached for ${key}. Data is safely stored in IndexedDB.`, e);
+    if (key === STORAGE_KEY_TIERLISTS && Array.isArray(value) && typeof localStorage !== "undefined") {
+      try {
+        const lightweight = value.slice(0, 10).map((l) => ({
+          ...l,
+          items: (l.items || []).map((it) => ({
+            id: it.id,
+            name: it.name,
+            imageUrl: it.imageUrl && it.imageUrl.length > 25000 ? "" : it.imageUrl,
+            displayMode: it.displayMode,
+          })),
+        }));
+        localStorage.setItem(key, JSON.stringify(lightweight));
+      } catch {
+        // Quota continua cheia, ignorado pois IndexedDB já preserva os dados
+      }
+    }
+  }
+
+  // Notifica sempre os ouvintes em tempo real para sincronização instantânea
+  if (!skipNotify) {
+    notifyDbChange({ key });
   }
 
   // Sincroniza em background com o endpoint local do Vite dev server
@@ -1005,6 +1159,25 @@ export async function getTierLists({
 } = {}) {
   let lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
 
+  // Garante que listas guardadas no IndexedDB são incorporadas
+  try {
+    const idbLists = await idbGetAllTierLists();
+    if (Array.isArray(idbLists) && idbLists.length > 0) {
+      const listMap = new Map(lists.map((l) => [l.id, l]));
+      let added = false;
+      for (const l of idbLists) {
+        if (l && l.id && !SEED_TIERLIST_IDS.has(l.id) && !listMap.has(l.id)) {
+          listMap.set(l.id, l);
+          added = true;
+        }
+      }
+      if (added) {
+        lists = Array.from(listMap.values());
+        memoryTierLists = lists;
+      }
+    }
+  } catch {}
+
   if (lists.length === 0) {
     await syncDbFromRemote();
     lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
@@ -1082,16 +1255,41 @@ export async function getTierLists({
 }
 
 export async function getTierListById(id, requestingUid = null) {
+  if (!id) return null;
   let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   let target = stored.find((l) => l.id === id);
 
-  if (!target && isFirebaseConfigured()) {
+  // Procura de imediato no IndexedDB se não existir na memória ou se os itens tiverem sido truncados
+  if (!target || !target.items || target.items.length === 0) {
+    try {
+      const idbList = await idbGetTierList(id);
+      if (idbList) {
+        target = idbList;
+        const existingIdx = stored.findIndex((l) => l.id === id);
+        if (existingIdx !== -1) {
+          stored[existingIdx] = target;
+        } else {
+          stored.unshift(target);
+        }
+        if (memoryTierLists) {
+          const mIdx = memoryTierLists.findIndex((l) => l.id === id);
+          if (mIdx !== -1) memoryTierLists[mIdx] = target;
+          else memoryTierLists.unshift(target);
+        }
+      }
+    } catch (e) {
+      console.warn("IndexedDB read tierlist error:", e);
+    }
+  }
+
+  if (!target && isFirebaseConfigured() && db) {
     try {
       const ref = doc(db, "tierlists", id);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         target = { ...snap.data(), id: snap.id };
         stored.push(target);
+        await idbSaveTierList(target);
         setStored(STORAGE_KEY_TIERLISTS, stored);
       }
     } catch (e) {
@@ -1129,15 +1327,35 @@ export async function createTierList(uid, {
   const newId = `tl-${Date.now()}`;
   const now = new Date().toISOString();
 
+  // Otimiza e redimensiona quaisquer imagens de elementos enviadas como data URL pesado
+  const sanitizedItems = await Promise.all(
+    (items || []).map(async (it) => {
+      if (
+        it.imageUrl &&
+        typeof it.imageUrl === "string" &&
+        it.imageUrl.startsWith("data:image/") &&
+        it.imageUrl.length > 50000
+      ) {
+        try {
+          const compressed = await compressImage(it.imageUrl, 360, 360, 0.82);
+          return { ...it, imageUrl: compressed };
+        } catch {
+          return it;
+        }
+      }
+      return it;
+    })
+  );
+
   const record = {
     id: newId,
     title: title || "A Minha Tier List",
     category: category || "football",
     description,
     language,
-    tiers,
-    items,
-    placements,
+    tiers: tiers || [],
+    items: sanitizedItems,
+    placements: placements || {},
     itemDisplayMode,
     visibility: visibility || "public",
     ownerId: uid || "anon",
@@ -1181,6 +1399,10 @@ export async function createTierList(uid, {
     }
   }
 
+  // 1. Guarda diretamente e com segurança total no IndexedDB
+  await idbSaveTierList(record);
+
+  // 2. Persiste na cache em memória e sincroniza com o ecossistema
   setStored(STORAGE_KEY_TIERLISTS, [record, ...existing]);
 
   // Regista o ID na lista de criações locais para permitir edição/eliminação mesmo como anónimo
@@ -1190,7 +1412,7 @@ export async function createTierList(uid, {
     setStored("tierforge_created_lists", myLists);
   }
 
-  if (isFirebaseConfigured()) {
+  if (isFirebaseConfigured() && db) {
     try {
       await setDoc(doc(db, "tierlists", newId), {
         ...record,
@@ -1281,8 +1503,17 @@ export function canEditTierList(tierList, currentUid = null) {
 
 // Atualizar uma Tier List existente
 export async function updateTierList(id, uid, updates = {}) {
-  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
-  const index = stored.findIndex((l) => l.id === id);
+  let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let index = stored.findIndex((l) => l.id === id);
+
+  if (index === -1) {
+    const idbList = await idbGetTierList(id);
+    if (idbList) {
+      stored.unshift(idbList);
+      index = 0;
+    }
+  }
+
   if (index === -1) {
     throw new Error("Tier List não encontrada.");
   }
@@ -1292,16 +1523,42 @@ export async function updateTierList(id, uid, updates = {}) {
     throw new Error("Não tens permissão para editar esta Tier List.");
   }
 
+  // Otimiza quaisquer novas imagens enviadas em updates.items
+  let sanitizedUpdates = { ...updates };
+  if (Array.isArray(sanitizedUpdates.items)) {
+    sanitizedUpdates.items = await Promise.all(
+      sanitizedUpdates.items.map(async (it) => {
+        if (
+          it.imageUrl &&
+          typeof it.imageUrl === "string" &&
+          it.imageUrl.startsWith("data:image/") &&
+          it.imageUrl.length > 50000
+        ) {
+          try {
+            const compressed = await compressImage(it.imageUrl, 360, 360, 0.82);
+            return { ...it, imageUrl: compressed };
+          } catch {
+            return it;
+          }
+        }
+        return it;
+      })
+    );
+  }
+
   const updated = {
     ...existing,
-    ...updates,
+    ...sanitizedUpdates,
     updatedAt: new Date().toISOString(),
   };
 
   stored[index] = updated;
+
+  // Persiste no IndexedDB e sincroniza na cache e storage
+  await idbSaveTierList(updated);
   setStored(STORAGE_KEY_TIERLISTS, stored);
 
-  if (isFirebaseConfigured() && existing.ownerId !== "anon") {
+  if (isFirebaseConfigured() && db && existing.ownerId !== "anon") {
     try {
       const ref = doc(db, "tierlists", id);
       await setDoc(ref, updated, { merge: true });
@@ -1315,8 +1572,12 @@ export async function updateTierList(id, uid, updates = {}) {
 
 // Eliminar uma Tier List
 export async function deleteTierList(id, uid) {
-  const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
-  const existing = stored.find((l) => l.id === id);
+  let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  let existing = stored.find((l) => l.id === id);
+  if (!existing) {
+    existing = await idbGetTierList(id);
+  }
+
   if (!existing) {
     throw new Error("Tier List não encontrada.");
   }
@@ -1324,6 +1585,9 @@ export async function deleteTierList(id, uid) {
   if (!canEditTierList(existing, uid)) {
     throw new Error("Não tens permissão para eliminar esta Tier List.");
   }
+
+  // Remove do IndexedDB
+  await idbDeleteTierList(id);
 
   // Remove da lista
   const filtered = stored.filter((l) => l.id !== id);
@@ -1345,7 +1609,7 @@ export async function deleteTierList(id, uid) {
   delete votes[id];
   setStored(STORAGE_KEY_USER_VOTES, votes);
 
-  if (isFirebaseConfigured() && existing.ownerId !== "anon") {
+  if (isFirebaseConfigured() && db && existing.ownerId !== "anon") {
     try {
       const ref = doc(db, "tierlists", id);
       await deleteDoc(ref);
@@ -1447,6 +1711,34 @@ export async function deleteUserAccountAndData(uid) {
 export async function getUserTierLists(uid, isOwner = false) {
   if (!uid) return [];
   let stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+
+  // Garante que listas criadas pelo utilizador preservadas no IndexedDB são recuperadas
+  try {
+    const idbLists = await idbGetAllTierLists();
+    if (Array.isArray(idbLists) && idbLists.length > 0) {
+      const listMap = new Map(stored.map((l) => [l.id, l]));
+      let added = false;
+      for (const l of idbLists) {
+        if (l && l.id && !SEED_TIERLIST_IDS.has(l.id)) {
+          if (!listMap.has(l.id)) {
+            listMap.set(l.id, l);
+            added = true;
+          } else {
+            const existing = listMap.get(l.id);
+            if ((l.items?.length || 0) >= (existing.items?.length || 0)) {
+              listMap.set(l.id, { ...existing, ...l });
+            }
+          }
+        }
+      }
+      if (added) {
+        stored = Array.from(listMap.values());
+        memoryTierLists = stored;
+      }
+    }
+  } catch (e) {
+    console.warn("getUserTierLists idb notice:", e);
+  }
 
   if (stored.length === 0) {
     await syncDbFromRemote();
