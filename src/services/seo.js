@@ -40,3 +40,4 @@ export function updatePageMeta({ title, description, image = null, url = null })
     setMetaTag('meta[name="twitter:image"]', "name", "twitter:image", image);
   }
 }
+

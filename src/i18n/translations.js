@@ -13,7 +13,7 @@ export const translations = {
     nav: {
       brand: "TierWorld",
       explore: "Explorar",
-      categories: "Categorias",
+      trending: "Em Alta",
       leaderboard: "Classificação",
       searchPlaceholder: "Pesquisar #id, criadores, jogos, jogadores…",
       create: "Criar Tier List",
@@ -312,7 +312,7 @@ export const translations = {
     nav: {
       brand: "TierWorld",
       explore: "Explorar",
-      categories: "Categorias",
+      trending: "Em Alta",
       leaderboard: "Classificação",
       searchPlaceholder: "Buscar #id, criadores, games, jogadores…",
       create: "Criar Tier List",

@@ -39,33 +39,8 @@ import {
   getUserTierLists,
   toggleFollowUser,
 } from "../services/db";
-import { calculateUserBadges } from "../services/badges";
+import { calculateUserBadges, getCreatorLevelInfo } from "../services/badges";
 import { updatePageMeta } from "../services/seo";
-
-// Helper de Níveis de Criador e Patamares de Experiência
-function getCreatorLevelInfo(xp = 0) {
-  const LEVELS = [
-    { name: "Iniciante", minXp: 0, nextXp: 200, icon: "🌱", color: "#A0A0B0", rank: "Tier I" },
-    { name: "Criador Emergente", minXp: 200, nextXp: 600, icon: "⚡", color: "#60A5FA", rank: "Tier II" },
-    { name: "Arquiteto de Tiers", minXp: 600, nextXp: 1500, icon: "🏗️", color: "#34D399", rank: "Tier III" },
-    { name: "Mestre das Tiers", minXp: 1500, nextXp: 3500, icon: "🏆", color: "#FBBF24", rank: "Tier IV" },
-    { name: "Grão-Mestre", minXp: 3500, nextXp: 7000, icon: "💎", color: "#A78BFA", rank: "Tier V" },
-    { name: "Lenda das Tiers", minXp: 7000, nextXp: 15000, icon: "👑", color: "#F43F5E", rank: "Mítico" },
-  ];
-
-  const current = [...LEVELS].reverse().find((l) => xp >= l.minXp) || LEVELS[0];
-  const next = LEVELS.find((l) => l.minXp > current.minXp);
-  const range = next ? next.minXp - current.minXp : 5000;
-  const progressInLevel = next ? Math.min(Math.max(xp - current.minXp, 0), range) : range;
-  const percent = next ? Math.min(100, Math.round((progressInLevel / range) * 100)) : 100;
-
-  return {
-    ...current,
-    nextLevel: next,
-    percent,
-    remainingXp: next ? Math.max(0, next.minXp - xp) : 0,
-  };
-}
 
 export default function Profile() {
   const { handle: paramHandle } = useParams();
