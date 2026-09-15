@@ -380,26 +380,19 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className={`flex h-10 items-center gap-2 rounded-xl border pl-1.5 pr-2.5 transition-all duration-200 active:scale-95 group ${
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 ${
                     menuOpen
                       ? "border-accent bg-accent/15 text-white shadow-glow"
                       : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
                   }`}
                   style={!menuOpen ? { backgroundColor: "#121218", borderColor: "rgba(255,255,255,0.08)" } : undefined}
+                  title={profile?.displayName || user.displayName || "Perfil de utilizador"}
+                  aria-label="Menu de utilizador"
                 >
                   <Avatar
                     name={profile?.displayName || user.email}
                     image={profile?.avatar || user.photoURL}
                     size={28}
-                  />
-                  <span className="hidden xl:inline text-[12.5px] font-bold text-white max-w-[95px] truncate">
-                    {profile?.displayName || user.displayName || "Perfil"}
-                  </span>
-                  <ChevronDown
-                    size={13}
-                    className={`text-mutedDim transition-transform duration-200 group-hover:text-white ${
-                      menuOpen ? "rotate-180 text-accent" : ""
-                    }`}
                   />
                 </button>
 
@@ -493,6 +486,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => navigate("/login")}
                 className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-[13px] font-bold text-muted hover:text-white hover:border-borderStrong hover:bg-surface2 transition-all active:scale-95"
+                style={{ backgroundColor: "#121218", borderColor: "rgba(255,255,255,0.08)" }}
               >
                 <LogIn size={15} className="text-accent" />
                 <span>{t("nav.login")}</span>
