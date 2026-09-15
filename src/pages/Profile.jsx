@@ -96,13 +96,27 @@ export default function Profile() {
     (authProfile && authProfile.handle?.toLowerCase() === paramHandle.toLowerCase()) ||
     (user && user.uid === paramHandle);
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (overrideHandle = null) => {
+    const handleToQuery = overrideHandle || paramHandle;
     try {
       let foundUser = null;
-      if (paramHandle) {
-        foundUser = (await getUserByHandle(paramHandle)) || (await getUserByUid(paramHandle));
-      } else if (user) {
-        foundUser = await getUserByUid(user.uid);
+      if (handleToQuery) {
+        foundUser = (await getUserByHandle(handleToQuery)) || (await getUserByUid(handleToQuery));
+        // Se for o próprio criador autenticado e o handle tiver sido recentemente alterado, recupera com segurança pelo UID
+        if (!foundUser && (user || authProfile)) {
+          const myUid = user?.uid || authProfile?.uid;
+          if (myUid) {
+            const selfUser = await getUserByUid(myUid);
+            if (selfUser) {
+              foundUser = selfUser;
+            }
+          }
+        }
+      } else if (user || authProfile) {
+        const myUid = user?.uid || authProfile?.uid;
+        if (myUid) {
+          foundUser = await getUserByUid(myUid);
+        }
       }
 
       setTargetUser(foundUser);
@@ -120,7 +134,7 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [paramHandle, user, isOwnProfile, navigate]);
+  }, [paramHandle, user, authProfile, isOwnProfile]);
 
   // Sincronização ao segundo em tempo real do perfil, listas e métricas
   useRealtimeDb(() => {
@@ -761,11 +775,15 @@ export default function Profile() {
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         onSaveSuccess={(updated) => {
-          setTargetUser((prev) => ({ ...prev, ...updated }));
-          if (updated && updated.handle) {
-            navigate(`/profile/${updated.handle}`, { replace: true });
+          if (updated) {
+            setTargetUser((prev) => ({ ...(prev || {}), ...updated }));
+            if (updated.handle) {
+              navigate(`/profile/${updated.handle}`, { replace: true });
+              loadProfile(updated.handle);
+            } else {
+              loadProfile();
+            }
           }
-          loadProfile();
         }}
       />
 

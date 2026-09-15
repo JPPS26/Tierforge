@@ -168,8 +168,9 @@ export function AuthProvider({ children }) {
 
   // Atualizar perfil em tempo real
   async function updateProfile(data) {
-    if (!user) return null;
-    const updated = await dbUpdateUserProfile(user.uid, data);
+    const targetUid = user?.uid || profile?.uid;
+    if (!targetUid) return null;
+    const updated = await dbUpdateUserProfile(targetUid, data);
     if (updated) {
       setProfile(updated);
     }

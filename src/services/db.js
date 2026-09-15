@@ -446,11 +446,15 @@ const RESERVED_HANDLES = [
 ];
 
 export function checkHandleAvailable(handle, currentUid) {
-  if (!handle) return { available: false, reason: "empty" };
-  const clean = handle.replace(/^#/, "").toLowerCase().trim();
+  if (!handle || !handle.trim()) return { available: false, reason: "empty" };
+  const clean = handle.replace(/^[@#]+/, "").toLowerCase().trim();
 
-  // Validação de formato alfanumérico com underscore (3 a 20 caracteres)
-  const regex = /^[a-zA-Z0-9_]{3,20}$/;
+  if (clean.length < 3) {
+    return { available: false, reason: "too_short" };
+  }
+
+  // Validação de formato alfanumérico com underscore e hífen (3 a 20 caracteres)
+  const regex = /^[a-zA-Z0-9_-]{3,20}$/;
   if (!regex.test(clean)) {
     return { available: false, reason: "invalid_format" };
   }
@@ -461,7 +465,9 @@ export function checkHandleAvailable(handle, currentUid) {
 
   const users = getAllUsers();
   const existing = users.find(
-    (u) => (u.handle || "").toLowerCase() === clean && u.uid !== currentUid
+    (u) =>
+      (u.handle || "").replace(/^[@#]+/, "").toLowerCase() === clean &&
+      u.uid !== currentUid
   );
 
   if (existing) {
@@ -472,21 +478,36 @@ export function checkHandleAvailable(handle, currentUid) {
 }
 
 export async function updateUserProfile(uid, data) {
-  const users = getAllUsers();
-  const index = users.findIndex((u) => u.uid === uid);
-  if (index === -1) return null;
+  if (!uid) return null;
+  let users = getAllUsers();
+  let index = users.findIndex((u) => u.uid === uid);
 
-  const current = users[index];
+  if (index === -1) {
+    await syncDbFromRemote();
+    users = getAllUsers();
+    index = users.findIndex((u) => u.uid === uid);
+  }
+
+  const cleanHandle = data.handle !== undefined
+    ? data.handle.replace(/^[@#]+/, "").toLowerCase().trim()
+    : undefined;
+
+  const current = index !== -1 ? users[index] : null;
   const updated = {
-    ...current,
-    displayName: data.displayName !== undefined ? data.displayName.trim() : current.displayName,
-    handle: data.handle !== undefined ? data.handle.replace(/^#/, "").toLowerCase().trim() : current.handle,
-    bio: data.bio !== undefined ? data.bio.trim() : current.bio,
-    avatar: data.avatar !== undefined ? data.avatar : current.avatar,
+    ...(current || {}),
+    uid,
+    displayName: data.displayName !== undefined ? data.displayName.trim() : (current?.displayName || "Criador"),
+    handle: cleanHandle !== undefined ? cleanHandle : (current?.handle || `user_${uid.slice(0, 6)}`),
+    bio: data.bio !== undefined ? data.bio.trim() : (current?.bio || ""),
+    avatar: data.avatar !== undefined ? data.avatar : (current?.avatar || ""),
     updatedAt: new Date().toISOString(),
   };
 
-  users[index] = updated;
+  if (index !== -1) {
+    users[index] = updated;
+  } else {
+    users.push(updated);
+  }
   setStored(STORAGE_KEY_USERS, users);
 
   // Sincroniza o nome e avatar do criador nas suas tier lists existentes
@@ -504,16 +525,16 @@ export async function updateUserProfile(uid, data) {
     setStored(STORAGE_KEY_TIERLISTS, lists);
   }
 
-  if (isFirebaseConfigured()) {
+  if (isFirebaseConfigured() && db) {
     try {
       const ref = doc(db, "users", uid);
-      await updateDoc(ref, {
+      await setDoc(ref, {
         displayName: updated.displayName,
         handle: updated.handle,
         bio: updated.bio,
         avatar: updated.avatar,
         updatedAt: serverTimestamp(),
-      });
+      }, { merge: true });
     } catch (e) {
       console.warn("Firestore user update error:", e);
     }

@@ -35,15 +35,21 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (profile) {
+    if (isOpen && !wasOpenRef.current && profile) {
       setDisplayName(profile.displayName || "");
-      setHandle(profile.handle || "");
+      setHandle(profile.handle ? profile.handle.replace(/^[@#]+/, "") : "");
       setBio(profile.bio || "");
       setAvatar(profile.avatar || "");
+      setErrorMsg("");
+      const activeUid = user?.uid || profile?.uid;
+      const res = checkHandleAvailable(profile.handle || "", activeUid);
+      setHandleStatus(res);
     }
-  }, [profile, isOpen]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen, profile, user?.uid]);
 
   // Validação em tempo real do ID / Handle
   useEffect(() => {
@@ -53,12 +59,13 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
     }
 
     const timer = setTimeout(() => {
-      const res = checkHandleAvailable(handle, user?.uid);
+      const activeUid = user?.uid || profile?.uid;
+      const res = checkHandleAvailable(handle, activeUid);
       setHandleStatus(res);
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
-  }, [handle, user?.uid]);
+  }, [handle, user?.uid, profile?.uid]);
 
   if (!isOpen) return null;
 
@@ -100,9 +107,10 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
     setErrorMsg("");
 
     try {
+      const cleanHandleToSave = handle.replace(/^[@#]+/, "").toLowerCase().trim();
       const updated = await updateProfile({
         displayName,
-        handle: handle.replace(/^#/, "").replace(/^@/, "").toLowerCase().trim(),
+        handle: cleanHandleToSave,
         bio,
         avatar,
       });
@@ -295,12 +303,22 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
                   ) : handleStatus.reason === "taken" ? (
                     <>
                       <X size={11} className="stroke-[3]" />
-                      <span>Em uso</span>
+                      <span>Em uso por outro utilizador</span>
+                    </>
+                  ) : handleStatus.reason === "reserved" ? (
+                    <>
+                      <AlertCircle size={11} />
+                      <span>Identificador reservado</span>
+                    </>
+                  ) : handleStatus.reason === "empty" ? (
+                    <>
+                      <AlertCircle size={11} />
+                      <span>ID obrigatório</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={11} />
-                      <span>Mínimo 3 caracteres alfanuméricos</span>
+                      <span>Mínimo 3 caracteres (letras, números, _ ou -)</span>
                     </>
                   )}
                 </span>
@@ -312,7 +330,12 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
               <input
                 value={handle}
                 onChange={(e) =>
-                  setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20))
+                  setHandle(
+                    e.target.value
+                      .replace(/^[@#]+/, "")
+                      .replace(/[^a-zA-Z0-9_-]/g, "")
+                      .slice(0, 20)
+                  )
                 }
                 placeholder="omeunome"
                 required
@@ -331,7 +354,7 @@ export default function ProfileEditModal({ isOpen, onClose, onSaveSuccess }) {
                   /profile/{cleanHandle || "handle"}
                 </strong>
               </span>
-              <span>Apenas letras, números e underscores.</span>
+              <span>Apenas letras, números, _ ou -.</span>
             </div>
           </div>
 

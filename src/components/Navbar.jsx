@@ -560,6 +560,11 @@ export default function Navbar() {
       <ProfileEditModal
         isOpen={editProfileOpen}
         onClose={() => setEditProfileOpen(false)}
+        onSaveSuccess={(updated) => {
+          if (updated && updated.handle && location.pathname.startsWith("/profile")) {
+            navigate(`/profile/${updated.handle}`, { replace: true });
+          }
+        }}
       />
     </>
   );
