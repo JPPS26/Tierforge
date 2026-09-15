@@ -15,7 +15,6 @@ import {
   Menu,
   LogIn,
   Zap,
-  Flame,
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -117,14 +116,7 @@ export default function Navbar() {
 
   const levelInfo = getCreatorLevelInfo(profile?.creatorXp || 0);
 
-  const isTrendingActive =
-    location.pathname === "/explore" &&
-    (location.search.toLowerCase().includes("trending") ||
-      location.search.toLowerCase().includes("sort=votes"));
-
-  const isExploreActive =
-    location.pathname === "/explore" && !isTrendingActive;
-
+  const isExploreActive = location.pathname === "/explore";
   const isLeaderboardActive = location.pathname === "/leaderboard";
 
   return (
@@ -141,7 +133,7 @@ export default function Navbar() {
             <nav className="hidden items-center gap-1.5 md:flex rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1.5 backdrop-blur-md shadow-inner">
               <Link
                 to="/explore"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-[13.5px] transition-all duration-200 ${
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] transition-all duration-200 ${
                   isExploreActive
                     ? "bg-gradient-to-r from-accent/25 to-[#6A46F0]/25 text-white font-bold border border-accent/40 shadow-glow"
                     : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
@@ -155,23 +147,8 @@ export default function Navbar() {
               </Link>
 
               <Link
-                to="/explore?tab=Trending"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-[13.5px] transition-all duration-200 ${
-                  isTrendingActive
-                    ? "bg-gradient-to-r from-rose-500/25 to-amber-500/25 text-white font-bold border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.25)]"
-                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
-                }`}
-              >
-                <Flame
-                  size={15}
-                  className={isTrendingActive ? "text-rose-400 fill-rose-400/20" : "text-mutedDim"}
-                />
-                <span>{t("nav.trending", {}, "Em Alta")}</span>
-              </Link>
-
-              <Link
                 to="/leaderboard"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-[13.5px] transition-all duration-200 ${
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] transition-all duration-200 ${
                   isLeaderboardActive
                     ? "bg-gradient-to-r from-amber-500/25 to-accent/25 text-white font-bold border border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.25)]"
                     : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
@@ -528,27 +505,6 @@ export default function Navbar() {
                   <div>
                     <div className="text-[14px] font-bold text-white">{t("nav.explore")}</div>
                     <div className="text-[11.5px] text-mutedDim">Todas as tier lists e categorias</div>
-                  </div>
-                </div>
-                <span className="text-[12px] text-mutedDim font-semibold">→</span>
-              </Link>
-
-              <Link
-                to="/explore?tab=Trending"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between rounded-2xl border p-3 transition-all ${
-                  isTrendingActive
-                    ? "border-rose-500/40 bg-rose-500/15 text-white"
-                    : "border-white/[0.06] bg-surface/50 text-muted hover:border-white/20 hover:text-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
-                    <Flame size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[14px] font-bold text-white">{t("nav.trending", {}, "Em Alta")}</div>
-                    <div className="text-[11.5px] text-mutedDim">As mais votadas e debatidas agora</div>
                   </div>
                 </div>
                 <span className="text-[12px] text-mutedDim font-semibold">→</span>
