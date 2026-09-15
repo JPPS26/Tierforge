@@ -385,6 +385,7 @@ export default function Navbar() {
                       ? "border-accent bg-accent/15 text-white shadow-glow"
                       : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
                   }`}
+                  style={!menuOpen ? { backgroundColor: "#121218", borderColor: "rgba(255,255,255,0.08)" } : undefined}
                 >
                   <Avatar
                     name={profile?.displayName || user.email}
@@ -403,9 +404,9 @@ export default function Navbar() {
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] w-64 rounded-2xl border border-white/10 bg-[#12131F]/98 p-3 shadow-2xl backdrop-blur-2xl animate-fadeIn z-50">
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017]/98 p-3.5 shadow-2xl backdrop-blur-2xl animate-fadeIn z-50">
                     {/* Header do Utilizador com XP e Nível */}
-                    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 mb-2">
+                    <div className="rounded-2xl border border-border/80 bg-surface2/60 p-3 mb-2.5">
                       <div className="flex items-center gap-2.5 mb-2">
                         <Avatar
                           name={profile?.displayName || user.email}
@@ -423,7 +424,7 @@ export default function Navbar() {
                       </div>
 
                       {/* Nível e Barra de XP */}
-                      <div className="pt-2 border-t border-white/[0.06]">
+                      <div className="pt-2 border-t border-border/60">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-bold text-mutedDim flex items-center gap-1">
                             <span>{levelInfo.icon}</span>
@@ -442,11 +443,11 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-1.5">
                       <Link
                         to={`/profile/${profile?.handle || ""}`}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-text hover:bg-surface2 hover:text-white transition-colors"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
                       >
                         <UserIcon size={15} className="text-muted" />
                         <span>{t("nav.profile")}</span>
@@ -455,7 +456,7 @@ export default function Navbar() {
                       <Link
                         to="/create"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-text hover:bg-surface2 hover:text-white transition-colors"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
                       >
                         <Plus size={15} className="text-teal" />
                         <span>Criar Nova Tier List</span>
@@ -467,18 +468,18 @@ export default function Navbar() {
                           setMenuOpen(false);
                           setEditProfileOpen(true);
                         }}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-text hover:bg-surface2 hover:text-white transition-colors text-left"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all text-left"
                       >
                         <Settings size={15} className="text-muted" />
                         <span>{t("nav.editProfile")}</span>
                       </button>
 
-                      <div className="my-1 border-t border-white/[0.08]"></div>
+                      <div className="my-1 border-t border-border/50"></div>
 
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                        className="flex w-full items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-left text-[13px] font-medium text-red-400 hover:border-red-500/40 hover:bg-red-500/20 hover:text-red-300 transition-all"
                       >
                         <LogOut size={15} />
                         <span>{t("nav.logout")}</span>
@@ -732,7 +733,8 @@ export default function Navbar() {
                     <Link
                       to={`/profile/${profile?.handle || ""}`}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[11.5px] font-bold text-white hover:bg-white/10"
+                      className="rounded-xl border border-border bg-surface px-3 py-1.5 text-[11.5px] font-bold text-muted hover:border-borderStrong hover:text-white hover:bg-surface2 transition-all"
+                      style={{ backgroundColor: "#121218" }}
                     >
                       {t("nav.profile")}
                     </Link>
