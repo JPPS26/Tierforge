@@ -120,28 +120,26 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D]/90 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <div className="mx-auto flex h-[64px] max-w-[1320px] items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6">
-          {/* Lado Esquerdo: Logótipo & Navegação Coesa */}
-          <div className="flex items-center gap-3 lg:gap-4 shrink-0">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D]/85 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-auto flex h-[64px] max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6">
+          {/* Lado Esquerdo: Logótipo & Navegação */}
+          <div className="flex items-center gap-5 lg:gap-7 shrink-0">
             <Link to="/" className="flex flex-shrink-0 items-center gap-2.5 group select-none">
               <TierWorldLogo size={32} showText={true} />
             </Link>
 
-            <div className="hidden md:block h-5 w-px bg-white/[0.08]" />
-
-            {/* Navegação Segmentada Elegante (Desktop) */}
-            <nav className="hidden md:flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 backdrop-blur-md">
+            {/* Links de Navegação Coesos (Desktop) */}
+            <nav className="hidden md:flex items-center gap-1.5">
               <Link
                 to="/explore"
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-all duration-150 ${
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-150 ${
                   isExploreActive
-                    ? "bg-accent/20 text-white font-bold border border-accent/40 shadow-sm"
-                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
+                    ? "bg-accent/15 text-white border border-accent/35 shadow-[0_0_14px_rgba(124,92,255,0.25)]"
+                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
                 }`}
               >
                 <Compass
-                  size={14}
+                  size={15}
                   className={isExploreActive ? "text-accent" : "text-mutedDim"}
                 />
                 <span>{t("nav.explore")}</span>
@@ -149,14 +147,14 @@ export default function Navbar() {
 
               <Link
                 to="/leaderboard"
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-all duration-150 ${
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-150 ${
                   isLeaderboardActive
-                    ? "bg-amber-500/20 text-white font-bold border border-amber-500/40 shadow-sm"
-                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
+                    ? "bg-amber-500/15 text-white border border-amber-500/35 shadow-[0_0_14px_rgba(245,158,11,0.25)]"
+                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
                 }`}
               >
                 <Trophy
-                  size={14}
+                  size={15}
                   className={isLeaderboardActive ? "text-amber-400" : "text-mutedDim"}
                 />
                 <span>{t("nav.leaderboard")}</span>
@@ -165,8 +163,8 @@ export default function Navbar() {
           </div>
 
           {/* Centro: Barra de Pesquisa Omni-Search Proporcional */}
-          <div className="relative hidden max-w-[340px] xl:max-w-[420px] flex-1 lg:block mx-3" ref={searchContainerRef}>
-            <div className="relative flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#12121D]/80 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#151525] focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
+          <div className="relative hidden max-w-[380px] xl:max-w-[440px] flex-1 lg:block mx-4" ref={searchContainerRef}>
+            <div className="relative flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#141522]/90 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#18192A] focus-within:ring-2 focus-within:ring-accent/20 focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
               <Search size={15} className="pointer-events-none absolute left-3 text-mutedDim" />
               <input
                 ref={searchInputRef}
@@ -345,7 +343,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Lado Direito: Ações, Notificações, Botões e Avatar */}
+          {/* Lado Direito: Ações (Criar, Notificações, Perfil, Mobile Menu) */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Botão de Pesquisa Rápida (Mobile/Tablet) */}
             <button
@@ -354,25 +352,25 @@ export default function Navbar() {
               aria-label="Abrir pesquisa"
               className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 lg:hidden ${
                 mobileSearchOpen
-                  ? "border-accent bg-accent/15 text-white shadow-glow"
-                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                  : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
               }`}
             >
               <Search size={16} />
             </button>
 
-            {/* Notificações no Próprio Site */}
-            {user && <NotificationsDropdown />}
-
-            {/* Botão de Criação com Gradiente */}
+            {/* Botão de Criação Primário com Gradiente */}
             <button
               type="button"
               onClick={() => navigate("/create")}
-              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-glow hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] active:scale-95 transition-all border border-white/15"
+              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-[0_0_20px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_25px_rgba(124,92,255,0.55)] active:scale-95 transition-all border border-white/15"
             >
               <Plus size={16} />
               <span>{t("nav.create")}</span>
             </button>
+
+            {/* Notificações no Próprio Site */}
+            {user && <NotificationsDropdown />}
 
             {/* Menu de Perfil / Iniciar Sessão */}
             {user ? (
@@ -382,10 +380,9 @@ export default function Navbar() {
                   onClick={() => setMenuOpen((v) => !v)}
                   className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 ${
                     menuOpen
-                      ? "border-accent bg-accent/15 text-white shadow-glow"
-                      : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+                      ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                      : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
                   }`}
-                  style={!menuOpen ? { backgroundColor: "#121218", borderColor: "rgba(255,255,255,0.08)" } : undefined}
                   title={profile?.displayName || user.displayName || "Perfil de utilizador"}
                   aria-label="Menu de utilizador"
                 >
@@ -397,9 +394,9 @@ export default function Navbar() {
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017]/98 p-3.5 shadow-2xl backdrop-blur-2xl animate-fadeIn z-50">
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#11121C]/98 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(124,92,255,0.15)] backdrop-blur-2xl animate-fadeIn z-50">
                     {/* Header do Utilizador com XP e Nível */}
-                    <div className="rounded-2xl border border-border/80 bg-surface2/60 p-3 mb-2.5">
+                    <div className="rounded-xl border border-white/[0.08] bg-[#161726]/80 p-3 mb-2">
                       <div className="flex items-center gap-2.5 mb-2">
                         <Avatar
                           name={profile?.displayName || user.email}
@@ -417,7 +414,7 @@ export default function Navbar() {
                       </div>
 
                       {/* Nível e Barra de XP */}
-                      <div className="pt-2 border-t border-border/60">
+                      <div className="pt-2 border-t border-white/[0.06]">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-bold text-mutedDim flex items-center gap-1">
                             <span>{levelInfo.icon}</span>
@@ -436,11 +433,11 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1">
                       <Link
                         to={`/profile/${profile?.handle || ""}`}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
+                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
                       >
                         <UserIcon size={15} className="text-muted" />
                         <span>{t("nav.profile")}</span>
@@ -449,7 +446,7 @@ export default function Navbar() {
                       <Link
                         to="/create"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
+                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
                       >
                         <Plus size={15} className="text-teal" />
                         <span>Criar Nova Tier List</span>
@@ -461,13 +458,13 @@ export default function Navbar() {
                           setMenuOpen(false);
                           setEditProfileOpen(true);
                         }}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all text-left"
+                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all text-left"
                       >
                         <Settings size={15} className="text-muted" />
                         <span>{t("nav.editProfile")}</span>
                       </button>
 
-                      <div className="my-1 border-t border-border/50"></div>
+                      <div className="my-1 border-t border-white/[0.08]"></div>
 
                       <button
                         type="button"
@@ -485,8 +482,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-[13px] font-bold text-muted hover:text-white hover:border-borderStrong hover:bg-surface2 transition-all active:scale-95"
-                style={{ backgroundColor: "#121218", borderColor: "rgba(255,255,255,0.08)" }}
+                className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.1] bg-[#141522] px-4 text-[13px] font-bold text-muted hover:text-white hover:border-white/20 hover:bg-[#1D1E30] transition-all active:scale-95 shadow-sm"
               >
                 <LogIn size={15} className="text-accent" />
                 <span>{t("nav.login")}</span>
@@ -500,8 +496,8 @@ export default function Navbar() {
               aria-label="Menu principal"
               className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 md:hidden ${
                 mobileMenuOpen
-                  ? "border-accent bg-accent/15 text-white shadow-glow"
-                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                  : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
               }`}
             >
               {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
@@ -643,50 +639,44 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <nav
             ref={mobileMenuRef}
-            className="border-t border-white/10 bg-[#0B0C14]/98 px-4 py-5 backdrop-blur-2xl md:hidden animate-slideUp shadow-2xl flex flex-col gap-4"
+            className="border-t border-white/10 bg-[#0B0C14]/98 px-4 py-5 backdrop-blur-2xl md:hidden animate-slideUp shadow-2xl flex flex-col gap-3.5"
           >
-            {/* Cartões de Navegação Principal */}
-            <div className="flex flex-col gap-2">
+            {/* Cartões de Navegação Principal (Grid Coesa) */}
+            <div className="grid grid-cols-2 gap-2.5">
               <Link
                 to="/explore"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between rounded-2xl border p-3 transition-all ${
+                className={`flex flex-col gap-2 rounded-2xl border p-3.5 transition-all ${
                   isExploreActive
-                    ? "border-accent/40 bg-accent/15 text-white"
-                    : "border-white/[0.06] bg-surface/50 text-muted hover:border-white/20 hover:text-white"
+                    ? "border-accent/40 bg-accent/15 text-white shadow-[0_0_16px_rgba(124,92,255,0.25)]"
+                    : "border-white/[0.08] bg-[#141522] text-muted hover:border-white/20 hover:text-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accentSoft border border-accent/30 text-accent">
-                    <Compass size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[14px] font-bold text-white">{t("nav.explore")}</div>
-                    <div className="text-[11.5px] text-mutedDim">Todas as tier lists e categorias</div>
-                  </div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accentSoft border border-accent/30 text-accent">
+                  <Compass size={18} />
                 </div>
-                <span className="text-[12px] text-mutedDim font-semibold">→</span>
+                <div>
+                  <div className="text-[13.5px] font-bold text-white">{t("nav.explore")}</div>
+                  <div className="text-[11px] text-mutedDim">Todas as listas</div>
+                </div>
               </Link>
 
               <Link
                 to="/leaderboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between rounded-2xl border p-3 transition-all ${
+                className={`flex flex-col gap-2 rounded-2xl border p-3.5 transition-all ${
                   isLeaderboardActive
-                    ? "border-amber-500/40 bg-amber-500/15 text-white"
-                    : "border-white/[0.06] bg-surface/50 text-muted hover:border-white/20 hover:text-white"
+                    ? "border-amber-500/40 bg-amber-500/15 text-white shadow-[0_0_16px_rgba(245,158,11,0.25)]"
+                    : "border-white/[0.08] bg-[#141522] text-muted hover:border-white/20 hover:text-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                    <Trophy size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[14px] font-bold text-white">{t("nav.leaderboard")}</div>
-                    <div className="text-[11.5px] text-mutedDim">Top criadores e pontuação XP</div>
-                  </div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  <Trophy size={18} />
                 </div>
-                <span className="text-[12px] text-mutedDim font-semibold">→</span>
+                <div>
+                  <div className="text-[13.5px] font-bold text-white">{t("nav.leaderboard")}</div>
+                  <div className="text-[11px] text-mutedDim">Top criadores</div>
+                </div>
               </Link>
             </div>
 
@@ -697,7 +687,7 @@ export default function Navbar() {
                 setMobileMenuOpen(false);
                 navigate("/create");
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] py-3.5 text-[14px] font-bold text-white shadow-glow"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] py-3 text-[14px] font-bold text-white shadow-[0_0_20px_rgba(124,92,255,0.35)] hover:shadow-[0_0_25px_rgba(124,92,255,0.55)] active:scale-95 transition-all"
             >
               <Plus size={17} />
               <span>{t("nav.create")}</span>
@@ -706,7 +696,7 @@ export default function Navbar() {
             {/* Cartão de Utilizador / Login no Mobile */}
             <div className="pt-2 border-t border-white/10">
               {user ? (
-                <div className="flex flex-col gap-2.5 rounded-2xl border border-white/[0.08] bg-surface/60 p-3.5">
+                <div className="flex flex-col gap-2.5 rounded-2xl border border-white/[0.08] bg-[#141522] p-3.5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Avatar
@@ -727,14 +717,13 @@ export default function Navbar() {
                     <Link
                       to={`/profile/${profile?.handle || ""}`}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-xl border border-border bg-surface px-3 py-1.5 text-[11.5px] font-bold text-muted hover:border-borderStrong hover:text-white hover:bg-surface2 transition-all"
-                      style={{ backgroundColor: "#121218" }}
+                      className="rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 py-1.5 text-[11.5px] font-bold text-white hover:bg-white/[0.12] transition-colors"
                     >
                       {t("nav.profile")}
                     </Link>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-mutedDim pt-1 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between text-[11px] text-mutedDim pt-1.5 border-t border-white/[0.06]">
                     <span>{levelInfo.icon} {levelInfo.name}</span>
                     <span className="font-mono text-accent font-bold">{profile?.creatorXp || 0} XP</span>
                   </div>
@@ -742,7 +731,7 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-medium text-red-400 hover:bg-red-500/10"
+                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-medium text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut size={14} />
                     <span>{t("nav.logout")}</span>
@@ -755,7 +744,7 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     navigate("/login");
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-3 text-[14px] font-bold text-white hover:bg-white/10 transition-all"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-[#141522] py-3 text-[14px] font-bold text-white hover:bg-[#1D1E30] transition-all"
                 >
                   <LogIn size={16} className="text-accent" />
                   <span>{t("nav.login")}</span>

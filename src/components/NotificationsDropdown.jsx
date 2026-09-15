@@ -258,10 +258,10 @@ export default function NotificationsDropdown() {
         }}
         className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 ${
           isOpen
-            ? "border-accent bg-accent/15 text-white shadow-glow"
+            ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
             : isMuted
             ? "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:border-amber-500/50"
-            : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+            : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
         }`}
         title={isMuted ? `Notificações Silenciadas (${getMuteTimeString()})` : "Notificações do Site"}
         aria-label="Abrir notificações"
