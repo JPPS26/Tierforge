@@ -290,7 +290,7 @@ export default function Builder() {
   const [tiers, setTiers] = useState(DEFAULT_TIERS);
   const [placements, setPlacements] = useState({});
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("gaming");
+  const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
   const [visibility, setVisibility] = useState("public"); // "public" | "unlisted" | "private"
   const [displayMode, setDisplayMode] = useState("both"); // "both" | "image" | "text"
@@ -515,7 +515,7 @@ export default function Builder() {
         c.id === category ||
         c.slug === category ||
         (c.name && c.name.toLowerCase() === (category || "").toLowerCase())
-    ) || categories[0];
+    ) || null;
 
   // Validação contínua da subcategoria pertencente à categoria ativa
   useEffect(() => {
@@ -806,7 +806,7 @@ export default function Builder() {
       } else {
         const result = await createTierList(user?.uid || null, {
           title: title.trim() || t("builder.defaultTitle"),
-          category,
+          category: (category || "").trim() || (detectCategory({ title, items })?.slug) || "geral",
           subcategory,
           visibility,
           language,
@@ -1041,10 +1041,12 @@ export default function Builder() {
               className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accentSoft/60 px-3.5 py-1.5 text-xs font-bold text-accent hover:border-accent hover:bg-accentSoft transition-all shadow-sm group"
             >
               <Sparkles size={13} className="text-accent animate-pulse" />
-              <span>{currentCategoryObj?.name || category}</span>
-              <span className="text-[10.5px] font-medium text-muted group-hover:text-white">
-                {manualCategoryOverride ? "(manual)" : "(auto)"}
-              </span>
+              <span>{currentCategoryObj?.name || (category ? getCategoryDisplayName(category) : "Escolher Categoria")}</span>
+              {category && (
+                <span className="text-[10.5px] font-medium text-muted group-hover:text-white">
+                  {manualCategoryOverride ? "(manual)" : "(auto)"}
+                </span>
+              )}
               <ChevronDown size={13} className="text-accent ml-0.5" />
             </button>
           </div>
@@ -1774,38 +1776,46 @@ export default function Builder() {
                 <div className="text-[11px] font-bold uppercase tracking-wider text-mutedDim mb-2.5">
                   Categorias Disponíveis:
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {categories
-                    .filter((c) =>
-                      catSearchQuery.trim()
-                        ? (c.name || "").toLowerCase().includes(catSearchQuery.toLowerCase()) ||
-                          (c.slug || "").toLowerCase().includes(catSearchQuery.toLowerCase())
-                        : true
-                    )
-                    .map((c) => {
-                      const isSelected = category === c.id || category === c.slug;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setCategory(c.slug || c.id);
-                            setSubcategory("");
-                            setManualCategoryOverride(true);
-                            setCategoryModalOpen(false);
-                          }}
-                          className={`flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all ${
-                            isSelected
-                              ? "bg-accent text-black shadow-glow font-black"
-                              : "border border-border bg-surface2/60 text-muted hover:text-white hover:border-white/20"
-                          }`}
-                        >
-                          <span className="truncate">{c.name}</span>
-                          {isSelected && <Check size={14} className="stroke-[3]" />}
-                        </button>
-                      );
-                    })}
-                </div>
+                {categories.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-surface/50 p-4 text-center">
+                    <p className="text-xs text-mutedDim leading-relaxed">
+                      Ainda não existem categorias ativas no TierWorld. Escreve no campo acima o nome de qualquer nicho ou tema para o inaugurares nesta Tier List!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {categories
+                      .filter((c) =>
+                        catSearchQuery.trim()
+                          ? (c.name || "").toLowerCase().includes(catSearchQuery.toLowerCase()) ||
+                            (c.slug || "").toLowerCase().includes(catSearchQuery.toLowerCase())
+                          : true
+                      )
+                      .map((c) => {
+                        const isSelected = category === c.id || category === c.slug;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setCategory(c.slug || c.id);
+                              setSubcategory("");
+                              setManualCategoryOverride(true);
+                              setCategoryModalOpen(false);
+                            }}
+                            className={`flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all ${
+                              isSelected
+                                ? "bg-accent text-black shadow-glow font-black"
+                                : "border border-border bg-surface2/60 text-muted hover:text-white hover:border-white/20"
+                            }`}
+                          >
+                            <span className="truncate">{c.name}</span>
+                            {isSelected && <Check size={14} className="stroke-[3]" />}
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
 
               {manualCategoryOverride && (

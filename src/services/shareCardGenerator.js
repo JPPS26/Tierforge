@@ -590,3 +590,4 @@ function drawTiersTable(ctx, {
 
   ctx.restore();
 }
+

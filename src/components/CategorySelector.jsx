@@ -217,67 +217,93 @@ export default function CategorySelector({
         </div>
       )}
 
+      {/* Opção para usar texto livre introduzido */}
+      {searchQuery.trim().length >= 2 &&
+        !filteredCategories.some(
+          (c) => (c.name || "").toLowerCase() === searchQuery.trim().toLowerCase()
+        ) && (
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                onSelectCategory(searchQuery.trim());
+                setSearchQuery("");
+              }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-accent/15 border border-accent/40 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm"
+            >
+              <Sparkles size={13} />
+              <span>Usar categoria "{searchQuery.trim()}"</span>
+            </button>
+          </div>
+        )}
+
       {/* Pílulas de Categorias Disponíveis */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {(isExpanded || searchQuery ? filteredCategories : filteredCategories.slice(0, 10)).map(
-          (cat) => {
-            const isSelected =
-              activeCategoryObj?.id === cat.id ||
-              activeCategoryObj?.slug === cat.slug ||
-              (activeCategoryObj?.name &&
-                cat.name &&
-                activeCategoryObj.name.toLowerCase() === cat.name.toLowerCase());
-            const Icon = ICON_COMPONENTS[cat.icon] || Tag;
+      {categories.length === 0 ? (
+        <div className="py-2.5 px-3 mb-3 rounded-2xl bg-surface/50 border border-dashed border-white/10 text-xs text-mutedDim leading-relaxed">
+          Ainda não existem categorias ativas. Escreve no campo de pesquisa acima qualquer tema para o inaugurares nesta Tier List!
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {(isExpanded || searchQuery ? filteredCategories : filteredCategories.slice(0, 10)).map(
+            (cat) => {
+              const isSelected =
+                activeCategoryObj?.id === cat.id ||
+                activeCategoryObj?.slug === cat.slug ||
+                (activeCategoryObj?.name &&
+                  cat.name &&
+                  activeCategoryObj.name.toLowerCase() === cat.name.toLowerCase());
+              const Icon = ICON_COMPONENTS[cat.icon] || Tag;
 
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  onSelectCategory(cat.slug || cat.id);
-                  onSelectSubcategory("");
-                }}
-                className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all ${
-                  isSelected
-                    ? "bg-accent text-black shadow-glow scale-[1.02]"
-                    : "bg-surface2/80 text-muted hover:text-white hover:border-accent/40 border border-border"
-                }`}
-              >
-                <Icon size={14} className={isSelected ? "text-black" : "text-accent"} />
-                <span>{cat.name}</span>
-                {isSelected && <Check size={13} className="stroke-[3]" />}
-                {cat.count > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      isSelected ? "bg-black/20 text-black" : "bg-surface text-mutedDim"
-                    }`}
-                  >
-                    {cat.count}
-                  </span>
-                )}
-              </button>
-            );
-          }
-        )}
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectCategory(cat.slug || cat.id);
+                    onSelectSubcategory("");
+                  }}
+                  className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all ${
+                    isSelected
+                      ? "bg-accent text-black shadow-glow scale-[1.02]"
+                      : "bg-surface2/80 text-muted hover:text-white hover:border-accent/40 border border-border"
+                  }`}
+                >
+                  <Icon size={14} className={isSelected ? "text-black" : "text-accent"} />
+                  <span>{cat.name}</span>
+                  {isSelected && <Check size={13} className="stroke-[3]" />}
+                  {cat.count > 0 && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isSelected ? "bg-black/20 text-black" : "bg-surface text-mutedDim"
+                      }`}
+                    >
+                      {cat.count}
+                    </span>
+                  )}
+                </button>
+              );
+            }
+          )}
 
-        {!searchQuery && filteredCategories.length > 10 && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-border bg-surface text-xs font-semibold text-mutedDim hover:text-white transition-colors"
-          >
-            <span>
-              {isExpanded
-                ? "Mostrar menos"
-                : `+${filteredCategories.length - 10} mais categorias`}
-            </span>
-            <ChevronDown
-              size={14}
-              className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-            />
-          </button>
-        )}
-      </div>
+          {!searchQuery && filteredCategories.length > 10 && (
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-border bg-surface text-xs font-semibold text-mutedDim hover:text-white transition-colors"
+            >
+              <span>
+                {isExpanded
+                  ? "Mostrar menos"
+                  : `+${filteredCategories.length - 10} mais categorias`}
+              </span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+              />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Subcategorias da Categoria Selecionada */}
       {activeCategoryObj?.subcategories?.length > 0 && (

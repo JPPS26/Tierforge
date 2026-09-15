@@ -82,16 +82,6 @@ const CATEGORY_COLORS = {
   geek: "#6366F1",
 };
 
-const TRENDING_TOPIC_CHIPS = [
-  { label: "⚽ Futebol & Lendas", category: "football" },
-  { label: "🎮 Jogos & RPGs", category: "gaming" },
-  { label: "🎬 Cinema & Séries", category: "movies" },
-  { label: "✨ Anime & Mangá", category: "anime" },
-  { label: "💻 Tecnologia & Setup", category: "tech" },
-  { label: "🍕 Gastronomia", category: "food" },
-  { label: "🎵 Música & Álbuns", category: "music" },
-];
-
 function getCatVisuals(cat) {
   const key = (cat.id || cat.slug || "").toLowerCase();
   const IconComponent = CATEGORY_ICONS[key] || CATEGORY_ICONS[cat.icon] || Layers;
@@ -333,6 +323,13 @@ export default function Explore() {
     );
   }, [activeCategories, categorySearchQuery]);
 
+  const trendingTopicChips = useMemo(() => {
+    return activeCategories.slice(0, 8).map((c) => ({
+      label: c.name,
+      category: c.id,
+    }));
+  }, [activeCategories]);
+
   const tabs = [
     { key: "Trending", label: "Em Destaque", icon: Flame, color: "#FF5470" },
     { key: "TopRated", label: "Mais Votadas", icon: Heart, color: "#FF3B5C" },
@@ -456,29 +453,31 @@ export default function Explore() {
       {/* =========================================================
           2. CHIPS DE TEMAS RÁPIDOS EM DESTAQUE (TRENDING TOPICS)
          ========================================================= */}
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <span className="flex items-center gap-1 font-bold text-mutedDim uppercase tracking-wider text-[11px] shrink-0 mr-1">
-          <TrendingUp size={13} className="text-accent" />
-          <span>Em alta:</span>
-        </span>
-        {TRENDING_TOPIC_CHIPS.map((topic) => {
-          const isSelected = cat === topic.category;
-          return (
-            <button
-              key={topic.label}
-              type="button"
-              onClick={() => handleSelectCategory(topic.category)}
-              className={`shrink-0 rounded-xl border px-3 py-1.5 font-bold transition-all ${
-                isSelected
-                  ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
-                  : "border-white/[0.08] bg-[#12121A]/80 text-muted hover:border-white/20 hover:text-white"
-              }`}
-            >
-              {topic.label}
-            </button>
-          );
-        })}
-      </div>
+      {trendingTopicChips.length > 0 && (
+        <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+          <span className="flex items-center gap-1 font-bold text-mutedDim uppercase tracking-wider text-[11px] shrink-0 mr-1">
+            <TrendingUp size={13} className="text-accent" />
+            <span>Em alta:</span>
+          </span>
+          {trendingTopicChips.map((topic) => {
+            const isSelected = cat === topic.category;
+            return (
+              <button
+                key={topic.category}
+                type="button"
+                onClick={() => handleSelectCategory(topic.category)}
+                className={`shrink-0 rounded-xl border px-3 py-1.5 font-bold transition-all ${
+                  isSelected
+                    ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
+                    : "border-white/[0.08] bg-[#12121A]/80 text-muted hover:border-white/20 hover:text-white"
+                }`}
+              >
+                {topic.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* =========================================================
           3. BARRA DE PESQUISA, ORDENAÇÃO E MODOS DE EXIBIÇÃO

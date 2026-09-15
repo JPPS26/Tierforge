@@ -1018,67 +1018,100 @@ export function getCategoryDisplayName(categoryKey) {
 }
 
 export function getCategories() {
+  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
   const baseCatalog = getApiCatalog();
-  const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
-  const existingIds = new Set(stored.map((c) => (c.id || c.slug || "").toLowerCase()));
-  const merged = [...stored];
-  for (const baseCat of baseCatalog) {
-    const bId = (baseCat.id || "").toLowerCase();
-    const bSlug = (baseCat.slug || "").toLowerCase();
-    if (!existingIds.has(bId) && !existingIds.has(bSlug)) {
-      merged.push(baseCat);
-      existingIds.add(bId);
-      if (bSlug) existingIds.add(bSlug);
-    }
+  const storedCustom = getStored(STORAGE_KEY_CATEGORIES, []);
+
+  // Catálogo base e categorias guardadas servem exclusivamente para enriquecer com metadados
+  // as categorias que sejam efetivamente utilizadas em Tier Lists públicas
+  const metaMap = new Map();
+  for (const item of baseCatalog) {
+    if (item.id) metaMap.set(item.id.toLowerCase(), item);
+    if (item.slug) metaMap.set(item.slug.toLowerCase(), item);
+    if (item.name) metaMap.set(item.name.toLowerCase(), item);
+  }
+  for (const item of storedCustom) {
+    if (item.id) metaMap.set(item.id.toLowerCase(), item);
+    if (item.slug) metaMap.set(item.slug.toLowerCase(), item);
+    if (item.name) metaMap.set(item.name.toLowerCase(), item);
   }
 
-  const lists = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
+  // Apenas listas públicas contam para a taxonomia ativa e visível do site
+  const publicLists = lists.filter((l) => l.category && (l.visibility === "public" || !l.visibility));
 
-  // Inclui dinamicamente qualquer categoria criada organicamente através de Tier Lists
-  lists.forEach((l) => {
-    if (l.category && (l.visibility === "public" || !l.visibility)) {
-      const rawCat = String(l.category).trim();
-      const catKey = rawCat.toLowerCase();
-      const slugKey = slugify(rawCat);
-      if (!existingIds.has(catKey) && !existingIds.has(slugKey)) {
-        const catName = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
-        merged.push({
-          id: slugKey || catKey,
-          slug: slugKey || catKey,
-          name: catName,
-          description: `Comunidade de ${catName} criada através de Tier Lists.`,
-          icon: "Layers",
-          color: "#7C5CFF",
-          domain: "general",
-        });
-        existingIds.add(catKey);
-        if (slugKey) existingIds.add(slugKey);
+  const countsByCanonical = new Map();
+  const aliasCache = new Map();
+
+  for (const l of publicLists) {
+    const raw = String(l.category).trim();
+    if (!raw) continue;
+    const lower = raw.toLowerCase();
+    const slug = slugify(raw);
+
+    let canonical = aliasCache.get(lower) || aliasCache.get(slug);
+    if (!canonical) {
+      const meta = metaMap.get(lower) || metaMap.get(slug);
+      if (meta) {
+        canonical = meta.id || meta.slug || slug;
+      } else {
+        const accepted = getCategoryAcceptedKeys(lower);
+        if (accepted) {
+          for (const k of accepted) {
+            if (aliasCache.has(k)) {
+              canonical = aliasCache.get(k);
+              break;
+            }
+            const m = metaMap.get(k);
+            if (m) {
+              canonical = m.id || m.slug || slug;
+              break;
+            }
+          }
+        }
       }
+      if (!canonical) {
+        canonical = slug || lower;
+      }
+
+      aliasCache.set(lower, canonical);
+      aliasCache.set(slug, canonical);
     }
-  });
 
-  // Calcula a contagem estritamente real de tier lists públicas com correspondência unificada
-  return merged.map((cat) => {
-    const acceptedKeys = getCategoryAcceptedKeys(cat.id || cat.slug || cat.name);
+    const curr = countsByCanonical.get(canonical) || { canonical, rawName: raw, count: 0 };
+    curr.count += 1;
+    countsByCanonical.set(canonical, curr);
+  }
 
-    const realCount = lists.filter((l) => {
-      if (!l.category) return false;
-      const lCat = String(l.category).toLowerCase().trim();
-      const lSlug = slugify(l.category);
-      const isMatch = acceptedKeys ? (acceptedKeys.has(lCat) || acceptedKeys.has(lSlug)) : false;
-      return isMatch && (l.visibility === "public" || !l.visibility);
-    }).length;
+  // Constrói a lista final de categorias estritamente com count > 0
+  const result = [];
+  for (const [canonical, data] of countsByCanonical.entries()) {
+    if (data.count <= 0) continue;
+    const meta = metaMap.get(canonical.toLowerCase()) || metaMap.get(data.rawName.toLowerCase()) || {};
+    const displayName = meta.name || getCategoryDisplayName(canonical) || (data.rawName.charAt(0).toUpperCase() + data.rawName.slice(1));
 
-    return {
-      ...cat,
-      count: realCount,
-    };
-  });
+    result.push({
+      id: meta.id || canonical,
+      slug: meta.slug || canonical,
+      name: displayName,
+      description: meta.description || `Comunidade de ${displayName} criada através de Tier Lists.`,
+      icon: meta.icon || "Layers",
+      color: meta.color || "#7C5CFF",
+      imageUrl: meta.imageUrl || null,
+      subcategories: meta.subcategories || [],
+      domain: meta.domain || "general",
+      count: data.count,
+      tierListsCount: data.count,
+    });
+  }
+
+  // Ordena por quantidade decrescente de tier lists e depois por nome
+  result.sort((a, b) => (b.count || 0) - (a.count || 0) || a.name.localeCompare(b.name));
+  return result;
 }
 
 // Retorna exclusivamente categorias que tenham pelo menos 1 Tier List criada
 export function getActiveCategories() {
-  return getCategories().filter((c) => (c.count || 0) > 0);
+  return getCategories();
 }
 
 export function getGuestClientId() {
@@ -1121,17 +1154,7 @@ export function getPopularCategories(limit = 6) {
     .filter((c) => c.tierListsCount > 0)
     .sort((a, b) => b.popularityScore - a.popularityScore);
 
-  if (populated.length > 0) {
-    return populated.slice(0, limit);
-  }
-
-  // Fallback se não houver listas criadas: apresenta as principais categorias do catálogo
-  return categories.slice(0, limit).map((c) => ({
-    ...c,
-    tierListsCount: c.count || 0,
-    totalVotes: 0,
-    popularityScore: 0,
-  }));
+  return populated.slice(0, limit);
 }
 
 export function searchCategories(queryText) {
@@ -1217,7 +1240,7 @@ export async function createCustomCategory({
     count: 0,
   };
 
-  const stored = getStored(STORAGE_KEY_CATEGORIES, getApiCatalog());
+  const stored = getStored(STORAGE_KEY_CATEGORIES, []);
   stored.push(newCategory);
   setStored(STORAGE_KEY_CATEGORIES, stored);
 
@@ -1239,8 +1262,7 @@ export async function createCustomCategory({
 export async function saveCategoryWithApiData(categoryData) {
   if (!categoryData || !categoryData.name) return null;
   const slug = categoryData.slug || slugifyCategory(categoryData.name);
-  const baseCatalog = getApiCatalog();
-  const stored = getStored(STORAGE_KEY_CATEGORIES, baseCatalog);
+  const stored = getStored(STORAGE_KEY_CATEGORIES, []);
 
   const existingIdx = stored.findIndex((c) => c.id === slug || c.slug === slug);
   const enriched = {

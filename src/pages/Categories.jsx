@@ -131,7 +131,6 @@ export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("all");
-  const [filterMode, setFilterMode] = useState("all"); // "all" | "active_only"
   const [loading, setLoading] = useState(true);
 
   // Estado do Modal "Inaugurar Nova Categoria"
@@ -248,14 +247,9 @@ export default function Categories() {
     }
   };
 
-  // Filtragem composta: texto + domínio + modo ("todas" ou "ativas com listas")
+  // Filtragem composta: texto + domínio
   const filteredCategories = useMemo(() => {
     return categories.filter((c) => {
-      // Filtro de atividade
-      if (filterMode === "active_only" && (c.count || 0) === 0) {
-        return false;
-      }
-
       // Filtro por domínio
       if (selectedDomain !== "all") {
         const catDomain = (c.domain || "general").toLowerCase();
@@ -280,11 +274,7 @@ export default function Categories() {
 
       return true;
     });
-  }, [categories, filterMode, selectedDomain, searchQuery]);
-
-  const activeCategoriesCount = useMemo(() => {
-    return categories.filter((c) => (c.count || 0) > 0).length;
-  }, [categories]);
+  }, [categories, selectedDomain, searchQuery]);
 
   const totalTierListsCount = useMemo(() => {
     return categories.reduce((acc, c) => acc + (c.count || 0), 0);
@@ -326,214 +316,214 @@ export default function Categories() {
         </div>
       </div>
 
-      {/* =========================================================
-          2. CARTÕES DE MÉTRICAS / KPI DO CATÁLOGO
-         ========================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        {/* Card 1: Total de Categorias */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/40 bg-accent/10 text-accent shadow-sm shrink-0">
-            <Layers size={24} />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
-              Catálogo de Nichos
-            </span>
-            <div className="font-display text-[22px] font-black text-white">
-              {categories.length} Categorias
-            </div>
-            <span className="text-[12px] font-medium text-mutedDim">
-              Comunidades disponíveis
-            </span>
-          </div>
+      {loading ? (
+        <div className="py-20 text-center text-muted text-sm flex items-center justify-center gap-2">
+          <Loader2 className="animate-spin text-accent" size={20} />
+          <span>A carregar catálogo de categorias…</span>
         </div>
-
-        {/* Card 2: Categorias com Listas Ativas */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00E5A3]/40 bg-[#00E5A3]/10 text-[#00E5A3] shadow-sm shrink-0">
-            <CheckCircle2 size={24} />
+      ) : categories.length === 0 ? (
+        <div className="p-10 sm:p-16 text-center rounded-[32px] border border-white/[0.08] bg-gradient-to-br from-[#181826]/90 via-[#12121B]/95 to-[#0D0D14] backdrop-blur-2xl shadow-2xl">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-accent/40 bg-accent/10 text-accent shadow-inner">
+            <Layers size={32} />
           </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
-              Inauguradas com Listas
-            </span>
-            <div className="font-display text-[22px] font-black text-white">
-              {activeCategoriesCount} Ativas
-            </div>
-            <span className="text-[12px] font-medium text-mutedDim">
-              Com tier lists da comunidade
-            </span>
-          </div>
-        </div>
-
-        {/* Card 3: Total de Tier Lists Organizadas */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-300 shadow-sm shrink-0">
-            <Trophy size={24} />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
-              Total de Listas
-            </span>
-            <div className="font-display text-[22px] font-black text-white">
-              {totalTierListsCount} Publicadas
-            </div>
-            <span className="text-[12px] font-medium text-mutedDim">
-              Organizadas nestes temas
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================================
-          3. BARRA DE PESQUISA E FILTROS POR DOMÍNIO
-         ========================================================= */}
-      <div className="space-y-4 mb-8">
-        {/* Barra de Pesquisa + Toggle de Atividade */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mutedDim pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Pesquisar por categoria ou subcategoria (ex: Champions, RPGs, Nolan, Rock)..."
-              className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-12 pr-10 py-3 text-[14px] text-white placeholder-mutedDim focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20 focus:outline-none transition-all shadow-lg backdrop-blur-md"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
-                title="Limpar pesquisa"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
-
-          {/* Alternador Todas vs Apenas com Listas */}
-          <div className="inline-flex rounded-2xl border border-white/[0.08] bg-[#12121B]/90 p-1 shrink-0 backdrop-blur-md">
+          <h2 className="font-display text-[24px] sm:text-[30px] font-black text-white tracking-tight">
+            Ainda não existem categorias ativas
+          </h2>
+          <p className="mt-3 text-[15px] text-muted max-w-lg mx-auto leading-relaxed">
+            No TierWorld, as categorias e comunidades não são pré-criadas: elas nascem de forma 100% orgânica quando a comunidade cria e publica as suas Tier Lists. Sê o pioneiro a inaugurar a primeira categoria ao publicar uma lista!
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+            <Link to="/create">
+              <PrimaryButton icon={Plus}>
+                Criar Primeira Tier List
+              </PrimaryButton>
+            </Link>
             <button
               type="button"
-              onClick={() => setFilterMode("all")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                filterMode === "all"
-                  ? "bg-accent text-black shadow-sm font-black"
-                  : "text-mutedDim hover:text-white"
-              }`}
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl border border-accent/40 bg-accent/10 text-white font-bold text-[13px] hover:bg-accent hover:text-black transition-all shadow-sm"
             >
-              Todas ({categories.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterMode("active_only")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                filterMode === "active_only"
-                  ? "bg-accent text-black shadow-sm font-black"
-                  : "text-mutedDim hover:text-white"
-              }`}
-            >
-              Com Tier Lists ({activeCategoriesCount})
+              <FolderPlus size={16} />
+              <span>+ Nova Categoria</span>
             </button>
           </div>
         </div>
-
-        {/* Pílulas de Domínios Temáticos */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {DOMAIN_FILTERS.map((dm) => {
-            const Icon = dm.icon;
-            const isSelected = selectedDomain === dm.id;
-            return (
-              <button
-                key={dm.id}
-                type="button"
-                onClick={() => setSelectedDomain(dm.id)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[12px] font-bold shrink-0 transition-all ${
-                  isSelected
-                    ? "bg-white text-black shadow-md font-black"
-                    : "bg-surface/70 border border-white/[0.06] text-mutedDim hover:text-white hover:border-white/20"
-                }`}
-              >
-                <Icon size={14} className={isSelected ? "text-black" : "text-accent"} />
-                <span>{dm.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* =========================================================
-          4. GRELHA DE CATEGORIAS
-         ========================================================= */}
-      <div>
-        <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/10 border border-accent/30 text-accent">
-              <Layers size={16} />
+      ) : (
+        <>
+          {/* =========================================================
+              2. CARTÕES DE MÉTRICAS / KPI DO CATÁLOGO
+             ========================================================= */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            {/* Card 1: Total de Categorias */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/40 bg-accent/10 text-accent shadow-sm shrink-0">
+                <Layers size={24} />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
+                  Categorias Criadas
+                </span>
+                <div className="font-display text-[22px] font-black text-white">
+                  {categories.length} Categorias
+                </div>
+                <span className="text-[12px] font-medium text-mutedDim">
+                  Comunidades ativas
+                </span>
+              </div>
             </div>
-            <div>
-              <h2 className="font-display text-[20px] font-black text-white tracking-tight">
-                {searchQuery
-                  ? "Resultados da Pesquisa"
-                  : selectedDomain !== "all"
-                  ? DOMAIN_FILTERS.find((d) => d.id === selectedDomain)?.label
-                  : filterMode === "active_only"
-                  ? "Categorias com Tier Lists Criadas"
-                  : "Todas as Categorias"}
-              </h2>
+
+            {/* Card 2: Categorias com Listas Ativas */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00E5A3]/40 bg-[#00E5A3]/10 text-[#00E5A3] shadow-sm shrink-0">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
+                  Em Alta na Plataforma
+                </span>
+                <div className="font-display text-[22px] font-black text-white">
+                  {categories.length} Ativas
+                </div>
+                <span className="text-[12px] font-medium text-mutedDim">
+                  Com rankings publicados
+                </span>
+              </div>
+            </div>
+
+            {/* Card 3: Total de Tier Lists Organizadas */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#161624] via-[#12121A] to-[#0E0E15] p-4.5 shadow-lg flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-300 shadow-sm shrink-0">
+                <Trophy size={24} />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-mutedDim">
+                  Total de Listas
+                </span>
+                <div className="font-display text-[22px] font-black text-white">
+                  {totalTierListsCount} Publicadas
+                </div>
+                <span className="text-[12px] font-medium text-mutedDim">
+                  Organizadas nestes temas
+                </span>
+              </div>
             </div>
           </div>
-          <span className="text-[12px] font-bold text-mutedDim bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.06]">
-            {filteredCategories.length}{" "}
-            {filteredCategories.length === 1 ? "categoria" : "categorias"}
-          </span>
-        </div>
 
-        {loading ? (
-          <div className="py-20 text-center text-muted text-sm flex items-center justify-center gap-2">
-            <Loader2 className="animate-spin text-accent" size={20} />
-            <span>A carregar catálogo de categorias…</span>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="p-10 sm:p-14 text-center rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] backdrop-blur-xl shadow-xl">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-surface2 text-mutedDim">
-              <Search size={24} />
+          {/* =========================================================
+              3. BARRA DE PESQUISA E FILTROS POR DOMÍNIO
+             ========================================================= */}
+          <div className="space-y-4 mb-8">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-xl">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mutedDim pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Pesquisar por categoria ou subcategoria (ex: Champions, RPGs, Nolan, Rock)..."
+                  className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-12 pr-10 py-3 text-[14px] text-white placeholder-mutedDim focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20 focus:outline-none transition-all shadow-lg backdrop-blur-md"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+                    title="Limpar pesquisa"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="text-white font-display font-bold mb-1.5 text-[18px]">
-              Nenhuma categoria encontrada
-            </p>
-            <p className="text-[13.5px] text-mutedDim mb-6 max-w-md mx-auto leading-relaxed">
-              {searchQuery
-                ? `Ainda não existe nenhuma categoria que corresponda a "${searchQuery}". Podes inaugurar este nicho em segundos!`
-                : "Não foram encontradas categorias com os filtros selecionados."}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-[13px] font-bold text-white hover:bg-surface2 transition-all"
-                >
-                  Limpar Pesquisa
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (searchQuery.trim()) {
-                    setNewCatName(searchQuery.trim());
-                  }
-                  setCreateModalOpen(true);
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-bold text-black hover:opacity-90 transition-all shadow-glow"
-              >
-                <FolderPlus size={16} />
-                <span>Inaugurar Categoria {searchQuery ? `"${searchQuery.trim()}"` : ""}</span>
-              </button>
+
+            {/* Pílulas de Domínios Temáticos */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {DOMAIN_FILTERS.map((dm) => {
+                const Icon = dm.icon;
+                const isSelected = selectedDomain === dm.id;
+                return (
+                  <button
+                    key={dm.id}
+                    type="button"
+                    onClick={() => setSelectedDomain(dm.id)}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[12px] font-bold shrink-0 transition-all ${
+                      isSelected
+                        ? "bg-white text-black shadow-md font-black"
+                        : "bg-surface/70 border border-white/[0.06] text-mutedDim hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    <Icon size={14} className={isSelected ? "text-black" : "text-accent"} />
+                    <span>{dm.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        ) : (
+
+          {/* =========================================================
+              4. GRELHA DE CATEGORIAS
+             ========================================================= */}
+          <div>
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/10 border border-accent/30 text-accent">
+                  <Layers size={16} />
+                </div>
+                <div>
+                  <h2 className="font-display text-[20px] font-black text-white tracking-tight">
+                    {searchQuery
+                      ? "Resultados da Pesquisa"
+                      : selectedDomain !== "all"
+                      ? DOMAIN_FILTERS.find((d) => d.id === selectedDomain)?.label
+                      : "Categorias da Comunidade"}
+                  </h2>
+                </div>
+              </div>
+              <span className="text-[12px] font-bold text-mutedDim bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.06]">
+                {filteredCategories.length}{" "}
+                {filteredCategories.length === 1 ? "categoria" : "categorias"}
+              </span>
+            </div>
+
+            {filteredCategories.length === 0 ? (
+              <div className="p-10 sm:p-14 text-center rounded-[28px] border border-white/[0.08] bg-gradient-to-b from-[#161624] via-[#12121A] to-[#0E0E14] backdrop-blur-xl shadow-xl">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-surface2 text-mutedDim">
+                  <Search size={24} />
+                </div>
+                <p className="text-white font-display font-bold mb-1.5 text-[18px]">
+                  Nenhuma categoria encontrada
+                </p>
+                <p className="text-[13.5px] text-mutedDim mb-6 max-w-md mx-auto leading-relaxed">
+                  {searchQuery
+                    ? `Ainda não existe nenhuma categoria que corresponda a "${searchQuery}". Podes inaugurar este nicho em segundos!`
+                    : "Não foram encontradas categorias com os filtros selecionados."}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-[13px] font-bold text-white hover:bg-surface2 transition-all"
+                    >
+                      Limpar Pesquisa
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (searchQuery.trim()) {
+                        setNewCatName(searchQuery.trim());
+                      }
+                      setCreateModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-bold text-black hover:opacity-90 transition-all shadow-glow"
+                  >
+                    <FolderPlus size={16} />
+                    <span>Inaugurar Categoria {searchQuery ? `"${searchQuery.trim()}"` : ""}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCategories.map((c) => {
               const { IconComponent, color } = getCatVisuals(c);
@@ -690,6 +680,8 @@ export default function Categories() {
           </div>
         )}
       </div>
+    </>
+  )}
 
       {/* =========================================================
           5. MODAL: INAUGURAR NOVA CATEGORIA
