@@ -120,26 +120,28 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D]/85 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <div className="mx-auto flex h-[72px] max-w-[1320px] items-center justify-between gap-3 sm:gap-6 px-4 sm:px-6">
-          {/* Lado Esquerdo: Logótipo & Navegação Segmentada Desktop */}
-          <div className="flex items-center gap-5 lg:gap-7">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D]/90 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-auto flex h-[64px] max-w-[1320px] items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6">
+          {/* Lado Esquerdo: Logótipo & Navegação Coesa */}
+          <div className="flex items-center gap-3 lg:gap-4 shrink-0">
             <Link to="/" className="flex flex-shrink-0 items-center gap-2.5 group select-none">
-              <TierWorldLogo size={36} showText={true} />
+              <TierWorldLogo size={32} showText={true} />
             </Link>
 
-            {/* Pílula de Navegação Segmentada (Desktop) */}
-            <nav className="hidden items-center gap-1.5 md:flex rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1.5 backdrop-blur-md shadow-inner">
+            <div className="hidden md:block h-5 w-px bg-white/[0.08]" />
+
+            {/* Navegação Segmentada Elegante (Desktop) */}
+            <nav className="hidden md:flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 backdrop-blur-md">
               <Link
                 to="/explore"
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] transition-all duration-200 ${
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-all duration-150 ${
                   isExploreActive
-                    ? "bg-gradient-to-r from-accent/25 to-[#6A46F0]/25 text-white font-bold border border-accent/40 shadow-glow"
+                    ? "bg-accent/20 text-white font-bold border border-accent/40 shadow-sm"
                     : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
                 }`}
               >
                 <Compass
-                  size={15}
+                  size={14}
                   className={isExploreActive ? "text-accent" : "text-mutedDim"}
                 />
                 <span>{t("nav.explore")}</span>
@@ -147,14 +149,14 @@ export default function Navbar() {
 
               <Link
                 to="/leaderboard"
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] transition-all duration-200 ${
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-all duration-150 ${
                   isLeaderboardActive
-                    ? "bg-gradient-to-r from-amber-500/25 to-accent/25 text-white font-bold border border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.25)]"
+                    ? "bg-amber-500/20 text-white font-bold border border-amber-500/40 shadow-sm"
                     : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent font-medium"
                 }`}
               >
                 <Trophy
-                  size={15}
+                  size={14}
                   className={isLeaderboardActive ? "text-amber-400" : "text-mutedDim"}
                 />
                 <span>{t("nav.leaderboard")}</span>
@@ -162,10 +164,10 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Centro: Barra de Pesquisa Omni-Search (Desktop) */}
-          <div className="relative hidden max-w-[320px] xl:max-w-[400px] flex-1 lg:block" ref={searchContainerRef}>
-            <div className="relative flex items-center rounded-2xl border border-white/[0.08] bg-[#12121D]/75 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#151525] focus-within:shadow-[0_0_24px_rgba(124,92,255,0.25)]">
-              <Search size={15} className="pointer-events-none absolute left-3.5 text-mutedDim" />
+          {/* Centro: Barra de Pesquisa Omni-Search Proporcional */}
+          <div className="relative hidden max-w-[340px] xl:max-w-[420px] flex-1 lg:block mx-3" ref={searchContainerRef}>
+            <div className="relative flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#12121D]/80 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#151525] focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
+              <Search size={15} className="pointer-events-none absolute left-3 text-mutedDim" />
               <input
                 ref={searchInputRef}
                 value={q}
@@ -173,7 +175,7 @@ export default function Navbar() {
                 onFocus={() => setSearchOpen(true)}
                 onKeyDown={handleSearchSubmit}
                 placeholder={t("nav.searchPlaceholder")}
-                className="w-full bg-transparent py-2.5 pl-9 pr-14 text-[13px] text-text outline-none transition-all placeholder:text-mutedDim"
+                className="w-full bg-transparent py-2 pl-9 pr-14 text-[13px] text-text outline-none transition-all placeholder:text-mutedDim"
               />
               {q ? (
                 <button
@@ -187,7 +189,7 @@ export default function Navbar() {
                   <X size={14} />
                 </button>
               ) : (
-                <span className="pointer-events-none absolute right-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-mutedDim">
+                <span className="pointer-events-none absolute right-2.5 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-mutedDim">
                   ⌘K
                 </span>
               )}
@@ -195,7 +197,7 @@ export default function Navbar() {
 
             {/* Dropdown de Resultados da Pesquisa Omni */}
             {searchOpen && (
-              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#12131F]/95 p-2 shadow-2xl backdrop-blur-2xl animate-fadeIn">
+              <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#12131F]/95 p-2 shadow-2xl backdrop-blur-2xl animate-fadeIn">
                 {q.trim().length < 2 ? (
                   /* Estado Inicial: Sugestões Rápidas & Tópicos Populares */
                   <div className="p-2">
@@ -344,13 +346,13 @@ export default function Navbar() {
           </div>
 
           {/* Lado Direito: Ações, Notificações, Botões e Avatar */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Botão de Pesquisa Rápida (Mobile/Tablet) */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen((prev) => !prev)}
               aria-label="Abrir pesquisa"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-surface/80 text-muted hover:border-white/20 hover:text-white transition-colors lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-muted hover:border-white/20 hover:text-white transition-colors lg:hidden"
             >
               <Search size={16} />
             </button>
@@ -362,7 +364,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => navigate("/create")}
-              className="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 py-2 text-[13px] font-bold text-white shadow-glow hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] active:scale-95 transition-all border border-white/15"
+              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-glow hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] active:scale-95 transition-all border border-white/15"
             >
               <Plus size={16} />
               <span>{t("nav.create")}</span>
@@ -374,23 +376,26 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-surface2/60 p-0.5 transition-all hover:border-accent hover:scale-105 active:scale-95 ring-2 ring-transparent hover:ring-accent/30"
+                  className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] pl-1.5 pr-2.5 transition-all hover:border-accent/40 hover:bg-white/[0.06] active:scale-95 group"
                 >
                   <Avatar
                     name={profile?.displayName || user.email}
                     image={profile?.avatar || user.photoURL}
-                    size={34}
+                    size={28}
                   />
+                  <span className="hidden xl:inline text-[12.5px] font-bold text-white max-w-[95px] truncate">
+                    {profile?.displayName || user.displayName || "Perfil"}
+                  </span>
                   <ChevronDown
-                    size={14}
-                    className={`text-mutedDim mr-1 transition-transform duration-200 ${
+                    size={13}
+                    className={`text-mutedDim transition-transform duration-200 group-hover:text-white ${
                       menuOpen ? "rotate-180 text-accent" : ""
                     }`}
                   />
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-[52px] w-64 rounded-3xl border border-white/10 bg-[#12131F]/95 p-3 shadow-2xl backdrop-blur-2xl animate-fadeIn z-50">
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-64 rounded-2xl border border-white/10 bg-[#12131F]/98 p-3 shadow-2xl backdrop-blur-2xl animate-fadeIn z-50">
                     {/* Header do Utilizador com XP e Nível */}
                     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 mb-2">
                       <div className="flex items-center gap-2.5 mb-2">
@@ -478,7 +483,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3.5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
+                className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-[13px] font-bold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
               >
                 <LogIn size={15} className="text-accent" />
                 <span>{t("nav.login")}</span>
@@ -490,7 +495,7 @@ export default function Navbar() {
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Menu principal"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-surface/80 text-muted hover:border-white/20 hover:text-white transition-colors md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-muted hover:border-white/20 hover:text-white transition-colors md:hidden"
             >
               {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
