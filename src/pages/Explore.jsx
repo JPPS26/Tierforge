@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import TierListCard from "../components/TierListCard";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierLists, getActiveCategories } from "../services/db";
+import { getTierLists, getActiveCategories, getGlobalStats, getLeaderboard } from "../services/db";
 import useRealtimeDb from "../hooks/useRealtimeDb";
-import { PrimaryButton } from "../components/UI";
+import { Avatar, Badge, PrimaryButton, GhostButton } from "../components/UI";
 import {
   Sparkles,
   Search,
@@ -30,6 +30,17 @@ import {
   GraduationCap,
   Shield,
   Zap,
+  Dices,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Eye,
+  MessageCircle,
+  TrendingUp,
+  Users,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const CATEGORY_ICONS = {
@@ -49,14 +60,6 @@ const CATEGORY_ICONS = {
   science: GraduationCap,
   creators: Zap,
   geek: Shield,
-  Gamepad2,
-  Trophy,
-  Flame,
-  Film,
-  Tv,
-  Music,
-  Cpu,
-  Sparkles,
 };
 
 const CATEGORY_COLORS = {
@@ -77,6 +80,16 @@ const CATEGORY_COLORS = {
   creators: "#F59E0B",
   geek: "#6366F1",
 };
+
+const TRENDING_TOPIC_CHIPS = [
+  { label: "⚽ Futebol & Lendas", category: "football" },
+  { label: "🎮 Jogos & RPGs", category: "gaming" },
+  { label: "🎬 Cinema & Séries", category: "movies" },
+  { label: "✨ Anime & Mangá", category: "anime" },
+  { label: "💻 Tecnologia & Setup", category: "tech" },
+  { label: "🍕 Gastronomia", category: "food" },
+  { label: "🎵 Música & Álbuns", category: "music" },
+];
 
 function getCatVisuals(cat) {
   const key = (cat.id || cat.slug || "").toLowerCase();
@@ -103,20 +116,109 @@ function SkeletonCard() {
   );
 }
 
+function CompactTierListRow({ list }) {
+  const { t } = useLanguage();
+  const tiers = list.tiers?.slice(0, 4) || [];
+  const items = list.items || [];
+
+  return (
+    <Link
+      to={`/tier-list/${list.id}`}
+      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-surface/80 p-3.5 sm:p-4 transition-all hover:border-accent/60 hover:bg-surface2/60 hover:shadow-glow"
+    >
+      <div className="flex items-center gap-3.5 min-w-0">
+        {/* Mini Preview Bar */}
+        <div className="flex h-11 w-11 flex-shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/40">
+          {tiers.slice(0, 3).map((tr, idx) => (
+            <div
+              key={idx}
+              className="flex-1 w-full"
+              style={{ background: tr.color || "#8A6BFF" }}
+            />
+          ))}
+        </div>
+
+        <div className="min-w-0">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[11px] font-extrabold text-accent border border-accent/30">
+              {t(`categories.${list.category}`) || list.category?.toUpperCase() || "GERAL"}
+            </span>
+            {list.subcategory && (
+              <span className="text-[11.5px] font-semibold text-mutedDim">
+                • {list.subcategory}
+              </span>
+            )}
+            <span className="text-[11px] font-medium text-mutedDim">
+              • {items.length} {items.length === 1 ? "item" : "itens"}
+            </span>
+          </div>
+          <h3 className="font-display text-[15px] font-bold text-white group-hover:text-accent transition-colors truncate">
+            {list.title}
+          </h3>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between sm:justify-end gap-5 flex-shrink-0 border-t sm:border-t-0 border-white/[0.06] pt-3 sm:pt-0">
+        {/* Criador */}
+        <div className="flex items-center gap-2 text-[12.5px] text-muted">
+          <Avatar name={list.creator || "Criador"} image={list.creatorAvatar} size={22} />
+          <span className="font-semibold text-white truncate max-w-[120px]">
+            {list.creator || "Anónimo"}
+          </span>
+          {list.creatorHandle && (
+            <span className="text-accent/80 font-bold hidden md:inline">
+              #{list.creatorHandle}
+            </span>
+          )}
+        </div>
+
+        {/* Estatísticas */}
+        <div className="flex items-center gap-3 text-[12px] text-mutedDim">
+          <span className="flex items-center gap-1 font-bold text-white">
+            <Heart size={13} className="text-[#FF5470]" />
+            {(list.votes || 0).toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Eye size={13} />
+            {list.views > 1000
+              ? `${(list.views / 1000).toFixed(1)}k`
+              : (list.views || 0).toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <MessageCircle size={13} />
+            {list.commentsCount ?? 0}
+          </span>
+        </div>
+
+        {/* Seta de Acesso */}
+        <div className="hidden sm:flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 group-hover:bg-accent group-hover:text-black text-mutedDim transition-all">
+          <ArrowRight size={14} />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Explore() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialCat = searchParams.get("category") || "All";
   const initialSub = searchParams.get("sub") || "";
   const initialSearch = searchParams.get("search") || "";
 
-  // Sincronização inteligente dos parâmetros sort ou tab vindos do rodapé ou links externos
   const parseTabFromParams = (params) => {
     const sort = params.get("sort") || "";
     const tabParam = params.get("tab") || "";
+    if (sort === "votes" || sort === "top_rated" || tabParam.toLowerCase() === "toprated") {
+      return "TopRated";
+    }
     if (sort === "most_voted" || sort === "popular" || tabParam.toLowerCase() === "popular") {
       return "Popular";
+    }
+    if (sort === "discussed" || tabParam.toLowerCase() === "discussed") {
+      return "Discussed";
     }
     if (sort === "newest" || sort === "new" || tabParam.toLowerCase() === "new") {
       return "New";
@@ -129,9 +231,31 @@ export default function Explore() {
   const [selectedSub, setSelectedSub] = useState(initialSub);
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [queryText, setQueryText] = useState(initialSearch);
+  const [minItemsFilter, setMinItemsFilter] = useState(0);
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem("tierworld_explore_view_mode") || "grid";
+    } catch {
+      return "grid";
+    }
+  });
+
   const [lists, setLists] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ totalTierLists: 0, totalVotes: 0, totalCreators: 0 });
+  const [topCreators, setTopCreators] = useState([]);
+
+  const categoryScrollRef = useRef(null);
+
+  // Debounce da pesquisa para digitação a 60fps sem engasgos
+  const [debouncedQuery, setDebouncedQuery] = useState(queryText);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(queryText);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [queryText]);
 
   useEffect(() => {
     const urlCat = searchParams.get("category") || "All";
@@ -148,29 +272,42 @@ export default function Explore() {
     }
   }, [searchParams]);
 
-  // Sincronização ao segundo em tempo real com a base de dados
+  // Persiste a preferência de visualização (Grelha ou Lista)
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("tierworld_explore_view_mode", mode);
+    } catch {}
+  };
+
+  // Sincronização em tempo real da base de dados e métricas
   useRealtimeDb(() => {
     setCategories(getActiveCategories());
+    setStats(getGlobalStats());
+    setTopCreators(getLeaderboard().slice(0, 4));
+
     getTierLists({
       category: cat,
       tab,
-      queryText,
+      queryText: debouncedQuery,
     })
       .then((res) => {
+        let filtered = res;
         if (selectedSub) {
-          const filtered = res.filter(
+          filtered = filtered.filter(
             (l) =>
               l.subcategory === selectedSub ||
               (l.tags && l.tags.includes(selectedSub)) ||
               (l.title && l.title.toLowerCase().includes(selectedSub.toLowerCase()))
           );
-          setLists(filtered);
-        } else {
-          setLists(res);
         }
+        if (minItemsFilter > 0) {
+          filtered = filtered.filter((l) => (l.items?.length || 0) >= minItemsFilter);
+        }
+        setLists(filtered);
       })
       .finally(() => setLoading(false));
-  }, [tab, cat, selectedSub, queryText]);
+  }, [tab, cat, selectedSub, debouncedQuery, minItemsFilter]);
 
   const activeCategories = categories;
   const activeCatObj = categories.find((c) => c.id === cat || c.slug === cat);
@@ -188,9 +325,11 @@ export default function Explore() {
   }, [activeCategories, categorySearchQuery]);
 
   const tabs = [
-    { key: "Trending", label: t("explore.tabTrending") || "Em Destaque", icon: Flame, color: "#FF5470" },
-    { key: "Popular", label: t("explore.tabPopular") || "Mais Populares", icon: Trophy, color: "#FFD166" },
-    { key: "New", label: t("explore.tabNew") || "Mais Recentes", icon: Clock, color: "#00E5A3" },
+    { key: "Trending", label: "Em Destaque", icon: Flame, color: "#FF5470" },
+    { key: "TopRated", label: "Mais Votadas", icon: Heart, color: "#FF3B5C" },
+    { key: "Popular", label: "Mais Vistas", icon: Eye, color: "#FFD166" },
+    { key: "Discussed", label: "Mais Comentadas", icon: MessageCircle, color: "#7C5CFF" },
+    { key: "New", label: "Mais Recentes", icon: Clock, color: "#00E5A3" },
   ];
 
   const handleSelectCategory = (categoryId) => {
@@ -216,43 +355,128 @@ export default function Explore() {
     setCat("All");
     setSelectedSub("");
     setQueryText("");
+    setMinItemsFilter(0);
     setSearchParams({});
   };
 
-  const hasActiveFilters = cat !== "All" || selectedSub || queryText.trim() !== "";
+  // Surpreende-me: escolhe uma tier list pública aleatória
+  const handleSurpriseMe = () => {
+    if (!lists || lists.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * lists.length);
+    const chosen = lists[randomIndex];
+    if (chosen && chosen.id) {
+      navigate(`/tier-list/${chosen.id}`);
+    }
+  };
+
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      const offset = direction === "left" ? -280 : 280;
+      categoryScrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
+
+  const hasActiveFilters = cat !== "All" || selectedSub || queryText.trim() !== "" || minItemsFilter > 0;
   const totalListsCount = categories.reduce((acc, c) => acc + (c.count || 0), 0);
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-28 pt-10">
-      {/* Cabeçalho da Página com Badge e CTA */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1 text-[12px] font-bold text-[#B6A5FF] mb-3 shadow-sm">
-            <Compass size={13} className="text-accent" />
-            <span>Biblioteca Global da Comunidade</span>
-          </div>
-          <h1 className="font-display text-[32px] sm:text-[44px] font-black text-white tracking-tight leading-tight">
-            {t("explore.title") || "Explorar Tier Lists"}
-          </h1>
-          <p className="mt-2 text-[14.5px] text-muted max-w-xl leading-relaxed">
-            {t("explore.subtitle") ||
-              "Descobre, avalia e debate os rankings mais votados e recentes criados por toda a comunidade do TierWorld."}
-          </p>
-        </div>
+    <div className="mx-auto max-w-[1240px] px-4 sm:px-6 pb-28 pt-8 animate-fade-in">
+      {/* =========================================================
+          1. HERO DISCOVERY BANNER (HEADER + ESTATÍSTICAS + CTAS)
+         ========================================================= */}
+      <div className="relative mb-8 overflow-hidden rounded-[32px] border border-white/[0.08] bg-gradient-to-br from-[#181826]/90 via-[#12121B]/95 to-[#0D0D14] p-6 sm:p-9 shadow-2xl backdrop-blur-2xl">
+        {/* Ambient Glows */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-accent/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-16 h-72 w-72 rounded-full bg-teal/10 blur-3xl" />
 
-        <div className="shrink-0 flex items-center gap-3">
-          <Link to="/create">
-            <PrimaryButton icon={Plus}>
-              {t("home.createBtn") || "Criar Tier List"}
-            </PrimaryButton>
-          </Link>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1 text-[12px] font-bold text-[#C5B8FF] mb-3 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-accent animate-ping" />
+              <Compass size={13} className="text-accent" />
+              <span>Biblioteca Global da Comunidade</span>
+            </div>
+
+            <h1 className="font-display text-[32px] sm:text-[46px] font-black tracking-tight text-white leading-[1.1]">
+              Explorar <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-accentSoft to-accent">Tier Lists</span>
+            </h1>
+            <p className="mt-2.5 text-[14.5px] sm:text-[15.5px] text-muted max-w-xl leading-relaxed">
+              Descobre, avalia e debate os rankings mais votados e autênticos criados pela comunidade em tempo real.
+            </p>
+
+            {/* Micro Chips de Métricas Reais da BD */}
+            <div className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 font-bold text-white shadow-inner">
+                <Layers size={13} className="text-accent" />
+                <span>{stats.totalTierLists || totalListsCount} Tier Lists</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 font-bold text-white shadow-inner">
+                <Heart size={13} className="text-[#FF5470]" />
+                <span>{(stats.totalVotes || 0).toLocaleString()} Votos</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 font-bold text-white shadow-inner">
+                <Users size={13} className="text-[#31D8A8]" />
+                <span>{stats.totalCreators || 1} Criadores</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CTAs de Topo */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {lists.length > 0 && (
+              <button
+                type="button"
+                onClick={handleSurpriseMe}
+                className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accentSoft/60 px-4 py-2.5 text-[13.5px] font-bold text-accent hover:bg-accent hover:text-black transition-all duration-200 shadow-sm hover:shadow-glow active:scale-95"
+                title="Abrir uma Tier List aleatória"
+              >
+                <Dices size={16} />
+                <span>Surpreende-me</span>
+              </button>
+            )}
+
+            <Link to="/create">
+              <PrimaryButton icon={Plus}>
+                Criar Tier List
+              </PrimaryButton>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Barra de Ordenação e Pesquisa Principal */}
-      <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Abas de Ordenação com Ícones */}
-        <div className="flex flex-wrap items-center gap-2 bg-[#12121C]/80 p-1.5 rounded-2xl border border-white/[0.08] backdrop-blur-md">
+      {/* =========================================================
+          2. CHIPS DE TEMAS RÁPIDOS EM DESTAQUE (TRENDING TOPICS)
+         ========================================================= */}
+      <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+        <span className="flex items-center gap-1 font-bold text-mutedDim uppercase tracking-wider text-[11px] shrink-0 mr-1">
+          <TrendingUp size={13} className="text-accent" />
+          <span>Em alta:</span>
+        </span>
+        {TRENDING_TOPIC_CHIPS.map((topic) => {
+          const isSelected = cat === topic.category;
+          return (
+            <button
+              key={topic.label}
+              type="button"
+              onClick={() => handleSelectCategory(topic.category)}
+              className={`shrink-0 rounded-xl border px-3 py-1.5 font-bold transition-all ${
+                isSelected
+                  ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
+                  : "border-white/[0.08] bg-[#12121A]/80 text-muted hover:border-white/20 hover:text-white"
+              }`}
+            >
+              {topic.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* =========================================================
+          3. BARRA DE PESQUISA, ORDENAÇÃO E MODOS DE EXIBIÇÃO
+         ========================================================= */}
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Abas de Ordenação */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-[#12121C]/90 p-1.5 rounded-2xl border border-white/[0.08] backdrop-blur-md">
           {tabs.map((tItem) => {
             const Icon = tItem.icon;
             const isActive = tab === tItem.key;
@@ -261,14 +485,14 @@ export default function Explore() {
                 key={tItem.key}
                 type="button"
                 onClick={() => setTab(tItem.key)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-bold transition-all duration-200 ${
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-bold transition-all duration-200 ${
                   isActive
                     ? "bg-surface2 text-white border border-accent/40 shadow-sm shadow-accent/20"
                     : "text-muted hover:text-white hover:bg-white/[0.04]"
                 }`}
               >
                 <Icon
-                  size={15}
+                  size={14}
                   style={{ color: isActive ? tItem.color : undefined }}
                   className={isActive ? "" : "opacity-60"}
                 />
@@ -278,73 +502,143 @@ export default function Explore() {
           })}
         </div>
 
-        {/* Campo de Pesquisa Rápida de Listas */}
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
-          <input
-            type="text"
-            value={queryText}
-            onChange={(e) => setQueryText(e.target.value)}
-            placeholder="Pesquisar listas por nome, criador ou tema…"
-            className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-10 pr-9 py-2.5 text-[13.5px] text-white placeholder-mutedDim outline-none transition-all focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20"
-          />
-          {queryText && (
-            <button
-              onClick={() => setQueryText("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+        {/* Ferramentas: Pesquisa Rápida + Filtro de Tamanho + Alternador de Visualização */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Input de Pesquisa */}
+          <div className="relative flex-1 sm:w-72">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
+            <input
+              type="text"
+              value={queryText}
+              onChange={(e) => setQueryText(e.target.value)}
+              placeholder="Pesquisar por título, criador…"
+              className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-10 pr-9 py-2 text-[13px] text-white placeholder-mutedDim outline-none transition-all focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20"
+            />
+            {queryText && (
+              <button
+                onClick={() => setQueryText("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Filtro de Mínimo de Itens */}
+          <div className="relative flex items-center">
+            <select
+              value={minItemsFilter}
+              onChange={(e) => setMinItemsFilter(Number(e.target.value))}
+              className="rounded-2xl border border-white/10 bg-[#12121C]/90 px-3 py-2 text-[12.5px] font-bold text-white outline-none focus:border-accent cursor-pointer appearance-none pr-7"
             >
-              <X size={14} />
+              <option value={0}>Todos os tamanhos</option>
+              <option value={5}>5+ elementos</option>
+              <option value={10}>10+ elementos</option>
+              <option value={20}>20+ elementos</option>
+            </select>
+            <SlidersHorizontal size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
+          </div>
+
+          {/* Alternador de Visualização: Grelha vs Lista Compacta */}
+          <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#12121C]/90 p-1">
+            <button
+              type="button"
+              onClick={() => toggleViewMode("grid")}
+              className={`p-1.5 rounded-xl transition-all ${
+                viewMode === "grid"
+                  ? "bg-surface2 text-accent shadow-sm"
+                  : "text-mutedDim hover:text-white"
+              }`}
+              title="Visualização em Grelha"
+            >
+              <LayoutGrid size={15} />
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => toggleViewMode("compact")}
+              className={`p-1.5 rounded-xl transition-all ${
+                viewMode === "compact"
+                  ? "bg-surface2 text-accent shadow-sm"
+                  : "text-mutedDim hover:text-white"
+              }`}
+              title="Visualização em Lista Compacta"
+            >
+              <List size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Caixa de Exploração de Categorias */}
+      {/* =========================================================
+          4. CAIXA DE CARROSSEL DE CATEGORIAS E NICHOS
+         ========================================================= */}
       {activeCategories.length > 0 && (
-        <div className="mb-8 rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#161624]/90 to-[#101018]/90 p-5 sm:p-6 backdrop-blur-xl shadow-xl">
+        <div className="mb-8 rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#161624]/90 to-[#101018]/90 p-5 backdrop-blur-xl shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
                 <Filter size={14} />
               </div>
               <span className="font-display text-[15px] font-bold text-white">
-                Filtrar por Categoria
+                Navegar por Categoria
               </span>
               <span className="text-[11.5px] font-semibold text-mutedDim bg-white/[0.05] px-2.5 py-0.5 rounded-full border border-white/[0.06]">
-                {activeCategories.length} categorias ativas
+                {activeCategories.length} categorias
               </span>
             </div>
 
-            {/* Pesquisa interna de categorias (se existirem muitas) */}
-            {activeCategories.length > 4 && (
-              <div className="relative w-full sm:w-60">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
-                <input
-                  type="text"
-                  value={categorySearchQuery}
-                  onChange={(e) => setCategorySearchQuery(e.target.value)}
-                  placeholder="Pesquisar categoria…"
-                  className="w-full rounded-xl border border-white/10 bg-[#0E0E15] pl-8 pr-7 py-1.5 text-[12px] text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-all"
-                />
-                {categorySearchQuery && (
-                  <button
-                    onClick={() => setCategorySearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Controlos: Setas de Scroll + Pesquisa Interna */}
+            <div className="flex items-center gap-2">
+              {activeCategories.length > 4 && (
+                <div className="relative w-full sm:w-56">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
+                  <input
+                    type="text"
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    placeholder="Filtrar categoria…"
+                    className="w-full rounded-xl border border-white/10 bg-[#0E0E15] pl-8 pr-7 py-1.5 text-[12px] text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-all"
+                  />
+                  {categorySearchQuery && (
+                    <button
+                      onClick={() => setCategorySearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => scrollCategories("left")}
+                className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors"
+                title="Deslizar para a esquerda"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCategories("right")}
+                className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors"
+                title="Deslizar para a direita"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
 
-          {/* Pílulas de Categorias */}
-          <div className="flex flex-wrap gap-2">
+          {/* Carrossel Deslizável de Categorias */}
+          <div
+            ref={categoryScrollRef}
+            className="flex items-center gap-2 overflow-x-auto pb-2 scroll-smooth no-scrollbar"
+          >
             {/* Pílula: Todas as Categorias */}
             <button
               type="button"
               onClick={() => handleSelectCategory("All")}
-              className={`flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 ${
+              className={`flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 shrink-0 ${
                 cat === "All"
                   ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
                   : "border-white/[0.06] bg-surface/60 text-mutedDim hover:border-white/20 hover:text-white"
@@ -363,7 +657,7 @@ export default function Explore() {
               )}
             </button>
 
-            {/* Pílulas de cada Categoria */}
+            {/* Pílulas de Cada Categoria */}
             {filteredPillCategories.map((c) => {
               const isSelected = cat === c.id || cat === c.slug;
               const { IconComponent, color } = getCatVisuals(c);
@@ -372,7 +666,7 @@ export default function Explore() {
                   key={c.id}
                   type="button"
                   onClick={() => handleSelectCategory(c.id)}
-                  className={`group flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 ${
+                  className={`group flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 shrink-0 ${
                     isSelected
                       ? "border-white/40 bg-surface2 text-white shadow-md"
                       : "border-white/[0.06] bg-surface/60 text-mutedDim hover:border-white/20 hover:text-white"
@@ -402,10 +696,10 @@ export default function Explore() {
             })}
           </div>
 
-          {/* Subcategorias quando uma categoria está selecionada */}
+          {/* Subcategorias / Nichos quando uma categoria estiver selecionada */}
           {activeCatObj?.subcategories?.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-white/[0.06]">
-              <div className="text-[12px] font-bold text-mutedDim mb-2.5 flex items-center gap-2">
+            <div className="mt-3.5 pt-3.5 border-t border-white/[0.06]">
+              <div className="text-[12px] font-bold text-mutedDim mb-2 flex items-center gap-2">
                 <span>Filtrar por nicho em {activeCatObj.name}:</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -444,7 +738,53 @@ export default function Explore() {
         </div>
       )}
 
-      {/* Barra de Filtros Ativos (quando existem filtros aplicados) */}
+      {/* =========================================================
+          5. CRIADORES EM ALTA (COMMUNITY CREATORS SPOTLIGHT)
+         ========================================================= */}
+      {topCreators.length > 0 && cat === "All" && !queryText && (
+        <div className="mb-8 rounded-2xl border border-white/[0.06] bg-[#101018]/70 p-4 sm:p-5 backdrop-blur-md">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-mutedDim">
+              <Trophy size={13} className="text-amber-400" />
+              <span>Criadores em Destaque</span>
+            </div>
+            <Link to="/leaderboard" className="text-xs font-bold text-accent hover:underline">
+              Ver Classificação Completa →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {topCreators.map((cr, idx) => (
+              <Link
+                key={cr.uid || idx}
+                to={`/profile/${cr.handle || cr.uid}`}
+                className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface/50 p-2.5 hover:border-accent/40 hover:bg-surface2/60 transition-all"
+              >
+                <div className="relative">
+                  <Avatar name={cr.displayName} image={cr.avatar} size={32} />
+                  {idx === 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black">
+                      1
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-bold text-white group-hover:text-accent transition-colors truncate">
+                    {cr.displayName}
+                  </div>
+                  <div className="text-[11px] font-medium text-accent/80 truncate">
+                    #{cr.handle || "criador"}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          6. BARRA DE FILTROS ATIVOS
+         ========================================================= */}
       {hasActiveFilters && (
         <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/[0.06] bg-[#12121C]/60 px-4 py-2.5 text-[12.5px]">
           <span className="font-bold text-mutedDim">Filtros ativos:</span>
@@ -475,13 +815,26 @@ export default function Explore() {
             </span>
           )}
 
-          {queryText.trim() && (
+          {debouncedQuery.trim() && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-0.5 font-bold text-white">
-              <span>"{queryText}"</span>
+              <span>"{debouncedQuery}"</span>
               <button
                 onClick={() => setQueryText("")}
                 className="text-mutedDim hover:text-white transition-colors"
                 title="Limpar pesquisa"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
+          {minItemsFilter > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-0.5 font-bold text-white">
+              <span>Mínimo: {minItemsFilter} itens</span>
+              <button
+                onClick={() => setMinItemsFilter(0)}
+                className="text-mutedDim hover:text-white transition-colors"
+                title="Remover filtro de itens"
               >
                 <X size={12} />
               </button>
@@ -497,17 +850,21 @@ export default function Explore() {
         </div>
       )}
 
-      {/* Contador de Resultados */}
-      {!loading && lists.length > 0 && (
+      {/* =========================================================
+          7. CONTADOR DE RESULTADOS
+         ========================================================= */}
+      {!loading && (
         <div className="mb-5 flex items-center justify-between text-[13px] text-mutedDim font-medium">
           <div>
             A mostrar <span className="font-bold text-white">{lists.length}</span>{" "}
-            {lists.length === 1 ? "tier list" : "tier lists"}
+            {lists.length === 1 ? "tier list encontrada" : "tier lists encontradas"}
           </div>
         </div>
       )}
 
-      {/* Lista de Resultados Reais / Skeletons */}
+      {/* =========================================================
+          8. GRELHA / LISTA DE RESULTADOS OU ESTADO VAZIO
+         ========================================================= */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -526,10 +883,10 @@ export default function Explore() {
             {selectedSub
               ? `Ainda não existem listas na subcategoria "${selectedSub}". Sê o pioneiro a inaugurá-la!`
               : cat !== "All"
-              ? `Ainda não existem listas nesta categoria. Sê o primeiro a criar!`
+              ? `Ainda não existem listas nesta categoria. Sê o primeiro criador a publicar aqui!`
               : queryText
-              ? `Não foram encontrados resultados para a pesquisa "${queryText}". Tenta outros termos.`
-              : t("explore.noLists") || "Nenhuma tier list encontrada com os filtros selecionados."}
+              ? `Não foram encontrados resultados para a pesquisa "${queryText}". Tenta outros termos ou cria a primeira lista!`
+              : "Nenhuma tier list encontrada com os filtros selecionados."}
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -543,10 +900,16 @@ export default function Explore() {
             )}
             <Link to={`/create${cat !== "All" ? `?category=${cat}` : ""}`}>
               <PrimaryButton icon={Plus}>
-                {t("home.createBtn") || "Criar Tier List"}
+                Criar a Primeira Tier List
               </PrimaryButton>
             </Link>
           </div>
+        </div>
+      ) : viewMode === "compact" ? (
+        <div className="flex flex-col gap-3">
+          {lists.map((l) => (
+            <CompactTierListRow key={l.id} list={l} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

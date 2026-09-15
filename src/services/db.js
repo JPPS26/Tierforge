@@ -1242,6 +1242,10 @@ export async function getTierLists({
     copy.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   } else if (tab === "Popular") {
     copy.sort((a, b) => (b.views || 0) - (a.views || 0));
+  } else if (tab === "TopRated" || tab === "Votes") {
+    copy.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  } else if (tab === "Discussed" || tab === "Comments") {
+    copy.sort((a, b) => (b.commentsCount || 0) - (a.commentsCount || 0));
   } else {
     // Trending: ponderação de votos e visualizações
     copy.sort((a, b) => {
