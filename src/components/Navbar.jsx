@@ -352,7 +352,11 @@ export default function Navbar() {
               type="button"
               onClick={() => setMobileSearchOpen((prev) => !prev)}
               aria-label="Abrir pesquisa"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-muted hover:border-white/20 hover:text-white transition-colors lg:hidden"
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 lg:hidden ${
+                mobileSearchOpen
+                  ? "border-accent bg-accent/15 text-white shadow-glow"
+                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+              }`}
             >
               <Search size={16} />
             </button>
@@ -376,7 +380,11 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] pl-1.5 pr-2.5 transition-all hover:border-accent/40 hover:bg-white/[0.06] active:scale-95 group"
+                  className={`flex h-10 items-center gap-2 rounded-xl border pl-1.5 pr-2.5 transition-all duration-200 active:scale-95 group ${
+                    menuOpen
+                      ? "border-accent bg-accent/15 text-white shadow-glow"
+                      : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+                  }`}
                 >
                   <Avatar
                     name={profile?.displayName || user.email}
@@ -483,7 +491,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-[13px] font-bold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
+                className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-[13px] font-bold text-muted hover:text-white hover:border-borderStrong hover:bg-surface2 transition-all active:scale-95"
               >
                 <LogIn size={15} className="text-accent" />
                 <span>{t("nav.login")}</span>
@@ -495,7 +503,11 @@ export default function Navbar() {
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Menu principal"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-muted hover:border-white/20 hover:text-white transition-colors md:hidden"
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 md:hidden ${
+                mobileMenuOpen
+                  ? "border-accent bg-accent/15 text-white shadow-glow"
+                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-white hover:bg-surface2"
+              }`}
             >
               {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
