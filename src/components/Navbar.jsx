@@ -120,22 +120,22 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D]/85 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <div className="mx-auto flex h-[64px] max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6">
-          {/* Lado Esquerdo: Logótipo & Navegação */}
-          <div className="flex items-center gap-5 lg:gap-7 shrink-0">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D] backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-auto flex h-[64px] max-w-[1360px] items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6">
+          {/* Lado Esquerdo: Logótipo & Navegação em Barra Island */}
+          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
             <Link to="/" className="flex flex-shrink-0 items-center gap-2.5 group select-none">
               <TierWorldLogo size={32} showText={true} />
             </Link>
 
-            {/* Links de Navegação Coesos (Desktop) */}
-            <nav className="hidden md:flex items-center gap-1.5">
+            {/* Links de Navegação Coesos em Barra Island (Desktop) */}
+            <nav className="hidden md:flex items-center gap-1 rounded-2xl border border-white/[0.08] bg-[#141522] p-1 shadow-sm backdrop-blur-md">
               <Link
                 to="/explore"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-150 ${
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-150 ${
                   isExploreActive
-                    ? "bg-accent/15 text-white border border-accent/35 shadow-[0_0_14px_rgba(124,92,255,0.25)]"
-                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
+                    ? "bg-accent/20 text-white border border-accent/40 shadow-[0_0_12px_rgba(124,92,255,0.25)]"
+                    : "text-muted hover:text-white hover:bg-white/[0.06] border border-transparent"
                 }`}
               >
                 <Compass
@@ -145,12 +145,14 @@ export default function Navbar() {
                 <span>{t("nav.explore")}</span>
               </Link>
 
+              <div className="h-4 w-[1px] bg-white/[0.08]" />
+
               <Link
                 to="/leaderboard"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-150 ${
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-150 ${
                   isLeaderboardActive
-                    ? "bg-amber-500/15 text-white border border-amber-500/35 shadow-[0_0_14px_rgba(245,158,11,0.25)]"
-                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
+                    ? "bg-amber-500/20 text-white border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+                    : "text-muted hover:text-white hover:bg-white/[0.06] border border-transparent"
                 }`}
               >
                 <Trophy
@@ -162,10 +164,10 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Centro: Barra de Pesquisa Omni-Search Proporcional */}
-          <div className="relative hidden max-w-[380px] xl:max-w-[440px] flex-1 lg:block mx-4" ref={searchContainerRef}>
-            <div className="relative flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#141522]/90 transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#18192A] focus-within:ring-2 focus-within:ring-accent/20 focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
-              <Search size={15} className="pointer-events-none absolute left-3 text-mutedDim" />
+          {/* Centro: Barra de Pesquisa Omni-Search Proporcional com o Mesmo Layout */}
+          <div className="relative hidden max-w-[360px] xl:max-w-[420px] flex-1 lg:block mx-3" ref={searchContainerRef}>
+            <div className="relative flex h-10 items-center rounded-2xl border border-white/[0.08] bg-[#141522] px-3 shadow-sm transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20 focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
+              <Search size={15} className="pointer-events-none text-mutedDim shrink-0 mr-2.5" />
               <input
                 ref={searchInputRef}
                 value={q}
@@ -173,7 +175,7 @@ export default function Navbar() {
                 onFocus={() => setSearchOpen(true)}
                 onKeyDown={handleSearchSubmit}
                 placeholder={t("nav.searchPlaceholder")}
-                className="w-full bg-transparent py-2 pl-9 pr-14 text-[13px] text-text outline-none transition-all placeholder:text-mutedDim"
+                className="w-full bg-transparent py-1.5 text-[13px] text-text outline-none transition-all placeholder:text-mutedDim"
               />
               {q ? (
                 <button
@@ -182,12 +184,12 @@ export default function Navbar() {
                     setQ("");
                     setSearchOpen(false);
                   }}
-                  className="absolute right-3 text-mutedDim hover:text-white"
+                  className="text-mutedDim hover:text-white ml-1.5 p-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
                 >
                   <X size={14} />
                 </button>
               ) : (
-                <span className="pointer-events-none absolute right-2.5 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-mutedDim">
+                <span className="pointer-events-none ml-1.5 shrink-0 rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-mutedDim">
                   ⌘K
                 </span>
               )}
@@ -195,7 +197,7 @@ export default function Navbar() {
 
             {/* Dropdown de Resultados da Pesquisa Omni */}
             {searchOpen && (
-              <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#12131F]/95 p-2 shadow-2xl backdrop-blur-2xl animate-fadeIn">
+              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn">
                 {q.trim().length < 2 ? (
                   /* Estado Inicial: Sugestões Rápidas & Tópicos Populares */
                   <div className="p-2">
@@ -343,34 +345,50 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Lado Direito: Ações (Criar, Notificações, Perfil, Mobile Menu) */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Botão de Pesquisa Rápida (Mobile/Tablet) */}
+          {/* Lado Direito: Barra de Ações com o Mesmo Layout Coeso */}
+          <div className="flex items-center gap-1.5 rounded-2xl border border-white/[0.08] bg-[#141522] p-1 shadow-sm backdrop-blur-md shrink-0">
+            {/* Botão de Pesquisa Rápida (Mobile/Tablet dentro da barra) */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen((prev) => !prev)}
               aria-label="Abrir pesquisa"
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 lg:hidden ${
+              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 lg:hidden ${
                 mobileSearchOpen
-                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
-                  : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
+                  ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
+                  : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
               }`}
             >
-              <Search size={16} />
+              <Search size={15} />
             </button>
 
             {/* Botão de Criação Primário com Gradiente */}
             <button
               type="button"
               onClick={() => navigate("/create")}
-              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-[0_0_20px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_25px_rgba(124,92,255,0.55)] active:scale-95 transition-all border border-white/15"
+              className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-3.5 text-[12.5px] font-bold text-white shadow-[0_0_14px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_20px_rgba(124,92,255,0.55)] active:scale-95 transition-all border border-white/15"
             >
-              <Plus size={16} />
+              <Plus size={15} />
               <span>{t("nav.create")}</span>
             </button>
 
+            {/* Botão de Criação Compacto para Telas Mobile */}
+            <button
+              type="button"
+              onClick={() => navigate("/create")}
+              aria-label={t("nav.create")}
+              className="sm:hidden flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] text-white shadow-[0_0_12px_rgba(124,92,255,0.3)] hover:brightness-110 active:scale-95 transition-all border border-white/15"
+            >
+              <Plus size={15} />
+            </button>
+
+            {/* Separador subtil quando utilizador está com sessão iniciada */}
+            {user && <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />}
+
             {/* Notificações no Próprio Site */}
             {user && <NotificationsDropdown />}
+
+            {/* Separador subtil entre Notificações e Perfil */}
+            {user && <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />}
 
             {/* Menu de Perfil / Iniciar Sessão */}
             {user ? (
@@ -378,10 +396,10 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 ${
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 ${
                     menuOpen
-                      ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
-                      : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
+                      ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
+                      : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
                   }`}
                   title={profile?.displayName || user.displayName || "Perfil de utilizador"}
                   aria-label="Menu de utilizador"
@@ -389,14 +407,14 @@ export default function Navbar() {
                   <Avatar
                     name={profile?.displayName || user.email}
                     image={profile?.avatar || user.photoURL}
-                    size={28}
+                    size={26}
                   />
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#11121C]/98 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(124,92,255,0.15)] backdrop-blur-2xl animate-fadeIn z-50">
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn z-50">
                     {/* Header do Utilizador com XP e Nível */}
-                    <div className="rounded-xl border border-white/[0.08] bg-[#161726]/80 p-3 mb-2">
+                    <div className="rounded-2xl border border-border/80 bg-[#141522] p-3 mb-2.5">
                       <div className="flex items-center gap-2.5 mb-2">
                         <Avatar
                           name={profile?.displayName || user.email}
@@ -414,7 +432,7 @@ export default function Navbar() {
                       </div>
 
                       {/* Nível e Barra de XP */}
-                      <div className="pt-2 border-t border-white/[0.06]">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-bold text-mutedDim flex items-center gap-1">
                             <span>{levelInfo.icon}</span>
@@ -424,7 +442,7 @@ export default function Navbar() {
                             {profile?.creatorXp || 0} XP
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
+                        <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-accent to-[#00E5A3] transition-all duration-500"
                             style={{ width: `${levelInfo.percent}%` }}
@@ -433,11 +451,11 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       <Link
                         to={`/profile/${profile?.handle || ""}`}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
                       >
                         <UserIcon size={15} className="text-muted" />
                         <span>{t("nav.profile")}</span>
@@ -446,7 +464,7 @@ export default function Navbar() {
                       <Link
                         to="/create"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
                       >
                         <Plus size={15} className="text-teal" />
                         <span>Criar Nova Tier List</span>
@@ -458,18 +476,18 @@ export default function Navbar() {
                           setMenuOpen(false);
                           setEditProfileOpen(true);
                         }}
-                        className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#161726]/50 px-3 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all text-left"
+                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all text-left"
                       >
                         <Settings size={15} className="text-muted" />
                         <span>{t("nav.editProfile")}</span>
                       </button>
 
-                      <div className="my-1 border-t border-white/[0.08]"></div>
+                      <div className="my-1 border-t border-border/50"></div>
 
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-left text-[13px] font-medium text-red-400 hover:border-red-500/40 hover:bg-red-500/20 hover:text-red-300 transition-all"
+                        className="flex w-full items-center gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 px-3.5 py-2 text-left text-[13px] font-medium text-red-400 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-300 transition-all"
                       >
                         <LogOut size={15} />
                         <span>{t("nav.logout")}</span>
@@ -479,28 +497,32 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.1] bg-[#141522] px-4 text-[13px] font-bold text-muted hover:text-white hover:border-white/20 hover:bg-[#1D1E30] transition-all active:scale-95 shadow-sm"
-              >
-                <LogIn size={15} className="text-accent" />
-                <span>{t("nav.login")}</span>
-              </button>
+              <>
+                <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12.5px] font-bold text-muted hover:text-white hover:bg-white/[0.08] transition-all active:scale-95"
+                >
+                  <LogIn size={14} className="text-accent" />
+                  <span>{t("nav.login")}</span>
+                </button>
+              </>
             )}
 
             {/* Botão do Menu Hambúrguer (Mobile) */}
+            <div className="md:hidden h-4 w-[1px] bg-white/[0.08] my-auto" />
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Menu principal"
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 md:hidden ${
+              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 md:hidden ${
                 mobileMenuOpen
-                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
-                  : "border-white/[0.1] bg-[#141522] text-muted hover:border-white/20 hover:text-white hover:bg-[#1D1E30]"
+                  ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
+                  : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
               }`}
             >
-              {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
+              {mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}
             </button>
           </div>
         </div>
@@ -639,7 +661,7 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <nav
             ref={mobileMenuRef}
-            className="border-t border-white/10 bg-[#0B0C14]/98 px-4 py-5 backdrop-blur-2xl md:hidden animate-slideUp shadow-2xl flex flex-col gap-3.5"
+            className="border-t border-white/10 bg-[#0F1017] px-4 py-5 backdrop-blur-2xl md:hidden animate-slideUp shadow-2xl flex flex-col gap-3.5"
           >
             {/* Cartões de Navegação Principal (Grid Coesa) */}
             <div className="grid grid-cols-2 gap-2.5">
