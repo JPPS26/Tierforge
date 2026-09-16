@@ -115,7 +115,7 @@ function CompactTierListRow({ list }) {
   return (
     <Link
       to={`/tier-list/${list.id}`}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-surface/80 p-3.5 sm:p-4 transition-all hover:border-accent/60 hover:bg-surface2/60 hover:shadow-glow"
+      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-white/[0.08] bg-[#131422] p-3.5 sm:p-4 transition-all hover:border-accent/60 hover:bg-[#18192A] hover:shadow-[0_8px_24px_-6px_rgba(124,92,255,0.25)]"
     >
       <div className="flex items-center gap-3.5 min-w-0">
         {/* Mini Preview Bar */}
@@ -439,7 +439,7 @@ export default function Explore() {
               <button
                 type="button"
                 onClick={handleSurpriseMe}
-                className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accentSoft/60 px-4 py-2.5 text-[13.5px] font-bold text-accent hover:bg-accent hover:text-black transition-all duration-200 shadow-sm hover:shadow-glow active:scale-95"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-accent/40 bg-accentSoft/60 px-4 text-[13px] font-bold text-accent hover:bg-accent hover:text-black transition-all duration-200 shadow-sm hover:shadow-glow active:scale-95"
                 title="Abrir uma Tier List aleatória"
               >
                 <Dices size={16} />
@@ -472,10 +472,10 @@ export default function Explore() {
                 key={topic.category}
                 type="button"
                 onClick={() => handleSelectCategory(topic.category)}
-                className={`shrink-0 rounded-xl border px-3 py-1.5 font-bold transition-all ${
+                className={`shrink-0 rounded-xl border px-3 py-1.5 font-bold transition-all duration-150 ${
                   isSelected
-                    ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
-                    : "border-white/[0.08] bg-[#12121A]/80 text-muted hover:border-white/20 hover:text-white"
+                    ? "border-accent bg-accent/20 text-white shadow-[0_0_12px_rgba(124,92,255,0.25)]"
+                    : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
                 }`}
               >
                 {topic.label}
@@ -488,9 +488,9 @@ export default function Explore() {
       {/* =========================================================
           3. BARRA DE PESQUISA, ORDENAÇÃO E MODOS DE EXIBIÇÃO
          ========================================================= */}
-      <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Abas de Ordenação */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-[#12121C]/90 p-1.5 rounded-2xl border border-white/[0.08] backdrop-blur-md">
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+        {/* Abas de Ordenação Segmentadas */}
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-white/[0.08] bg-[#131422] p-1 shadow-sm">
           {tabs.map((tItem) => {
             const Icon = tItem.icon;
             const isActive = tab === tItem.key;
@@ -499,14 +499,14 @@ export default function Explore() {
                 key={tItem.key}
                 type="button"
                 onClick={() => setTab(tItem.key)}
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-bold transition-all duration-200 ${
+                className={`flex h-8 items-center gap-2 rounded-lg px-3 text-[12.5px] font-bold transition-all duration-150 ${
                   isActive
-                    ? "bg-surface2 text-white border border-accent/40 shadow-sm shadow-accent/20"
-                    : "text-muted hover:text-white hover:bg-white/[0.04]"
+                    ? "bg-accent/20 text-white border border-accent/40 shadow-[0_0_12px_rgba(124,92,255,0.25)]"
+                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
                 }`}
               >
                 <Icon
-                  size={14}
+                  size={13}
                   style={{ color: isActive ? tItem.color : undefined }}
                   className={isActive ? "" : "opacity-60"}
                 />
@@ -517,51 +517,51 @@ export default function Explore() {
         </div>
 
         {/* Ferramentas: Pesquisa Rápida + Filtro de Tamanho + Alternador de Visualização */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Input de Pesquisa */}
-          <div className="relative flex-1 sm:w-72">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Input de Pesquisa Proporcional h-10 */}
+          <div className="relative flex-1 sm:w-64">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
             <input
               type="text"
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
               placeholder="Pesquisar por título, criador…"
-              className="w-full rounded-2xl border border-white/10 bg-[#12121C]/90 pl-10 pr-9 py-2 text-[13px] text-white placeholder-mutedDim outline-none transition-all focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20"
+              className="h-10 w-full rounded-xl border border-white/[0.08] bg-[#131422] pl-9 pr-8 text-[13px] text-white placeholder:text-mutedDim outline-none transition-all focus:border-accent/60 focus:bg-[#18192A] focus:ring-2 focus:ring-accent/20"
             />
             {queryText && (
               <button
                 onClick={() => setQueryText("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors p-1"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
 
-          {/* Filtro de Mínimo de Itens */}
+          {/* Filtro de Mínimo de Itens h-10 */}
           <div className="relative flex items-center">
             <select
               value={minItemsFilter}
               onChange={(e) => setMinItemsFilter(Number(e.target.value))}
-              className="rounded-2xl border border-white/10 bg-[#12121C]/90 px-3 py-2 text-[12.5px] font-bold text-white outline-none focus:border-accent cursor-pointer appearance-none pr-7"
+              className="h-10 rounded-xl border border-white/[0.08] bg-[#131422] px-3 text-[12.5px] font-semibold text-white outline-none focus:border-accent/60 cursor-pointer appearance-none pr-8 hover:border-white/20 transition-all"
             >
-              <option value={0}>Todos os tamanhos</option>
-              <option value={5}>5+ elementos</option>
-              <option value={10}>10+ elementos</option>
-              <option value={20}>20+ elementos</option>
+              <option value={0} className="bg-[#131422]">Todos os tamanhos</option>
+              <option value={5} className="bg-[#131422]">5+ elementos</option>
+              <option value={10} className="bg-[#131422]">10+ elementos</option>
+              <option value={20} className="bg-[#131422]">20+ elementos</option>
             </select>
             <SlidersHorizontal size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
           </div>
 
-          {/* Alternador de Visualização: Grelha vs Lista Compacta */}
-          <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#12121C]/90 p-1">
+          {/* Alternador de Visualização: Grelha vs Lista Compacta h-10 */}
+          <div className="flex h-10 items-center gap-1 rounded-xl border border-white/[0.08] bg-[#131422] p-1">
             <button
               type="button"
               onClick={() => toggleViewMode("grid")}
-              className={`p-1.5 rounded-xl transition-all ${
+              className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all ${
                 viewMode === "grid"
-                  ? "bg-surface2 text-accent shadow-sm"
-                  : "text-mutedDim hover:text-white"
+                  ? "bg-accent/20 text-white border border-accent/40 shadow-sm"
+                  : "text-mutedDim hover:text-white hover:bg-white/[0.04]"
               }`}
               title="Visualização em Grelha"
             >
@@ -570,10 +570,10 @@ export default function Explore() {
             <button
               type="button"
               onClick={() => toggleViewMode("compact")}
-              className={`p-1.5 rounded-xl transition-all ${
+              className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all ${
                 viewMode === "compact"
-                  ? "bg-surface2 text-accent shadow-sm"
-                  : "text-mutedDim hover:text-white"
+                  ? "bg-accent/20 text-white border border-accent/40 shadow-sm"
+                  : "text-mutedDim hover:text-white hover:bg-white/[0.04]"
               }`}
               title="Visualização em Lista Compacta"
             >
@@ -587,16 +587,16 @@ export default function Explore() {
           4. CAIXA DE CARROSSEL DE CATEGORIAS E NICHOS
          ========================================================= */}
       {activeCategories.length > 0 && (
-        <div className="mb-8 rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#161624]/90 to-[#101018]/90 p-5 backdrop-blur-xl shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="mb-8 rounded-2xl border border-white/[0.08] bg-[#0F1017] p-4 sm:p-5 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
                 <Filter size={14} />
               </div>
-              <span className="font-display text-[15px] font-bold text-white">
+              <span className="font-display text-[14.5px] font-bold text-white">
                 Navegar por Categoria
               </span>
-              <span className="text-[11.5px] font-semibold text-mutedDim bg-white/[0.05] px-2.5 py-0.5 rounded-full border border-white/[0.06]">
+              <span className="text-[11px] font-semibold text-mutedDim bg-white/[0.05] px-2.5 py-0.5 rounded-full border border-white/[0.06]">
                 {activeCategories.length} categorias
               </span>
             </div>
@@ -604,19 +604,19 @@ export default function Explore() {
             {/* Controlos: Setas de Scroll + Pesquisa Interna */}
             <div className="flex items-center gap-2">
               {activeCategories.length > 4 && (
-                <div className="relative w-full sm:w-56">
+                <div className="relative w-full sm:w-52">
                   <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
                   <input
                     type="text"
                     value={categorySearchQuery}
                     onChange={(e) => setCategorySearchQuery(e.target.value)}
                     placeholder="Filtrar categoria…"
-                    className="w-full rounded-xl border border-white/10 bg-[#0E0E15] pl-8 pr-7 py-1.5 text-[12px] text-white placeholder-mutedDim focus:border-accent focus:outline-none transition-all"
+                    className="h-8 w-full rounded-lg border border-white/[0.08] bg-[#131422] pl-8 pr-7 text-[12px] text-white placeholder:text-mutedDim focus:border-accent focus:outline-none transition-all"
                   />
                   {categorySearchQuery && (
                     <button
                       onClick={() => setCategorySearchQuery("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-mutedDim hover:text-white transition-colors p-1"
                     >
                       <X size={12} />
                     </button>
@@ -627,7 +627,7 @@ export default function Explore() {
               <button
                 type="button"
                 onClick={() => scrollCategories("left")}
-                className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors"
+                className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-[#131422] hover:bg-[#1A1B2C] hover:border-white/20 text-muted hover:text-white transition-all"
                 title="Deslizar para a esquerda"
               >
                 <ChevronLeft size={14} />
@@ -635,7 +635,7 @@ export default function Explore() {
               <button
                 type="button"
                 onClick={() => scrollCategories("right")}
-                className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors"
+                className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-[#131422] hover:bg-[#1A1B2C] hover:border-white/20 text-muted hover:text-white transition-all"
                 title="Deslizar para a direita"
               >
                 <ChevronRight size={14} />
@@ -652,17 +652,17 @@ export default function Explore() {
             <button
               type="button"
               onClick={() => handleSelectCategory("All")}
-              className={`flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 shrink-0 ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-all duration-150 shrink-0 ${
                 cat === "All"
-                  ? "border-accent bg-accent/20 text-white shadow-sm shadow-accent/30"
-                  : "border-white/[0.06] bg-surface/60 text-mutedDim hover:border-white/20 hover:text-white"
+                  ? "border-accent bg-accent/20 text-white shadow-[0_0_12px_rgba(124,92,255,0.25)]"
+                  : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
               }`}
             >
-              <Layers size={14} className={cat === "All" ? "text-accent" : "opacity-60"} />
+              <Layers size={13} className={cat === "All" ? "text-accent" : "opacity-60"} />
               <span>{t("explore.allCategories") || "Todas as Categorias"}</span>
               {totalListsCount > 0 && (
                 <span
-                  className={`text-[10.5px] font-bold px-1.5 py-0.2 rounded-full ${
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
                     cat === "All" ? "bg-accent/30 text-white" : "bg-white/[0.06] text-mutedDim"
                   }`}
                 >
@@ -684,25 +684,25 @@ export default function Explore() {
                   key={c.id}
                   type="button"
                   onClick={() => handleSelectCategory(c.id)}
-                  className={`group flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-[12.5px] font-bold transition-all duration-200 shrink-0 ${
+                  className={`group flex items-center gap-2 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-all duration-150 shrink-0 ${
                     isSelected
-                      ? "border-white/40 bg-surface2 text-white shadow-md"
-                      : "border-white/[0.06] bg-surface/60 text-mutedDim hover:border-white/20 hover:text-white"
+                      ? "border-white/40 bg-[#1A1B2C] text-white shadow-md"
+                      : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
                   }`}
                   style={{
                     borderColor: isSelected ? color : undefined,
-                    backgroundColor: isSelected ? `${color}20` : undefined,
+                    backgroundColor: isSelected ? `${color}25` : undefined,
                   }}
                 >
                   <IconComponent
-                    size={14}
+                    size={13}
                     style={{ color: isSelected ? color : undefined }}
                     className={isSelected ? "" : "opacity-70 group-hover:opacity-100 transition-opacity"}
                   />
                   <span>{c.name || getCategoryDisplayName(c.id)}</span>
                   {c.count > 0 && (
                     <span
-                      className={`text-[10.5px] font-bold px-1.5 py-0.2 rounded-full transition-colors ${
+                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full transition-colors ${
                         isSelected
                           ? "bg-white/20 text-white"
                           : "bg-white/[0.06] text-mutedDim group-hover:text-muted"
@@ -718,18 +718,18 @@ export default function Explore() {
 
           {/* Subcategorias / Nichos quando uma categoria estiver selecionada */}
           {activeCatObj?.subcategories?.length > 0 && (
-            <div className="mt-3.5 pt-3.5 border-t border-white/[0.06]">
-              <div className="text-[12px] font-bold text-mutedDim mb-2 flex items-center gap-2">
+            <div className="mt-3 pt-3 border-t border-white/[0.06]">
+              <div className="text-[11.5px] font-bold text-mutedDim mb-2 flex items-center gap-2">
                 <span>Filtrar por nicho em {activeCatObj.name}:</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleSelectSubcategory("")}
-                  className={`px-3 py-1 rounded-xl text-[12px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11.5px] font-semibold transition-all ${
                     !selectedSub
                       ? "bg-white/15 text-white border border-white/20 shadow-sm"
-                      : "bg-surface/60 text-mutedDim hover:text-white border border-white/[0.06]"
+                      : "bg-[#131422] text-mutedDim hover:text-white border border-white/[0.06]"
                   }`}
                 >
                   Todos os temas
@@ -742,10 +742,10 @@ export default function Explore() {
                       key={subName}
                       type="button"
                       onClick={() => handleSelectSubcategory(subName)}
-                      className={`px-3 py-1 rounded-xl text-[12px] font-bold transition-all ${
+                      className={`px-2.5 py-1 rounded-lg text-[11.5px] font-semibold transition-all ${
                         isSubActive
                           ? "bg-accent/20 text-white border border-accent/60 shadow-sm"
-                          : "bg-surface/60 text-mutedDim hover:text-white border border-white/[0.06]"
+                          : "bg-[#131422] text-mutedDim hover:text-white border border-white/[0.06]"
                       }`}
                     >
                       {subName}
@@ -762,7 +762,7 @@ export default function Explore() {
           5. CRIADORES EM ALTA (COMMUNITY CREATORS SPOTLIGHT)
          ========================================================= */}
       {topCreators.length > 0 && cat === "All" && !queryText && (
-        <div className="mb-8 rounded-2xl border border-white/[0.06] bg-[#101018]/70 p-4 sm:p-5 backdrop-blur-md">
+        <div className="mb-8 rounded-2xl border border-white/[0.08] bg-[#0F1017] p-4 sm:p-5 shadow-xl">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-mutedDim">
               <Trophy size={13} className="text-amber-400" />
@@ -778,12 +778,12 @@ export default function Explore() {
               <Link
                 key={cr.uid || idx}
                 to={`/profile/${cr.handle || cr.uid}`}
-                className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface/50 p-2.5 hover:border-accent/40 hover:bg-surface2/60 transition-all"
+                className="group flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#131422] p-2.5 hover:border-accent/40 hover:bg-[#1A1B2C] transition-all"
               >
                 <div className="relative">
                   <Avatar name={cr.displayName} image={cr.avatar} size={32} />
                   {idx === 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black">
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black shadow-sm">
                       1
                     </span>
                   )}
@@ -792,7 +792,7 @@ export default function Explore() {
                   <div className="text-[13px] font-bold text-white group-hover:text-accent transition-colors truncate">
                     {cr.displayName}
                   </div>
-                  <div className="text-[11px] font-medium text-accent/80 truncate">
+                  <div className="text-[11px] font-semibold text-accent/80 truncate">
                     #{cr.handle || "criador"}
                   </div>
                 </div>
@@ -806,11 +806,11 @@ export default function Explore() {
           6. BARRA DE FILTROS ATIVOS
          ========================================================= */}
       {hasActiveFilters && (
-        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/[0.06] bg-[#12121C]/60 px-4 py-2.5 text-[12.5px]">
+        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 py-2.5 text-[12.5px]">
           <span className="font-bold text-mutedDim">Filtros ativos:</span>
 
           {cat !== "All" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-0.5 font-bold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-0.5 font-semibold text-white">
               <span>{activeCatObj?.name || cat}</span>
               <button
                 onClick={() => handleSelectCategory("All")}
@@ -823,7 +823,7 @@ export default function Explore() {
           )}
 
           {selectedSub && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-0.5 font-bold text-[#B6A5FF]">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/15 px-2.5 py-0.5 font-semibold text-[#B6A5FF]">
               <span>{selectedSub}</span>
               <button
                 onClick={() => handleSelectSubcategory("")}
@@ -836,7 +836,7 @@ export default function Explore() {
           )}
 
           {debouncedQuery.trim() && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-0.5 font-bold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-0.5 font-semibold text-white">
               <span>"{debouncedQuery}"</span>
               <button
                 onClick={() => setQueryText("")}
@@ -849,7 +849,7 @@ export default function Explore() {
           )}
 
           {minItemsFilter > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-0.5 font-bold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-0.5 font-semibold text-white">
               <span>Mínimo: {minItemsFilter} itens</span>
               <button
                 onClick={() => setMinItemsFilter(0)}

@@ -75,13 +75,13 @@ export function PrimaryButton({
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold text-white shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-6px_rgba(124,92,255,0.7)] active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 ${
-        small ? "px-3.5 py-2 text-[13px]" : "px-5 py-2.5 text-[14.5px]"
+        small ? "h-8 px-3 text-[12px]" : "h-10 px-5 text-[13.5px]"
       } ${className}`}
       style={{
         background: "linear-gradient(135deg, #8A6BFF 0%, #6A46F0 100%)",
       }}
     >
-      {Icon && <Icon size={small ? 15 : 17} className="flex-shrink-0" />}
+      {Icon && <Icon size={small ? 14 : 16} className="flex-shrink-0" />}
       <span>{children}</span>
     </button>
   );
@@ -105,10 +105,10 @@ export function SecondaryButton({
       className={`inline-flex items-center justify-center gap-2 rounded-xl border font-display font-semibold transition-all duration-200 disabled:opacity-50 ${
         active
           ? "border-accent bg-accentSoft text-[#B6A5FF]"
-          : "border-border bg-surface2 text-text hover:border-borderStrong hover:bg-surface"
-      } ${small ? "px-3 py-1.5 text-[12.5px]" : "px-4 py-2 text-[13.5px]"} ${className}`}
+          : "border-white/[0.08] bg-[#131422] text-text hover:border-white/20 hover:bg-[#1A1B2C] hover:text-white"
+      } ${small ? "h-8 px-3 text-[12px]" : "h-10 px-4 text-[13px]"} ${className}`}
     >
-      {Icon && <Icon size={small ? 14 : 16} className="flex-shrink-0" />}
+      {Icon && <Icon size={small ? 14 : 15} className="flex-shrink-0" />}
       <span>{children}</span>
     </button>
   );
@@ -128,11 +128,11 @@ export function GhostButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface2/80 font-display font-semibold text-text transition-all duration-200 hover:border-borderStrong hover:bg-surface hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 ${
-        small ? "px-3.5 py-2 text-[13px]" : "px-5 py-2.5 text-[14.5px]"
+      className={`inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] font-display font-semibold text-muted transition-all duration-200 hover:border-white/20 hover:bg-white/[0.08] hover:text-white hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 ${
+        small ? "h-8 px-3 text-[12px]" : "h-10 px-4 text-[13px]"
       } ${className}`}
     >
-      {Icon && <Icon size={small ? 15 : 17} className="flex-shrink-0 text-muted" />}
+      {Icon && <Icon size={small ? 14 : 15} className="flex-shrink-0 text-mutedDim group-hover:text-muted" />}
       <span>{children}</span>
     </button>
   );
