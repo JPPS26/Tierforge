@@ -75,48 +75,50 @@ export default function FollowersModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[520px] rounded-3xl border border-border bg-[#12131a] p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+        className="w-full max-w-[520px] rounded-3xl border border-white/[0.1] bg-[#0E0F18] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)] flex flex-col max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-accent" />
-            <span className="font-display font-black text-[18px] text-white">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accentSoft border border-accent/30 text-accent shadow-sm">
+              <Users size={18} />
+            </div>
+            <span className="font-display font-bold text-[17px] text-white tracking-tight">
               {targetUser.displayName}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-mutedDim hover:bg-surface2 hover:text-white transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Abas: Seguidores vs A Seguir */}
-        <div className="grid grid-cols-2 gap-2 bg-surface p-1 rounded-2xl border border-border mb-4">
+        <div className="grid grid-cols-2 gap-2 bg-[#0F1017] p-1 rounded-2xl border border-white/[0.08] mb-4">
           <button
             onClick={() => {
               setActiveTab("followers");
               setSearchQuery("");
             }}
-            className={`py-2 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "followers"
-                ? "bg-accent text-black shadow-glow"
+                ? "bg-accent text-black shadow-glow font-black"
                 : "text-muted hover:text-white"
             }`}
           >
             <span>{t("profile.modalFollowersTitle")}</span>
             <span
-              className={`text-xs px-2 py-0.5 rounded-full ${
+              className={`text-[11px] px-2 py-0.5 rounded-full ${
                 activeTab === "followers"
                   ? "bg-black/20 text-black font-black"
-                  : "bg-surface2 text-mutedDim"
+                  : "bg-[#131422] text-mutedDim"
               }`}
             >
               {followersList.length}
@@ -128,18 +130,18 @@ export default function FollowersModal({
               setActiveTab("following");
               setSearchQuery("");
             }}
-            className={`py-2 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "following"
-                ? "bg-accent text-black shadow-glow"
+                ? "bg-accent text-black shadow-glow font-black"
                 : "text-muted hover:text-white"
             }`}
           >
             <span>{t("profile.modalFollowingTitle")}</span>
             <span
-              className={`text-xs px-2 py-0.5 rounded-full ${
+              className={`text-[11px] px-2 py-0.5 rounded-full ${
                 activeTab === "following"
                   ? "bg-black/20 text-black font-black"
-                  : "bg-surface2 text-mutedDim"
+                  : "bg-[#131422] text-mutedDim"
               }`}
             >
               {followingList.length}
@@ -149,14 +151,14 @@ export default function FollowersModal({
 
         {/* Barra de Pesquisa dentro da lista */}
         {currentList.length > 3 && (
-          <div className="relative mb-3">
+          <div className="relative mb-3.5">
             <Search className="absolute left-3.5 top-3 w-4 h-4 text-mutedDim" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("profile.searchUserPlaceholder")}
-              className="w-full rounded-xl border border-border bg-surface pl-10 pr-4 py-2 text-sm text-white placeholder-mutedDim focus:border-accent focus:outline-none"
+              className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] pl-10 pr-4 text-[13px] text-white placeholder:text-mutedDim focus:border-accent outline-none transition-colors"
             />
           </div>
         )}
@@ -169,8 +171,8 @@ export default function FollowersModal({
             </div>
           ) : filteredList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-surface2 flex items-center justify-center text-mutedDim mb-3">
-                <Users size={24} />
+              <div className="w-12 h-12 rounded-2xl bg-[#131422] border border-white/[0.08] flex items-center justify-center text-mutedDim mb-3">
+                <Users size={22} />
               </div>
               <p className="text-white font-bold text-sm mb-1">
                 {activeTab === "followers"
@@ -195,7 +197,7 @@ export default function FollowersModal({
               return (
                 <div
                   key={itemUser.uid}
-                  className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/60 bg-surface/50 hover:bg-surface2/60 transition-colors"
+                  className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-white/[0.08] bg-[#131422] hover:bg-[#18192A] transition-colors"
                 >
                   <Link
                     to={profileUrl}
@@ -233,20 +235,20 @@ export default function FollowersModal({
                   {!isCurrentUser && (
                     <button
                       onClick={() => handleToggleFollow(itemUser)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                      className={`h-8 px-3 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
                         itemUser.isFollowing
-                          ? "bg-surface border border-border text-muted hover:text-red-400 hover:border-red-500/40"
+                          ? "bg-black/30 border border-white/[0.1] text-muted hover:text-red-400 hover:border-red-500/40"
                           : "bg-accent text-black hover:opacity-90 shadow-glow"
                       }`}
                     >
                       {itemUser.isFollowing ? (
                         <>
-                          <UserCheck size={14} />
+                          <UserCheck size={13} />
                           <span>{t("profile.followingBtn")}</span>
                         </>
                       ) : (
                         <>
-                          <UserPlus size={14} />
+                          <UserPlus size={13} />
                           <span>{t("profile.follow")}</span>
                         </>
                       )}
@@ -259,11 +261,11 @@ export default function FollowersModal({
         </div>
 
         {/* Rodapé informativo */}
-        <div className="border-t border-border pt-3 mt-3 flex items-center justify-between text-xs text-mutedDim">
+        <div className="border-t border-white/[0.08] pt-3 mt-3 flex items-center justify-between text-xs text-mutedDim">
           <span>Dados 100% reais da comunidade</span>
           <button
             onClick={onClose}
-            className="text-xs font-semibold text-muted hover:text-white"
+            className="text-xs font-semibold text-muted hover:text-white transition-colors"
           >
             Fechar
           </button>

@@ -80,7 +80,7 @@ const THEME_PRESETS = {
   },
 };
 
-function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete, dragging }) {
+function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete, onSelect, dragging }) {
   const mode = item.displayMode && item.displayMode !== "auto" ? item.displayMode : displayMode;
   const hasImage = Boolean(item.imageUrl);
   const name = item.name || "Elemento";
@@ -93,7 +93,10 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
       draggable
       onDragStart={(e) => onDragStart(e, item)}
       onDragEnd={onDragEnd}
-      className={`group relative flex cursor-grab select-none items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:border-accent hover:shadow-glow hover:-translate-y-0.5 active:cursor-grabbing ${
+      onClick={(e) => {
+        if (onSelect) onSelect(item);
+      }}
+      className={`group relative flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:border-accent hover:shadow-glow hover:-translate-y-0.5 active:scale-95 ${
         mode === "image" && hasImage
           ? "h-20 w-20 flex-shrink-0 bg-surface2 border-border/80"
           : mode === "both" && hasImage
@@ -109,7 +112,7 @@ function ItemCard({ item, displayMode, onDragStart, onDragEnd, onEdit, onDelete,
             : `linear-gradient(145deg, ${colorFor(name)}35, #14141e)`,
         opacity: dragging ? 0.35 : 1,
       }}
-      title={name}
+      title={`${name} (Toca para mover ou arrasta)`}
     >
       {showImage && (
         <img
@@ -183,6 +186,7 @@ function TierRow({
   onItemDragEnd,
   onEditItem,
   onDeleteItem,
+  onSelectItem,
   draggingId,
   t,
 }) {
@@ -264,6 +268,7 @@ function TierRow({
             onDragEnd={onItemDragEnd}
             onEdit={onEditItem}
             onDelete={onDeleteItem}
+            onSelect={onSelectItem}
           />
         ))}
 
@@ -307,6 +312,7 @@ export default function Builder() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [actionItem, setActionItem] = useState(null);
 
   // Form states para adição / edição manual
   const [formName, setFormName] = useState("");
@@ -1222,6 +1228,7 @@ export default function Builder() {
             onItemDragEnd={handleItemDragEnd}
             onEditItem={openEditModal}
             onDeleteItem={handleDeleteItem}
+            onSelectItem={setActionItem}
             draggingId={draggingId}
             t={t}
           />
@@ -1248,14 +1255,14 @@ export default function Builder() {
           setIsDraggingFile(true);
         }}
         onDragLeave={() => setIsDraggingFile(false)}
-        className={`rounded-3xl border bg-[#0d0e14] p-5 sm:p-6 transition-all shadow-xl ${
+        className={`rounded-3xl border bg-[#0F1017] p-5 sm:p-6 transition-all shadow-xl ${
           isDraggingFile
             ? "border-accent bg-accentSoft/35 shadow-glow scale-[1.005]"
-            : "border-border"
+            : "border-white/[0.08]"
         }`}
       >
         {/* Cabeçalho da Bancada */}
-        <div className="mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display text-[18px] font-bold text-white flex items-center gap-2">
               <Layers size={18} className="text-accent" />
@@ -1405,6 +1412,7 @@ export default function Builder() {
                 onDragEnd={handleItemDragEnd}
                 onEdit={openEditModal}
                 onDelete={handleDeleteItem}
+                onSelect={setActionItem}
               />
             ))}
           </div>
@@ -1424,18 +1432,147 @@ export default function Builder() {
           5. MODAIS INTEGRADOS
          ========================================================= */}
 
+      {/* MODAL 0: Ação Rápida no Elemento (Tap-to-Place para Mobile & Touch) */}
+      {actionItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 p-0 sm:p-4 backdrop-blur-md animate-fadeIn"
+          onClick={() => setActionItem(null)}
+        >
+          <div
+            className="w-full sm:max-w-[460px] rounded-t-3xl sm:rounded-3xl border border-white/[0.1] bg-[#0E0F18] p-5 sm:p-6 shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.15)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabeçalho do Elemento */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-12 w-12 rounded-xl overflow-hidden bg-black/40 border border-white/[0.08] flex-shrink-0 flex items-center justify-center shadow-inner">
+                  {actionItem.imageUrl ? (
+                    <img src={actionItem.imageUrl} alt={actionItem.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center font-bold text-white text-lg" style={{ background: colorFor(actionItem.name) }}>
+                      {actionItem.name?.[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-display text-[15px] font-bold text-white truncate">
+                    {actionItem.name}
+                  </h4>
+                  <p className="text-xs text-mutedDim truncate">
+                    {placements[actionItem.id]
+                      ? `Atualmente no Nível ${tiers.find((t) => t.id === placements[actionItem.id])?.label || "Tier"}`
+                      : "Atualmente na Bancada"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActionItem(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Atribuição Rápida a Níveis */}
+            <div className="mb-4">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-mutedDim mb-2.5">
+                Mover com 1 Toque para um Nível:
+              </span>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {tiers.map((tier) => {
+                  const isCurrent = placements[actionItem.id] === tier.id;
+                  return (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => {
+                        setPlacements((prev) => ({ ...prev, [actionItem.id]: tier.id }));
+                        setActionItem(null);
+                      }}
+                      className={`h-11 rounded-xl flex items-center justify-center font-display text-base font-black transition-all transform active:scale-95 shadow-sm ${
+                        isCurrent
+                          ? "ring-2 ring-white ring-offset-2 ring-offset-[#0E0F18] scale-[1.02]"
+                          : "hover:scale-105 opacity-90 hover:opacity-100"
+                      }`}
+                      style={{
+                        background: tier.color,
+                        color: "#0A0A0D",
+                      }}
+                    >
+                      {tier.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mover para a Bancada (se estiver colocado num nível) */}
+            {placements[actionItem.id] && (
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlacements((prev) => {
+                      const next = { ...prev };
+                      delete next[actionItem.id];
+                      return next;
+                    });
+                    setActionItem(null);
+                  }}
+                  className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] hover:bg-[#18192A] text-xs font-bold text-muted hover:text-white transition-all"
+                >
+                  <Layers size={14} className="text-accent" />
+                  <span>Devolver para a Bancada</span>
+                </button>
+              </div>
+            )}
+
+            {/* Ações Secundárias: Editar / Eliminar */}
+            <div className="flex items-center gap-2 pt-3 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => {
+                  const itemToEdit = actionItem;
+                  setActionItem(null);
+                  openEditModal(itemToEdit);
+                }}
+                className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#131422] text-xs font-semibold text-muted hover:text-white hover:bg-white/[0.06] transition-colors"
+              >
+                <Edit2 size={13} />
+                <span>Editar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const idToDelete = actionItem.id;
+                  setActionItem(null);
+                  handleDeleteItem(idToDelete);
+                }}
+                className="h-9 px-4 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-xs font-bold text-rose-400 hover:bg-rose-500/20 transition-colors"
+              >
+                <Trash2 size={13} />
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL 1: Adicionar / Editar Elemento Manualmente */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-[480px] rounded-3xl border border-borderStrong bg-[#12131a] p-6 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between border-b border-border pb-4">
-              <h3 className="font-display text-[18px] font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-[480px] rounded-3xl border border-white/[0.1] bg-[#0E0F18] p-6 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)]">
+            <div className="mb-5 flex items-center justify-between border-b border-white/[0.08] pb-4">
+              <h3 className="font-display text-[18px] font-bold text-white tracking-tight">
                 {editingItem ? t("builder.modalEditTitle") : t("builder.modalAddTitle")}
               </h3>
               <button
                 type="button"
                 onClick={() => setAddModalOpen(false)}
-                className="rounded-xl p-1.5 text-muted hover:bg-surface2 hover:text-text transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
@@ -1443,30 +1580,30 @@ export default function Builder() {
 
             <form onSubmit={handleSaveElement} className="flex flex-col gap-4">
               <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-text">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mutedDim">
                   {t("builder.elementName")}
                 </label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder={t("builder.elementNamePlaceholder")}
-                  className="w-full rounded-xl border border-border bg-surface2 px-3.5 py-2.5 text-[13.5px] text-text outline-none focus:border-accent"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] px-3.5 text-[13.5px] text-white outline-none focus:border-accent transition-colors"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-text">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mutedDim">
                   {t("builder.elementImage")}
                 </label>
                 <input
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
                   placeholder={t("builder.elementImagePlaceholder")}
-                  className="w-full rounded-xl border border-border bg-surface2 px-3.5 py-2.5 text-[13.5px] text-text outline-none focus:border-accent"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] px-3.5 text-[13.5px] text-white outline-none focus:border-accent transition-colors"
                 />
               </div>
 
-              <div className="rounded-2xl border border-dashed border-border p-3.5 text-center bg-surface2/40">
+              <div className="rounded-2xl border border-dashed border-white/[0.1] p-3.5 text-center bg-[#131422]/50 hover:bg-[#131422] transition-colors">
                 <input
                   type="file"
                   id="modal-file-upload"
@@ -1497,13 +1634,13 @@ export default function Builder() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-text">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-mutedDim">
                   {t("builder.elementDisplayMode")}
                 </label>
                 <select
                   value={formMode}
                   onChange={(e) => setFormMode(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface2 px-3 py-2 text-[13px] text-text outline-none focus:border-accent"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] px-3 text-[13px] text-white outline-none focus:border-accent transition-colors"
                 >
                   <option value="auto">{t("builder.displayAuto")}</option>
                   <option value="both">{t("builder.displayBoth")}</option>
@@ -1513,7 +1650,7 @@ export default function Builder() {
               </div>
 
               {(formName || formImageUrl) && (
-                <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 p-3">
+                <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#131422] p-3">
                   <span className="text-[12px] font-semibold text-muted">Pré-visualização:</span>
                   <ItemCard
                     item={{
@@ -1530,11 +1667,15 @@ export default function Builder() {
                 </div>
               )}
 
-              <div className="mt-2 flex justify-end gap-2.5 border-t border-border pt-4">
-                <GhostButton small onClick={() => setAddModalOpen(false)}>
-                  {t("builder.cancel")}
-                </GhostButton>
-                <PrimaryButton small type="submit">
+              <div className="mt-2 flex justify-end gap-2.5 border-t border-white/[0.08] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setAddModalOpen(false)}
+                  className="h-10 px-4 rounded-xl border border-white/[0.08] bg-[#131422] text-[13px] font-semibold text-muted hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  {t("builder.cancel") || "Cancelar"}
+                </button>
+                <PrimaryButton type="submit">
                   {editingItem ? t("builder.updateElement") : t("builder.saveElement")}
                 </PrimaryButton>
               </div>
@@ -1545,23 +1686,23 @@ export default function Builder() {
 
       {/* MODAL 2: Pesquisar na Base de Dados Real */}
       {searchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="flex max-h-[85vh] w-full max-w-[660px] flex-col rounded-3xl border border-borderStrong bg-[#12131a] shadow-2xl overflow-hidden">
-            <div className="border-b border-border p-5 sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn">
+          <div className="flex max-h-[85vh] w-full max-w-[660px] flex-col rounded-3xl border border-white/[0.1] bg-[#0E0F18] shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)] overflow-hidden">
+            <div className="border-b border-white/[0.08] p-5 sm:p-6 bg-[#0E0F18]">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-display text-[19px] font-black text-white flex items-center gap-2.5">
+                <h3 className="font-display text-[18px] sm:text-[19px] font-bold text-white flex items-center gap-2.5 tracking-tight">
                   <Search size={18} className="text-accent" />
                   {t("builder.searchModalTitle")}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setSearchModalOpen(false)}
-                  className="rounded-xl p-1.5 text-muted hover:bg-surface2 hover:text-text transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
                 >
                   <X size={18} />
                 </button>
               </div>
-              <p className="text-[13px] text-muted">
+              <p className="text-[13px] text-mutedDim">
                 {t("builder.searchModalDesc")}
               </p>
 
@@ -1572,18 +1713,18 @@ export default function Builder() {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder={t("builder.searchPlaceholder")}
-                  className="w-full rounded-xl border border-border bg-surface2 py-2.5 pl-10 pr-4 text-[13.5px] text-text outline-none focus:border-accent"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] pl-10 pr-4 text-[13.5px] text-white placeholder:text-mutedDim outline-none focus:border-accent transition-colors"
                 />
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 sm:p-6">
               {searching ? (
-                <div className="py-14 text-center text-[13.5px] text-muted">
+                <div className="py-14 text-center text-[13.5px] text-mutedDim">
                   {t("builder.searching")}
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="py-14 text-center text-[13.5px] text-muted">
+                <div className="py-14 text-center text-[13.5px] text-mutedDim">
                   {searchQuery ? t("builder.noResultsAtAll") : t("builder.noResultsFound")}
                 </div>
               ) : (
@@ -1595,19 +1736,19 @@ export default function Builder() {
                     return (
                       <div
                         key={entity.id}
-                        className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 p-3 transition-all hover:border-borderStrong hover:-translate-y-0.5"
+                        className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#131422] p-3 transition-all hover:border-white/20 hover:bg-[#18192A]"
                       >
                         {entity.imageUrl ? (
                           <img
                             src={entity.imageUrl}
                             alt={entity.name}
-                            className="h-12 w-12 flex-shrink-0 rounded-xl object-cover border border-white/10"
+                            className="h-12 w-12 flex-shrink-0 rounded-xl object-cover border border-white/[0.08]"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
                         ) : (
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-surface text-[14px] font-bold text-muted">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-black/40 border border-white/[0.08] text-[14px] font-bold text-muted">
                             {entity.name[0]}
                           </div>
                         )}
@@ -1627,10 +1768,10 @@ export default function Builder() {
                           type="button"
                           onClick={() => addFromCatalog(entity)}
                           disabled={isAdded}
-                          className={`rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all ${
+                          className={`h-8 px-3 rounded-xl text-[12px] font-bold transition-all ${
                             isAdded
-                              ? "bg-accentSoft text-accent opacity-60"
-                              : "bg-accent text-white hover:bg-accent/90 shadow-sm"
+                              ? "bg-accentSoft text-accent opacity-60 border border-accent/20"
+                              : "bg-accent text-black hover:opacity-90 shadow-sm"
                           }`}
                         >
                           {isAdded ? t("builder.alreadyAdded") : t("builder.addToTierList")}
@@ -1642,13 +1783,17 @@ export default function Builder() {
               )}
             </div>
 
-            <div className="border-t border-border p-4 flex justify-between items-center bg-surface2/60">
+            <div className="border-t border-white/[0.08] p-4 flex justify-between items-center bg-[#0E0F18]">
               <span className="text-[12px] font-bold text-mutedDim">
                 {t("builder.itemsCount", { count: items.length })}
               </span>
-              <GhostButton small onClick={() => setSearchModalOpen(false)}>
-                {t("builder.close")}
-              </GhostButton>
+              <button
+                type="button"
+                onClick={() => setSearchModalOpen(false)}
+                className="h-9 px-4 rounded-xl border border-white/[0.08] bg-[#131422] text-xs font-semibold text-muted hover:text-white hover:bg-white/[0.06] transition-colors"
+              >
+                {t("builder.close") || "Fechar"}
+              </button>
             </div>
           </div>
         </div>
@@ -1657,29 +1802,29 @@ export default function Builder() {
       {/* MODAL 3: Categoria & Taxonomia Studio Modal */}
       {categoryModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
           onClick={() => setCategoryModalOpen(false)}
         >
           <div
-            className="flex max-h-[85vh] w-full max-w-[620px] flex-col rounded-3xl border border-border bg-[#111219] shadow-2xl overflow-hidden"
+            className="flex max-h-[85vh] w-full max-w-[620px] flex-col rounded-3xl border border-white/[0.1] bg-[#0E0F18] shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-border p-5 sm:p-6">
+            <div className="border-b border-white/[0.08] p-5 sm:p-6 bg-[#0E0F18]">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-display text-[19px] font-black text-white flex items-center gap-2">
+                <h3 className="font-display text-[18px] sm:text-[19px] font-bold text-white flex items-center gap-2.5 tracking-tight">
                   <Sparkles size={18} className="text-accent" />
                   <span>Categoria & Taxonomia</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setCategoryModalOpen(false)}
-                  className="rounded-xl p-1.5 text-mutedDim hover:text-white transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
                 >
                   <X size={18} />
                 </button>
               </div>
-              <p className="text-xs text-muted leading-relaxed">
-                Seleciona a categoria mais adequada ou pesquisa qualquer tema na nossa API pública para estrear novos assuntos na plataforma.
+              <p className="text-xs text-mutedDim leading-relaxed">
+                Seleciona a categoria mais adequada ou pesquisa qualquer tema na nossa API pública para estrear novos assuntos na plataforma
               </p>
 
               {/* Input de Pesquisa de Categorias */}
@@ -1689,8 +1834,8 @@ export default function Builder() {
                   type="text"
                   value={catSearchQuery}
                   onChange={(e) => setCatSearchQuery(e.target.value)}
-                  placeholder="Pesquisar categoria ou tema da API (ex: Fórmula 1, Rock, Marvel)…"
-                  className="w-full rounded-xl border border-border bg-surface2 py-2 pl-9 pr-3 text-xs text-white placeholder-mutedDim outline-none focus:border-accent"
+                  placeholder="Pesquisar categoria ou tema da API (ex: Futebol, Rock, Marvel)…"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-[#131422] pl-10 pr-3 text-xs text-white placeholder:text-mutedDim outline-none focus:border-accent transition-colors"
                 />
               </div>
             </div>
@@ -1698,7 +1843,7 @@ export default function Builder() {
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
               {/* Sugestões da API em Tempo Real */}
               {catApiSuggestions.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-accentSoft/20 border border-accent/30">
+                <div className="p-3.5 rounded-2xl bg-[#131422] border border-accent/30">
                   <div className="text-[11px] font-bold text-accent mb-2 flex items-center gap-1.5">
                     <Sparkles size={13} />
                     <span>Sugerido da API Pública (Estrear Novo Tema):</span>
@@ -1727,7 +1872,7 @@ export default function Builder() {
                           setCatSearchQuery("");
                           setCatApiSuggestions([]);
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-accent/40 text-xs font-bold text-white hover:bg-accent hover:text-black transition-all shadow-sm"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090A10] border border-accent/40 text-xs font-bold text-white hover:bg-accent hover:text-black transition-all shadow-sm"
                       >
                         <span>{apiCat.name}</span>
                         <span className="text-[10px] text-accent font-normal">+ Adicionar</span>
@@ -1738,7 +1883,6 @@ export default function Builder() {
               )}
 
               {/* Categorias Disponíveis */}
-              {/* Botão de Criação de Nova Categoria Manual se não houver correspondência exata */}
               {catSearchQuery.trim() &&
                 !categories.some(
                   (c) => (c.name || "").toLowerCase() === catSearchQuery.trim().toLowerCase()
@@ -1771,7 +1915,7 @@ export default function Builder() {
                         setCatSearchQuery("");
                         setCatApiSuggestions([]);
                       }}
-                      className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-accent/60 bg-accent/15 hover:bg-accent hover:text-black transition-all group shadow-glow"
+                      className="w-full flex items-center justify-between p-3.5 rounded-xl border-2 border-accent/60 bg-accent/15 hover:bg-accent hover:text-black transition-all group shadow-glow"
                     >
                       <div className="flex items-center gap-2.5">
                         <FolderPlus size={18} className="text-accent group-hover:text-black transition-colors" />
@@ -1791,7 +1935,7 @@ export default function Builder() {
                   Categorias Disponíveis:
                 </div>
                 {categories.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/10 bg-surface/50 p-4 text-center">
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-[#131422] p-4 text-center">
                     <p className="text-xs text-mutedDim leading-relaxed">
                       Ainda não existem categorias ativas no TierWorld. Escreve no campo acima o nome de qualquer nicho ou tema para o inaugurares nesta Tier List!
                     </p>
@@ -1817,10 +1961,10 @@ export default function Builder() {
                               setManualCategoryOverride(true);
                               setCategoryModalOpen(false);
                             }}
-                            className={`flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all ${
+                            className={`flex items-center justify-between p-3 rounded-xl text-xs font-bold transition-all ${
                               isSelected
                                 ? "bg-accent text-black shadow-glow font-black"
-                                : "border border-border bg-surface2/60 text-muted hover:text-white hover:border-white/20"
+                                : "border border-white/[0.08] bg-[#131422] text-muted hover:text-white hover:border-white/20 hover:bg-[#18192A]"
                             }`}
                           >
                             <span className="truncate">{c.name}</span>
@@ -1852,10 +1996,14 @@ export default function Builder() {
               )}
             </div>
 
-            <div className="border-t border-border p-4 flex justify-end bg-surface2/60">
-              <GhostButton small onClick={() => setCategoryModalOpen(false)}>
+            <div className="border-t border-white/[0.08] p-4 flex justify-end bg-[#0E0F18]">
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="h-9 px-4 rounded-xl border border-white/[0.08] bg-[#131422] text-xs font-semibold text-muted hover:text-white transition-colors"
+              >
                 Concluído
-              </GhostButton>
+              </button>
             </div>
           </div>
         </div>
@@ -1864,30 +2012,30 @@ export default function Builder() {
       {/* MODAL 4: Importação de Texto em Lote */}
       {bulkModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
           onClick={() => setBulkModalOpen(false)}
         >
           <div
-            className="w-full max-w-[480px] rounded-3xl border border-border bg-[#12131a] p-6 shadow-2xl"
+            className="w-full max-w-[480px] rounded-3xl border border-white/[0.1] bg-[#0E0F18] p-6 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-border pb-3.5 mb-4">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5 mb-4">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-teal" />
-                <h3 className="font-display font-bold text-base text-white">
+                <h3 className="font-display font-bold text-base text-white tracking-tight">
                   Importar Itens em Lote
                 </h3>
               </div>
               <button
                 onClick={() => setBulkModalOpen(false)}
-                className="rounded-full p-1.5 text-mutedDim hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
             <p className="text-xs text-mutedDim mb-3 leading-relaxed">
-              Cola nomes separados por quebra de linha ou vírgulas. Todos os cartões serão criados instantaneamente no banco.
+              Cola nomes separados por quebra de linha ou vírgulas. Todos os cartões serão criados instantaneamente na bancada
             </p>
 
             <form onSubmit={handleBulkTextSubmit}>
@@ -1896,14 +2044,18 @@ export default function Builder() {
                 onChange={(e) => setBulkRawText(e.target.value)}
                 placeholder="Exemplo:&#10;Lionel Messi&#10;Cristiano Ronaldo&#10;Kylian Mbappé&#10;Erling Haaland"
                 rows={6}
-                className="w-full rounded-2xl border border-border bg-surface p-3.5 text-xs text-white placeholder-mutedDim outline-none focus:border-accent font-mono mb-4"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#131422] p-3.5 text-xs text-white placeholder:text-mutedDim outline-none focus:border-accent font-mono mb-4 leading-relaxed"
               />
 
-              <div className="flex items-center justify-end gap-2">
-                <GhostButton small onClick={() => setBulkModalOpen(false)}>
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setBulkModalOpen(false)}
+                  className="h-10 px-4 rounded-xl border border-white/[0.08] bg-[#131422] text-[13px] font-semibold text-muted hover:text-white transition-colors"
+                >
                   Cancelar
-                </GhostButton>
-                <PrimaryButton small type="submit" disabled={!bulkRawText.trim()}>
+                </button>
+                <PrimaryButton type="submit" disabled={!bulkRawText.trim()}>
                   Criar Elementos
                 </PrimaryButton>
               </div>

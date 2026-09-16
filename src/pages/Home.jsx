@@ -523,7 +523,7 @@ export default function Home() {
                 <Link
                   key={c.id}
                   to={`/explore?category=${c.id}`}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/[0.08] bg-[#14141F]/80 p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-[#1A1A28] hover:shadow-xl hover:shadow-black/50"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/[0.08] bg-[#131422] p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-[#18192A] hover:shadow-xl hover:shadow-black/50"
                 >
                   {/* Glow ambiente colorido no hover */}
                   <div
@@ -579,7 +579,7 @@ export default function Home() {
         </div>
 
         {/* Card em Destaque: O Nosso Objetivo */}
-        <div className="relative overflow-hidden rounded-[28px] border border-borderStrong bg-gradient-to-br from-[#181824] via-[#12121A] to-[#0D0D12] p-6 sm:p-9 shadow-2xl mb-8 group">
+        <div className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0E0F18] p-6 sm:p-9 shadow-2xl mb-8 group">
           <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="max-w-[720px]">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent mb-2">
@@ -669,7 +669,7 @@ export default function Home() {
           ].map((f) => (
             <div
               key={f.title}
-              className="relative flex flex-col justify-between overflow-hidden rounded-[26px] border border-white/[0.08] bg-[#12121C]/80 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-[#161624] hover:shadow-2xl hover:-translate-y-1.5 group"
+              className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/[0.08] bg-[#131422] p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-[#18192A] hover:shadow-2xl hover:-translate-y-1.5 group"
             >
               {/* Glow sutil ao passar o rato */}
               <div

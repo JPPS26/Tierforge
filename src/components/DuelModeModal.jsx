@@ -140,32 +140,32 @@ export default function DuelModeModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col w-full max-w-2xl rounded-3xl border border-border bg-[#0d0e14] shadow-2xl overflow-hidden"
+        className="relative flex flex-col w-full max-w-2xl rounded-3xl border border-white/[0.1] bg-[#0E0F18] shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Topo */}
-        <div className="flex items-center justify-between border-b border-border/80 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accentSoft text-accent">
+        <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accentSoft border border-accent/30 text-accent shadow-sm">
               <Swords size={18} />
             </div>
             <div>
-              <h3 className="font-display text-base font-bold text-white">
+              <h3 className="font-display text-[17px] font-bold text-white tracking-tight">
                 Modo Duelo 1 vs 1 (Face-Off)
               </h3>
-              <p className="text-xs text-mutedDim">
-                Escolhe o melhor em cada confronto para gerar o ranking Elo automaticamente.
+              <p className="text-[12px] text-mutedDim">
+                Escolhe o vencedor em cada confronto para gerar o ranking Elo em tempo real
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-mutedDim hover:bg-surface2 hover:text-white transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
           >
             <X size={18} />
           </button>
@@ -173,38 +173,41 @@ export default function DuelModeModal({
 
         {/* Corpo do Jogo */}
         {!isFinished && currentPair ? (
-          <div className="p-6 sm:p-8 flex flex-col items-center">
+          <div className="p-6 sm:p-7 flex flex-col items-center">
             {/* Barra de Progresso */}
             <div className="w-full mb-6">
-              <div className="flex items-center justify-between text-xs font-bold text-mutedDim mb-1.5">
-                <span>Duelo {round + 1} de {totalRounds}</span>
-                <span>{Math.round(((round + 1) / totalRounds) * 100)}%</span>
+              <div className="flex items-center justify-between text-xs font-bold text-mutedDim mb-2">
+                <span className="flex items-center gap-1.5 text-accent">
+                  <Sparkles size={13} />
+                  <span>Duelo {round + 1} de {totalRounds}</span>
+                </span>
+                <span className="font-mono text-muted">{Math.round(((round + 1) / totalRounds) * 100)}%</span>
               </div>
-              <div className="h-2 w-full rounded-full bg-surface2 overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[#131422] border border-white/[0.06] overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-accent to-teal transition-all duration-300 rounded-full"
+                  className="h-full bg-gradient-to-r from-accent via-[#9D7BFC] to-teal transition-all duration-300 rounded-full"
                   style={{ width: `${((round + 1) / totalRounds) * 100}%` }}
                 />
               </div>
             </div>
 
             {/* Cartões do Duelo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full relative my-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full relative my-1">
               {/* Opção A */}
               <button
                 type="button"
                 onClick={() => handleVote(currentPair[0], currentPair[1])}
-                className={`group relative flex flex-col items-center justify-center p-6 rounded-3xl border transition-all duration-200 hover:scale-[1.03] text-center ${
+                className={`group relative flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl border transition-all duration-200 hover:scale-[1.02] text-center ${
                   selectedWinner === currentPair[0].id
-                    ? "border-accent bg-accentSoft shadow-glow scale-[1.03]"
-                    : "border-border bg-surface hover:border-accent hover:bg-surface2"
+                    ? "border-accent bg-accentSoft/60 shadow-glow scale-[1.02]"
+                    : "border-white/[0.08] bg-[#131422] hover:border-accent/50 hover:bg-[#18192A]"
                 }`}
               >
-                <span className="absolute top-3 left-3 text-[11px] font-bold text-mutedDim px-2 py-0.5 rounded-lg bg-surface2 group-hover:text-accent">
-                  Opção 1 [Tecla 1]
+                <span className="absolute top-3 left-3 text-[10.5px] font-bold text-mutedDim px-2.5 py-1 rounded-lg bg-black/40 border border-white/[0.06] group-hover:text-accent group-hover:border-accent/30 transition-colors">
+                  [1] Tecla 1 ou ←
                 </span>
 
-                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-surface2 border border-border my-3 flex items-center justify-center">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-black/40 border border-white/[0.08] my-3 flex items-center justify-center shadow-inner">
                   {currentPair[0].imageUrl ? (
                     <img
                       src={currentPair[0].imageUrl}
@@ -221,13 +224,13 @@ export default function DuelModeModal({
                   )}
                 </div>
 
-                <span className="font-display text-base font-bold text-white group-hover:text-accent transition-colors line-clamp-2">
+                <span className="font-display text-[15px] font-bold text-white group-hover:text-accent transition-colors line-clamp-2 mt-1">
                   {currentPair[0].name}
                 </span>
               </button>
 
               {/* Distintivo VS Central */}
-              <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#0d0e14] border-2 border-border items-center justify-center font-display font-black text-accent text-xs shadow-xl pointer-events-none z-10">
+              <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#0E0F18] border-2 border-accent/40 items-center justify-center font-display font-black text-accent text-xs shadow-[0_0_20px_rgba(124,92,255,0.25)] pointer-events-none z-10">
                 VS
               </div>
 
@@ -235,17 +238,17 @@ export default function DuelModeModal({
               <button
                 type="button"
                 onClick={() => handleVote(currentPair[1], currentPair[0])}
-                className={`group relative flex flex-col items-center justify-center p-6 rounded-3xl border transition-all duration-200 hover:scale-[1.03] text-center ${
+                className={`group relative flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl border transition-all duration-200 hover:scale-[1.02] text-center ${
                   selectedWinner === currentPair[1].id
-                    ? "border-accent bg-accentSoft shadow-glow scale-[1.03]"
-                    : "border-border bg-surface hover:border-accent hover:bg-surface2"
+                    ? "border-accent bg-accentSoft/60 shadow-glow scale-[1.02]"
+                    : "border-white/[0.08] bg-[#131422] hover:border-accent/50 hover:bg-[#18192A]"
                 }`}
               >
-                <span className="absolute top-3 right-3 text-[11px] font-bold text-mutedDim px-2 py-0.5 rounded-lg bg-surface2 group-hover:text-accent">
-                  Opção 2 [Tecla 2]
+                <span className="absolute top-3 right-3 text-[10.5px] font-bold text-mutedDim px-2.5 py-1 rounded-lg bg-black/40 border border-white/[0.06] group-hover:text-accent group-hover:border-accent/30 transition-colors">
+                  [2] Tecla 2 ou →
                 </span>
 
-                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-surface2 border border-border my-3 flex items-center justify-center">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-black/40 border border-white/[0.08] my-3 flex items-center justify-center shadow-inner">
                   {currentPair[1].imageUrl ? (
                     <img
                       src={currentPair[1].imageUrl}
@@ -262,42 +265,45 @@ export default function DuelModeModal({
                   )}
                 </div>
 
-                <span className="font-display text-base font-bold text-white group-hover:text-accent transition-colors line-clamp-2">
+                <span className="font-display text-[15px] font-bold text-white group-hover:text-accent transition-colors line-clamp-2 mt-1">
                   {currentPair[1].name}
                 </span>
               </button>
             </div>
 
-            <p className="mt-4 text-[11.5px] text-mutedDim">
-              Dica: podes usar as teclas <kbd className="px-1.5 py-0.5 rounded bg-surface2 border border-border text-white font-mono">1</kbd> ou <kbd className="px-1.5 py-0.5 rounded bg-surface2 border border-border text-white font-mono">←</kbd> para a esquerda, e <kbd className="px-1.5 py-0.5 rounded bg-surface2 border border-border text-white font-mono">2</kbd> ou <kbd className="px-1.5 py-0.5 rounded bg-surface2 border border-border text-white font-mono">→</kbd> para a direita.
+            <p className="mt-4 text-[12px] text-mutedDim text-center">
+              Dica: podes clicar ou usar os atalhos de teclado <kbd className="px-1.5 py-0.5 rounded-md bg-[#131422] border border-white/[0.08] text-white font-mono text-[11px]">1</kbd> / <kbd className="px-1.5 py-0.5 rounded-md bg-[#131422] border border-white/[0.08] text-white font-mono text-[11px]">←</kbd> e <kbd className="px-1.5 py-0.5 rounded-md bg-[#131422] border border-white/[0.08] text-white font-mono text-[11px]">2</kbd> / <kbd className="px-1.5 py-0.5 rounded-md bg-[#131422] border border-white/[0.08] text-white font-mono text-[11px]">→</kbd>
             </p>
           </div>
         ) : (
           /* Ecrã de Resultados Finais */
           <div className="p-6 sm:p-8 flex flex-col items-center text-center">
-            <div className="h-16 w-16 rounded-3xl bg-accentSoft text-accent flex items-center justify-center mb-3 shadow-glow">
-              <Trophy size={32} />
+            <div className="h-14 w-14 rounded-2xl bg-accentSoft border border-accent/30 text-accent flex items-center justify-center mb-3 shadow-glow">
+              <Trophy size={28} />
             </div>
 
-            <h4 className="font-display text-2xl font-black text-white">
+            <h4 className="font-display text-2xl font-black text-white tracking-tight">
               Duelo Concluído!
             </h4>
             <p className="text-xs text-mutedDim max-w-md mt-1 mb-6">
-              Com base nas tuas escolhas nos confrontos, calculámos o ranking Elo e definimos os tiers automáticos.
+              Com base nas tuas decisões nos confrontos diretos, calculámos o ranking Elo e a distribuição ideal para a tua Tier List.
             </p>
 
             {/* Pódio Top 3 */}
             <div className="flex items-end justify-center gap-3 w-full mb-6">
               {sortedItems.slice(0, 3).map((item, idx) => {
-                const heights = ["h-28", "h-20", "h-16"];
-                const badges = ["🥇 1º", "🥈 2º", "🥉 3º"];
+                const badges = ["🥇 1º Lugar", "🥈 2º Lugar", "🥉 3º Lugar"];
                 return (
                   <div
                     key={item.id}
-                    className={`flex flex-col items-center flex-1 max-w-[140px] p-3 rounded-2xl border border-border bg-surface ${idx === 0 ? "border-accent shadow-glow -translate-y-1" : ""}`}
+                    className={`flex flex-col items-center flex-1 max-w-[150px] p-3.5 rounded-2xl border transition-all ${
+                      idx === 0
+                        ? "border-accent/60 bg-[#131422] shadow-[0_0_20px_rgba(124,92,255,0.2)] -translate-y-1"
+                        : "border-white/[0.08] bg-[#131422]"
+                    }`}
                   >
-                    <span className="text-xs font-black text-accent mb-1">{badges[idx]}</span>
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-surface2 mb-1.5">
+                    <span className="text-[11px] font-black text-accent mb-2">{badges[idx]}</span>
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 border border-white/[0.08] mb-2 shadow-inner">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
@@ -307,7 +313,7 @@ export default function DuelModeModal({
                       )}
                     </div>
                     <span className="font-bold text-xs text-white truncate w-full">{item.name}</span>
-                    <span className="text-[10px] text-mutedDim">{eloRatings[item.id] || 1000} pts</span>
+                    <span className="text-[10.5px] font-mono text-mutedDim mt-0.5">{eloRatings[item.id] || 1000} pts</span>
                   </div>
                 );
               })}
@@ -318,7 +324,7 @@ export default function DuelModeModal({
               <button
                 type="button"
                 onClick={initDuel}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl border border-border bg-surface text-xs font-bold text-muted hover:text-white hover:bg-surface2 transition-all"
+                className="flex-1 h-10 inline-flex items-center justify-center gap-2 px-4 rounded-xl border border-white/[0.08] bg-[#131422] text-[13px] font-bold text-muted hover:text-white hover:bg-[#18192A] transition-all"
               >
                 <RotateCcw size={14} />
                 <span>Repetir Duelo</span>
@@ -327,7 +333,7 @@ export default function DuelModeModal({
               <button
                 type="button"
                 onClick={handleApply}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-accent text-xs font-bold text-black hover:opacity-90 transition-all shadow-glow"
+                className="flex-1 h-10 inline-flex items-center justify-center gap-2 px-4 rounded-xl bg-accent text-[13px] font-bold text-black hover:opacity-90 transition-all shadow-glow"
               >
                 <Sparkles size={14} />
                 <span>Aplicar à Tier List</span>

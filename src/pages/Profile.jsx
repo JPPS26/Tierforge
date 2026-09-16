@@ -445,7 +445,7 @@ export default function Profile() {
          ========================================================= */}
       <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* KPI 1: Tier Lists Criadas */}
-        <div className="glass-panel group rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 sm:p-5 transition-all hover:border-white/20 hover:bg-[#18192A] hover:-translate-y-0.5 shadow-sm group">
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider">Tier Lists</span>
             <Layers size={16} className="text-accent group-hover:scale-110 transition-transform" />
@@ -465,7 +465,7 @@ export default function Profile() {
             setFollowersModalTab("followers");
             setFollowersModalOpen(true);
           }}
-          className="glass-panel group text-left rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5 cursor-pointer"
+          className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 sm:p-5 transition-all hover:border-white/20 hover:bg-[#18192A] hover:-translate-y-0.5 shadow-sm group text-left cursor-pointer"
         >
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-accent transition-colors">
@@ -488,7 +488,7 @@ export default function Profile() {
             setFollowersModalTab("following");
             setFollowersModalOpen(true);
           }}
-          className="glass-panel group text-left rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5 cursor-pointer"
+          className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 sm:p-5 transition-all hover:border-white/20 hover:bg-[#18192A] hover:-translate-y-0.5 shadow-sm group text-left cursor-pointer"
         >
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-accent transition-colors">
@@ -505,7 +505,7 @@ export default function Profile() {
         </button>
 
         {/* KPI 4: Votos Recebidos */}
-        <div className="glass-panel group rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 sm:p-5 transition-all hover:border-white/20 hover:bg-[#18192A] hover:-translate-y-0.5 shadow-sm group">
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider">Votos</span>
             <Heart size={16} className="text-rose-400 group-hover:scale-110 transition-transform" />
@@ -519,7 +519,7 @@ export default function Profile() {
         </div>
 
         {/* KPI 5: Visualizações Totais */}
-        <div className="glass-panel group rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 sm:p-5 transition-all hover:border-white/20 hover:bg-[#18192A] hover:-translate-y-0.5 shadow-sm group">
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider">Vistas</span>
             <Eye size={16} className="text-sky-400 group-hover:scale-110 transition-transform" />
@@ -533,7 +533,7 @@ export default function Profile() {
         </div>
 
         {/* KPI 6: Creator XP */}
-        <div className="glass-panel group rounded-3xl p-4 sm:p-5 transition-all hover:border-accent/40 hover:-translate-y-0.5 bg-gradient-to-b from-accentSoft/40 to-transparent">
+        <div className="rounded-2xl border border-accent/30 bg-gradient-to-b from-[#131422] to-[#18192A] p-4 sm:p-5 transition-all hover:border-accent/50 hover:-translate-y-0.5 shadow-sm group">
           <div className="mb-2 flex items-center justify-between text-mutedDim">
             <span className="text-[11px] font-bold uppercase tracking-wider text-accent">Score XP</span>
             <Zap size={16} className="text-accent animate-pulse" />

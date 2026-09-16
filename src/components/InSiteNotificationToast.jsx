@@ -98,7 +98,7 @@ export default function InSiteNotificationToast() {
               removeToast(toast.id);
             }
           }}
-          className={`pointer-events-auto flex items-start gap-3.5 p-3.5 rounded-2xl border border-borderStrong bg-surface/95 shadow-2xl backdrop-blur-xl transition-all duration-300 animate-slideUp cursor-pointer hover:border-accent/60 group`}
+          className="pointer-events-auto flex items-start gap-3.5 p-3.5 rounded-2xl border border-white/[0.12] bg-[#0E0F18]/95 shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_20px_rgba(124,92,255,0.15)] backdrop-blur-xl transition-all duration-300 animate-slideUp cursor-pointer hover:border-accent/60 group"
         >
           {/* Avatar ou Ícone */}
           <div className="relative flex-shrink-0">
@@ -106,12 +106,12 @@ export default function InSiteNotificationToast() {
               <img
                 src={toast.actorAvatar}
                 alt=""
-                className="w-10 h-10 rounded-xl object-cover border border-border"
+                className="w-10 h-10 rounded-xl object-cover border border-white/[0.08]"
               />
             ) : (
               <Avatar name={toast.title} size={40} />
             )}
-            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface2 border border-borderStrong shadow-sm">
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#131422] border border-white/[0.1] shadow-sm">
               {getIcon(toast.type)}
             </span>
           </div>
@@ -136,7 +136,7 @@ export default function InSiteNotificationToast() {
               e.stopPropagation();
               removeToast(toast.id);
             }}
-            className="flex-shrink-0 text-mutedDim hover:text-white p-1 rounded-lg hover:bg-surface2 transition-colors"
+            className="flex-shrink-0 text-mutedDim hover:text-white p-1 rounded-lg hover:bg-white/[0.06] transition-colors"
           >
             <X size={14} />
           </button>

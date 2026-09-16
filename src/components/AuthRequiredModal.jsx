@@ -38,32 +38,32 @@ export default function AuthRequiredModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[440px] rounded-3xl border border-borderStrong bg-[#111118] p-6 sm:p-7 shadow-2xl"
+        className="relative w-full max-w-[440px] rounded-3xl border border-white/[0.1] bg-[#0E0F18] p-6 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(124,92,255,0.12)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Botão Fechar */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-xl p-1.5 text-mutedDim hover:bg-surface hover:text-white transition-colors"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-white/[0.06] hover:text-white transition-colors"
         >
           <X size={18} />
         </button>
 
         {/* Ícone de Destaque */}
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
-          <Lock size={26} />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft border border-accent/30 text-accent shadow-sm">
+          <Lock size={22} />
         </div>
 
         {/* Título e Explicação */}
-        <h3 className="mb-2 font-display text-[22px] font-black text-white">
+        <h3 className="mb-2 font-display text-[20px] font-bold text-white tracking-tight">
           {title}
         </h3>
-        <p className="mb-6 text-[13.5px] leading-relaxed text-muted">
+        <p className="mb-5 text-[13px] leading-relaxed text-muted">
           {description}
         </p>
 
@@ -75,12 +75,12 @@ export default function AuthRequiredModal({
         )}
 
         {/* Benefícios com Conta */}
-        <div className="mb-6 rounded-2xl border border-border/80 bg-surface/50 p-3.5 flex flex-col gap-2 text-xs text-mutedDim">
-          <div className="flex items-center gap-2 text-text font-semibold">
-            <Sparkles size={13} className="text-accent" />
+        <div className="mb-5 rounded-2xl border border-white/[0.08] bg-[#131422] p-4 flex flex-col gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-text font-bold">
+            <Sparkles size={14} className="text-accent" />
             <span>Com a tua conta gratuita podes:</span>
           </div>
-          <ul className="list-disc pl-5 space-y-1 text-muted">
+          <ul className="list-disc pl-5 space-y-1 text-muted text-[12px] leading-relaxed">
             <li>Criar e personalizar as tuas próprias Tier Lists</li>
             <li>Dar gostos e votar nos rankings da comunidade</li>
             <li>Comentar e responder às discussões</li>
@@ -94,7 +94,7 @@ export default function AuthRequiredModal({
             type="button"
             onClick={handleGoogleLogin}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-5 py-3 text-[14px] font-bold text-[#0A0A0D] shadow-glow hover:bg-white/90 active:scale-[0.99] transition-all disabled:opacity-50"
+            className="flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-white px-5 text-[13.5px] font-bold text-[#0A0A0D] shadow-glow hover:bg-white/95 active:scale-[0.99] transition-all disabled:opacity-50"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -117,9 +117,13 @@ export default function AuthRequiredModal({
             <span>{busy ? "A iniciar sessão…" : "Entrar com Google"}</span>
           </button>
 
-          <GhostButton onClick={onClose} className="w-full text-center text-xs text-mutedDim">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-full items-center justify-center rounded-xl border border-white/[0.08] bg-[#131422] hover:bg-[#18192A] text-[13px] font-semibold text-muted hover:text-white transition-colors"
+          >
             Continuar apenas a visualizar
-          </GhostButton>
+          </button>
         </div>
       </div>
     </div>
