@@ -382,16 +382,16 @@ export default function Leaderboard() {
           )}
 
           {/* Barra de Pesquisa e Filtros */}
-          <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             {/* Campo de Pesquisa */}
             <div className="relative flex-1 max-w-md">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Pesquisar criador por nome ou #handle..."
-                className="w-full rounded-2xl border border-white/10 bg-[#14141E]/90 pl-10 pr-9 py-2.5 text-[13.5px] text-white placeholder-mutedDim outline-none transition-all focus:border-accent focus:bg-[#181826] focus:ring-2 focus:ring-accent/20"
+                className="h-10 w-full rounded-xl border border-white/[0.08] bg-[#131422] pl-10 pr-9 text-[13px] text-white placeholder:text-mutedDim outline-none transition-all focus:border-accent focus:bg-[#18192A]"
               />
               {searchQuery && (
                 <button
@@ -414,10 +414,10 @@ export default function Leaderboard() {
                 <button
                   key={f.id}
                   onClick={() => setFilterTier(f.id)}
-                  className={`rounded-xl px-3.5 py-2 text-[12px] font-bold transition-all whitespace-nowrap border ${
+                  className={`h-10 rounded-xl px-4 text-[12.5px] font-bold transition-all whitespace-nowrap border ${
                     filterTier === f.id
                       ? "border-accent bg-accent/20 text-white shadow-sm"
-                      : "border-white/[0.06] bg-surface/60 text-muted hover:border-white/20 hover:text-white"
+                      : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#18192A]"
                   }`}
                 >
                   {f.label}
@@ -428,12 +428,12 @@ export default function Leaderboard() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-xl border border-white/10 bg-[#14141E] px-3 py-2 text-[12px] font-bold text-muted outline-none hover:border-white/20 transition-all cursor-pointer"
+                className="h-10 rounded-xl border border-white/[0.08] bg-[#131422] px-3.5 text-[12.5px] font-bold text-muted outline-none hover:border-white/20 hover:text-white transition-all cursor-pointer"
               >
-                <option value="xp">Ordenar: Maior XP</option>
-                <option value="votes">Ordenar: Mais Votos</option>
-                <option value="lists">Ordenar: Mais Listas</option>
-                <option value="followers">Ordenar: Mais Seguidores</option>
+                <option value="xp" className="bg-[#131422]">Ordenar: Maior XP</option>
+                <option value="votes" className="bg-[#131422]">Ordenar: Mais Votos</option>
+                <option value="lists" className="bg-[#131422]">Ordenar: Mais Listas</option>
+                <option value="followers" className="bg-[#131422]">Ordenar: Mais Seguidores</option>
               </select>
             </div>
           </div>

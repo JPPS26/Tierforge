@@ -922,7 +922,7 @@ export default function Builder() {
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-[13px] font-bold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all shadow-sm disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 text-[13px] font-bold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
               title="Eliminar permanentemente esta Tier List"
             >
               <Trash2 size={14} />
@@ -934,10 +934,10 @@ export default function Builder() {
           <button
             type="button"
             onClick={() => setExportModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-colors hover:border-accent shadow-sm"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
             title="Exportar Card de Partilha em Imagem (PNG)"
           >
-            <Download size={14} className="text-teal" />
+            <Download size={15} className="text-teal" />
             <span>Exportar Card</span>
           </button>
 
@@ -946,28 +946,38 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setShareModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-colors"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
               >
                 <Share2 size={14} className="text-accent" />
                 <span>{t("tierListView.share")}</span>
               </button>
-              <Link to={`/tier-list/${savedId}`}>
-                <GhostButton small icon={ExternalLink}>
-                  {t("builder.previewList")}
-                </GhostButton>
+              <Link
+                to={`/tier-list/${savedId}`}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
+              >
+                <ExternalLink size={14} className="text-mutedDim" />
+                <span>{t("builder.previewList")}</span>
               </Link>
             </>
           )}
 
-          <PrimaryButton small icon={Check} onClick={handlePublish} disabled={saving}>
-            {saving
-              ? isEditing
-                ? "A guardar…"
-                : t("builder.publishing")
-              : isEditing
-              ? "Guardar Alterações"
-              : t("builder.publish")}
-          </PrimaryButton>
+          <button
+            type="button"
+            onClick={handlePublish}
+            disabled={saving}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-5 text-[13px] font-bold text-white shadow-[0_0_18px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_24px_rgba(124,92,255,0.55)] transition-all active:scale-95 border border-white/15 disabled:opacity-50"
+          >
+            <Check size={16} />
+            <span>
+              {saving
+                ? isEditing
+                  ? "A guardar…"
+                  : t("builder.publishing")
+                : isEditing
+                ? "Guardar Alterações"
+                : t("builder.publish")}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -989,18 +999,18 @@ export default function Builder() {
       {/* =========================================================
           2. STUDIO META RIBBON: VISIBILIDADE, CATEGORIA & FERRAMENTAS
          ========================================================= */}
-      <div className="mb-8 rounded-3xl border border-border bg-[#101016] p-4 sm:p-5 shadow-xl backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-8 rounded-2xl border border-white/[0.08] bg-[#0F1017] p-3.5 sm:p-4 shadow-xl backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           {/* Lado Esquerdo: Visibilidade e Categoria */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             {/* Segmented Control de Visibilidade */}
-            <div className="flex items-center rounded-2xl border border-border bg-surface2/90 p-1">
+            <div className="flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#131422] p-1">
               <button
                 type="button"
                 onClick={() => setVisibility("public")}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all ${
                   visibility === "public"
-                    ? "bg-accent text-white shadow-glow"
+                    ? "bg-accent text-white shadow-sm font-black"
                     : "text-muted hover:text-white"
                 }`}
                 title={t("builder.visibilityPublicDesc")}
@@ -1012,9 +1022,9 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setVisibility("unlisted")}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all ${
                   visibility === "unlisted"
-                    ? "bg-accent text-white shadow-glow"
+                    ? "bg-accent text-white shadow-sm font-black"
                     : "text-muted hover:text-white"
                 }`}
                 title={t("builder.visibilityUnlistedDesc")}
@@ -1026,9 +1036,9 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setVisibility("private")}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all ${
                   visibility === "private"
-                    ? "bg-accent text-white shadow-glow"
+                    ? "bg-accent text-white shadow-sm font-black"
                     : "text-muted hover:text-white"
                 }`}
                 title={t("builder.visibilityPrivateDesc")}
@@ -1042,7 +1052,7 @@ export default function Builder() {
             <button
               type="button"
               onClick={() => setCategoryModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accentSoft/60 px-3.5 py-1.5 text-xs font-bold text-accent hover:border-accent hover:bg-accentSoft transition-all shadow-sm group"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3.5 text-xs font-bold text-accent hover:border-accent hover:bg-accent/20 transition-all shadow-sm group"
             >
               <Sparkles size={13} className="text-accent animate-pulse" />
               <span>{currentCategoryObj?.name || (category ? getCategoryDisplayName(category) : "Escolher Categoria")}</span>
@@ -1058,11 +1068,11 @@ export default function Builder() {
           {/* Lado Direito: Modos de Exibição, Temas de Cores e Duelos */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Modo de Exibição */}
-            <div className="flex items-center rounded-2xl border border-border bg-surface2/90 p-1">
+            <div className="flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#131422] p-1">
               <button
                 type="button"
                 onClick={() => setDisplayMode("both")}
-                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-bold transition-all ${
                   displayMode === "both"
                     ? "bg-white text-black font-black shadow-sm"
                     : "text-muted hover:text-white"
@@ -1075,7 +1085,7 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setDisplayMode("image")}
-                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-bold transition-all ${
                   displayMode === "image"
                     ? "bg-white text-black font-black shadow-sm"
                     : "text-muted hover:text-white"
@@ -1088,7 +1098,7 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setDisplayMode("text")}
-                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-bold transition-all ${
                   displayMode === "text"
                     ? "bg-white text-black font-black shadow-sm"
                     : "text-muted hover:text-white"
@@ -1105,14 +1115,14 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface2/80 px-3 py-2 text-xs font-bold text-muted hover:text-white hover:border-accent/50 transition-all"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-3.5 text-xs font-bold text-muted hover:text-white hover:border-white/20 transition-all active:scale-95"
               >
                 <Palette size={13} className="text-accent" />
                 <span>Temas</span>
               </button>
 
               {themeMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 z-40 w-52 rounded-2xl border border-border bg-[#13141c] p-2 shadow-2xl animate-fade-in">
+                <div className="absolute right-0 top-full mt-2 z-40 w-52 rounded-2xl border border-white/[0.1] bg-[#0E0F18] p-2 shadow-2xl animate-fade-in">
                   <div className="px-2.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wider text-mutedDim">
                     Paleta dos Níveis:
                   </div>
@@ -1121,7 +1131,7 @@ export default function Builder() {
                       key={key}
                       type="button"
                       onClick={() => applyTheme(key)}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold text-muted hover:text-white hover:bg-surface2 transition-colors"
+                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold text-muted hover:text-white hover:bg-[#131422] transition-colors"
                     >
                       <span>{preset.name}</span>
                       <div className="flex items-center gap-1">
@@ -1140,7 +1150,7 @@ export default function Builder() {
               type="button"
               onClick={() => setDuelModalOpen(true)}
               disabled={items.length < 2}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-accent/40 bg-accentSoft/60 px-3.5 py-2 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40 disabled:pointer-events-none"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3.5 text-xs font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
               title={items.length < 2 ? "Adiciona pelo menos 2 elementos para iniciar duelos" : "Ordenar por confrontos diretos 1 vs 1"}
             >
               <Swords size={13} />
@@ -1308,7 +1318,7 @@ export default function Builder() {
             <button
               type="button"
               onClick={() => setBulkModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface2 px-3 py-2 text-xs font-bold text-muted hover:text-white hover:border-teal/50 transition-colors"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#131422] px-3 text-[12px] font-bold text-muted hover:text-white hover:border-teal/50 hover:bg-[#18192A] transition-colors"
             >
               <FileText size={13} className="text-teal" />
               <span>Texto em Lote</span>
@@ -1319,10 +1329,10 @@ export default function Builder() {
               <button
                 type="button"
                 onClick={handleClearBench}
-                className="rounded-xl p-2 text-mutedDim transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-400 transition-colors hover:bg-rose-500/20 hover:text-rose-300"
                 title={t("builder.actions.clearAll")}
               >
-                <Trash2 size={16} />
+                <Trash2 size={15} />
               </button>
             )}
           </div>
@@ -1331,13 +1341,13 @@ export default function Builder() {
         {/* Barra de Filtro Rápido dentro da bancada se tiver muitos itens */}
         {items.length > 8 && (
           <div className="mb-4 relative max-w-sm">
-            <Search size={13} className="absolute left-3 top-2.5 text-mutedDim" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
             <input
               type="text"
               value={benchFilter}
               onChange={(e) => setBenchFilter(e.target.value)}
               placeholder="Filtrar itens da bancada…"
-              className="w-full rounded-xl border border-border bg-surface2/60 py-1.5 pl-8 pr-3 text-xs text-white placeholder-mutedDim outline-none focus:border-accent"
+              className="h-8 w-full rounded-lg border border-white/[0.08] bg-[#131422] pl-8 pr-3 text-xs text-white placeholder:text-mutedDim outline-none focus:border-accent transition-all"
             />
           </div>
         )}

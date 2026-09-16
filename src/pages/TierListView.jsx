@@ -383,9 +383,8 @@ export default function TierListView() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Fazer a Minha Versão (Remix Template) */}
-          <PrimaryButton
-            small
-            icon={Sparkles}
+          <button
+            type="button"
             onClick={() => {
               if (!user) {
                 setAuthModalConfig({
@@ -397,18 +396,20 @@ export default function TierListView() {
               }
               navigate(`/create?remix=${tierList.id}`);
             }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-[0_0_18px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_24px_rgba(124,92,255,0.55)] transition-all active:scale-95 border border-white/15"
           >
-            Fazer a Minha Versão
-          </PrimaryButton>
+            <Sparkles size={15} />
+            <span>Fazer a Minha Versão</span>
+          </button>
 
           {/* Modo Duelo 1 vs 1 */}
           <button
             type="button"
             onClick={() => setDuelOpen(true)}
             disabled={items.length < 2}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accentSoft px-3.5 py-2 text-[13px] font-bold text-accent hover:bg-accent hover:text-black transition-all shadow-sm disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-4 text-[13px] font-bold text-[#C2B5FF] hover:bg-accent/20 hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
           >
-            <Swords size={14} />
+            <Swords size={15} className="text-accent" />
             <span>Duelo 1 vs 1</span>
           </button>
 
@@ -416,9 +417,9 @@ export default function TierListView() {
           <button
             type="button"
             onClick={() => setExportOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
           >
-            <Download size={14} className="text-teal" />
+            <Download size={15} className="text-teal" />
             <span>Exportar</span>
           </button>
 
@@ -426,9 +427,9 @@ export default function TierListView() {
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
           >
-            <Share2 size={14} className="text-accent" />
+            <Share2 size={15} className="text-accent" />
             <span>{t("tierListView.share")}</span>
           </button>
 
@@ -438,7 +439,7 @@ export default function TierListView() {
               <button
                 type="button"
                 onClick={() => navigate(`/edit/${tierList.id}`)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text hover:bg-surface2 transition-all hover:border-accent shadow-sm"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
                 title="Editar esta Tier List"
               >
                 <Edit2 size={14} className="text-accent" />
@@ -449,7 +450,7 @@ export default function TierListView() {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-[13px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-sm disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 text-[13px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                 title="Eliminar permanentemente esta Tier List"
               >
                 <Trash2 size={14} />
@@ -543,10 +544,10 @@ export default function TierListView() {
             <button
               type="button"
               onClick={() => handleVote(1)}
-              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition-all ${
+              className={`flex h-10 items-center gap-2 rounded-xl border px-4 text-[13px] font-bold transition-all active:scale-95 ${
                 userVote === 1
-                  ? "border-teal bg-[rgba(49,216,168,0.2)] text-teal shadow-glow"
-                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-text"
+                  ? "border-[#00E5A3] bg-[#00E5A3]/15 text-[#00E5A3] shadow-[0_0_16px_rgba(0,229,163,0.3)]"
+                  : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-text hover:bg-[#18192A]"
               }`}
             >
               <ThumbsUp size={15} />
@@ -556,10 +557,10 @@ export default function TierListView() {
             <button
               type="button"
               onClick={() => handleVote(-1)}
-              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition-all ${
+              className={`flex h-10 items-center gap-2 rounded-xl border px-4 text-[13px] font-bold transition-all active:scale-95 ${
                 userVote === -1
-                  ? "border-[#FF5470] bg-[rgba(255,84,112,0.2)] text-[#FF5470] shadow-glow"
-                  : "border-border bg-surface text-muted hover:border-borderStrong hover:text-text"
+                  ? "border-[#FF5470] bg-[#FF5470]/15 text-[#FF5470] shadow-[0_0_16px_rgba(255,84,112,0.3)]"
+                  : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-text hover:bg-[#18192A]"
               }`}
             >
               <ThumbsDown size={15} />
@@ -671,9 +672,8 @@ export default function TierListView() {
       </div>
 
       {/* Secção de Comentários */}
-      {/* Secção de Comentários */}
       <div className="mx-auto max-w-[840px]">
-        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+        <div className="mb-6 flex items-center justify-between border-b border-white/[0.08] pb-4">
           <h3 className="font-display text-[20px] font-bold text-white flex items-center gap-2">
             <MessageCircle size={20} className="text-accent" />
             <span>
@@ -686,7 +686,7 @@ export default function TierListView() {
 
         {/* Formulário Principal de Comentário */}
         {!user ? (
-          <div className="mb-8 rounded-3xl border border-border bg-surface/70 p-6 sm:p-8 text-center backdrop-blur-sm">
+          <div className="mb-8 rounded-2xl border border-white/[0.08] bg-[#131422] p-6 sm:p-8 text-center backdrop-blur-sm">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accentSoft text-accent shadow-inner">
               <MessageCircle size={22} />
             </div>
@@ -734,7 +734,7 @@ export default function TierListView() {
                   }}
                   placeholder="Escreve a tua opinião… Podes mencionar criadores com @handle"
                   rows={3}
-                  className="w-full rounded-2xl border border-border bg-surface p-3.5 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#131422] p-3.5 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
                 />
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[11px] text-mutedDim">
@@ -752,7 +752,7 @@ export default function TierListView() {
         {/* Lista de Comentários */}
         <div className="flex flex-col gap-4">
           {comments.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border py-10 text-center text-[13.5px] text-muted">
+            <div className="rounded-2xl border border-dashed border-white/[0.1] bg-[#131422]/50 py-10 text-center text-[13.5px] text-muted">
               <MessageCircle size={28} className="mx-auto mb-2 opacity-30 text-muted" />
               <p>{t("tierListView.emptyComments")}</p>
             </div>
@@ -770,7 +770,7 @@ export default function TierListView() {
               return (
                 <div
                   key={c.id}
-                  className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-borderStrong"
+                  className="rounded-2xl border border-white/[0.08] bg-[#131422] p-4 transition-colors hover:border-white/20"
                 >
                   {/* Cabeçalho do Comentário */}
                   <div className="mb-2 flex items-center justify-between">
@@ -941,7 +941,7 @@ export default function TierListView() {
                     {replyingTo === c.id && (
                       <form
                         onSubmit={(e) => handleAddReplySubmit(c.id, e)}
-                        className="mt-3 rounded-xl border border-border bg-surface2/60 p-3 animate-fadeIn"
+                        className="mt-3 rounded-xl border border-white/[0.08] bg-[#0E0F18] p-3 animate-fadeIn"
                       >
                         {replyError && (
                           <div className="mb-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-400">
@@ -957,7 +957,7 @@ export default function TierListView() {
                           }}
                           placeholder="Escreve a tua resposta… Podes mencionar com @handle"
                           rows={2}
-                          className="w-full rounded-xl border border-border bg-surface p-2.5 text-[13px] text-text outline-none focus:border-accent"
+                          className="w-full rounded-xl border border-white/[0.08] bg-[#131422] p-2.5 text-[13px] text-text outline-none focus:border-accent"
                           autoFocus
                         />
                         <div className="mt-2 flex items-center justify-end gap-2">

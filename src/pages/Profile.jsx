@@ -358,7 +358,7 @@ export default function Profile() {
             <button
               type="button"
               onClick={handleShareProfile}
-              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface2/80 px-4 py-2.5 text-[13px] font-bold text-text hover:bg-surface2 hover:border-accent/50 hover:text-white transition-all shadow-sm"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
             >
               {copiedLink ? (
                 <>
@@ -378,25 +378,27 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface2/80 px-4 py-2.5 text-[13px] font-bold text-text hover:bg-surface2 hover:border-accent/50 hover:text-white transition-all shadow-sm"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#131422] px-4 text-[13px] font-bold text-text hover:bg-[#18192A] hover:border-white/20 hover:text-white transition-all shadow-sm active:scale-95"
                 >
                   <Settings size={15} className="text-mutedDim" />
                   <span>{t("profile.editProfile")}</span>
                 </button>
 
-                <Link to="/create">
-                  <PrimaryButton small icon={Plus}>
-                    {t("nav.create")}
-                  </PrimaryButton>
+                <Link
+                  to="/create"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-[0_0_18px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_24px_rgba(124,92,255,0.55)] transition-all active:scale-95 border border-white/15"
+                >
+                  <Plus size={16} />
+                  <span>{t("nav.create")}</span>
                 </Link>
               </>
             ) : (
               <button
                 type="button"
                 onClick={handleFollowToggle}
-                className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-[13px] font-bold transition-all shadow-md active:scale-95 ${
+                className={`inline-flex h-10 items-center gap-2 rounded-xl px-5 text-[13px] font-bold transition-all shadow-md active:scale-95 ${
                   isFollowing
-                    ? "border border-border bg-surface text-muted hover:border-red-500/40 hover:text-red-400"
+                    ? "border border-white/[0.08] bg-[#131422] text-muted hover:border-red-500/40 hover:text-red-400 hover:bg-[#18192A]"
                     : "bg-accent text-white hover:bg-accent/90 shadow-glow"
                 }`}
               >
@@ -585,7 +587,7 @@ export default function Profile() {
       {/* =========================================================
           4. ABAS E FERRAMENTAS DE FILTRAGEM DE TIER LISTS
          ========================================================= */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
         {/* Segmented Control de Abas */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
           {[
@@ -601,16 +603,16 @@ export default function Profile() {
                 key={item.id}
                 type="button"
                 onClick={() => setTab(item.id)}
-                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-[13px] font-bold transition-all ${
+                className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-bold transition-all ${
                   isActive
-                    ? "bg-white text-black shadow-glow font-black"
-                    : "border border-border bg-surface2/60 text-muted hover:text-white hover:border-white/20"
+                    ? "bg-white text-black shadow-sm font-black"
+                    : "border border-white/[0.08] bg-[#131422] text-muted hover:text-white hover:border-white/20 hover:bg-[#18192A]"
                 }`}
               >
                 <span>{item.label}</span>
                 <span
-                  className={`rounded-full px-2 py-0.2 text-[10.5px] font-extrabold ${
-                    isActive ? "bg-black/15 text-black" : "bg-surface text-mutedDim"
+                  className={`rounded-full px-2 py-0.5 text-[10.5px] font-extrabold ${
+                    isActive ? "bg-black/15 text-black" : "bg-white/[0.06] text-mutedDim"
                   }`}
                 >
                   {item.count}
@@ -625,28 +627,28 @@ export default function Profile() {
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Input de Pesquisa Rápida */}
             <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-              <Search size={14} className="absolute left-3 top-3 text-mutedDim" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mutedDim pointer-events-none" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Filtrar tier lists…"
-                className="w-full rounded-xl border border-border bg-surface2/80 py-2 pl-8 pr-3 text-xs text-white placeholder-mutedDim outline-none focus:border-accent transition-colors"
+                className="h-10 w-full rounded-xl border border-white/[0.08] bg-[#131422] pl-8 pr-3 text-[12.5px] text-white placeholder:text-mutedDim outline-none focus:border-accent transition-all"
               />
             </div>
 
             {/* Select de Ordenação */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-border bg-surface2/80 px-2.5 py-1.5 text-xs text-muted">
+            <div className="flex h-10 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#131422] px-3 text-xs text-muted">
               <SlidersHorizontal size={13} className="text-mutedDim" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-transparent font-bold text-white outline-none cursor-pointer"
               >
-                <option value="recent" className="bg-[#12131a] text-white">Mais Recentes</option>
-                <option value="votes" className="bg-[#12131a] text-white">Mais Votadas</option>
-                <option value="views" className="bg-[#12131a] text-white">Mais Vistas</option>
-                <option value="alpha" className="bg-[#12131a] text-white">Nome (A - Z)</option>
+                <option value="recent" className="bg-[#131422] text-white">Mais Recentes</option>
+                <option value="votes" className="bg-[#131422] text-white">Mais Votadas</option>
+                <option value="views" className="bg-[#131422] text-white">Mais Vistas</option>
+                <option value="alpha" className="bg-[#131422] text-white">Nome (A - Z)</option>
               </select>
             </div>
           </div>

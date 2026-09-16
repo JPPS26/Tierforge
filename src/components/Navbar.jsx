@@ -548,7 +548,7 @@ export default function Navbar() {
 
         {/* Barra de Pesquisa Expansível (Mobile / Tablet) */}
         {mobileSearchOpen && (
-          <div className="border-t border-border/70 bg-[#0C0D14]/95 p-3 backdrop-blur-xl lg:hidden animate-fadeIn">
+          <div className="border-t border-white/[0.08] bg-[#0E0F18]/95 p-3 backdrop-blur-xl lg:hidden animate-fadeIn">
             <div className="relative flex items-center">
               <Search size={15} className="pointer-events-none absolute left-3.5 text-mutedDim" />
               <input
@@ -557,7 +557,7 @@ export default function Navbar() {
                 onKeyDown={handleSearchSubmit}
                 placeholder={t("nav.searchPlaceholder")}
                 autoFocus
-                className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-9 text-[13px] text-text outline-none focus:border-accent"
+                className="h-10 w-full rounded-xl border border-white/[0.08] bg-[#131422] pl-9 pr-9 text-[13px] text-white placeholder:text-mutedDim outline-none focus:border-accent focus:bg-[#18192A] transition-all"
               />
               {q && (
                 <button
