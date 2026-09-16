@@ -147,21 +147,25 @@ async function hydrateFromIndexedDb() {
 
 function purgeSeedData() {
   try {
-    const rawLists = localStorage.getItem(STORAGE_KEY_TIERLISTS);
+    const rawLists = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY_TIERLISTS) : null;
     if (rawLists) {
       const parsed = JSON.parse(rawLists);
-      const cleanLists = parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id));
-      if (cleanLists.length !== parsed.length) {
-        localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(cleanLists));
+      if (Array.isArray(parsed)) {
+        const cleanLists = parsed.filter((l) => !SEED_TIERLIST_IDS.has(l.id));
+        if (cleanLists.length !== parsed.length) {
+          localStorage.setItem(STORAGE_KEY_TIERLISTS, JSON.stringify(cleanLists));
+        }
       }
     }
 
-    const rawUsers = localStorage.getItem(STORAGE_KEY_USERS);
+    const rawUsers = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY_USERS) : null;
     if (rawUsers) {
       const parsedUsers = JSON.parse(rawUsers);
-      const cleanUsers = parsedUsers.filter((u) => !SEED_USER_UIDS.has(u.uid));
-      if (cleanUsers.length !== parsedUsers.length) {
-        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(cleanUsers));
+      if (Array.isArray(parsedUsers)) {
+        const cleanUsers = parsedUsers.filter((u) => !SEED_USER_UIDS.has(u.uid));
+        if (cleanUsers.length !== parsedUsers.length) {
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(cleanUsers));
+        }
       }
     }
   } catch (e) {
@@ -1116,12 +1120,16 @@ export function getActiveCategories() {
 
 export function getGuestClientId() {
   if (typeof window === "undefined") return "guest_user";
-  let guestId = localStorage.getItem("tierforge_guest_client_id");
-  if (!guestId) {
-    guestId = `guest_${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem("tierforge_guest_client_id", guestId);
+  try {
+    let guestId = localStorage.getItem("tierforge_guest_client_id");
+    if (!guestId) {
+      guestId = `guest_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem("tierforge_guest_client_id", guestId);
+    }
+    return guestId;
+  } catch {
+    return "guest_user";
   }
-  return guestId;
 }
 
 // Categorias populares calculadas estritamente com base na atividade real de listas e votos
@@ -1659,9 +1667,16 @@ export function calculateCommunityConsensus(templateId) {
 
 // Verifica se o utilizador tem permissões de edição/eliminação sobre uma Tier List
 export function canEditTierList(tierList, currentUid = null) {
-  if (!tierList || !currentUid) return false;
+  if (!tierList) return false;
   // Apenas o criador autenticado com a sua respetiva conta pode editar/eliminar
-  if (tierList.ownerId === currentUid) return true;
+  if (currentUid && tierList.ownerId === currentUid) return true;
+  // Ou se foi criada localmente neste navegador
+  if (typeof window !== "undefined") {
+    try {
+      const myLists = getStored("tierforge_created_lists", []);
+      if (Array.isArray(myLists) && myLists.includes(tierList.id)) return true;
+    } catch {}
+  }
   return false;
 }
 
@@ -1982,7 +1997,7 @@ export async function voteTierList(tierListId, userId = "anonymous", direction =
       target.ownerId !== userId &&
       target.ownerId !== "anon"
     ) {
-      const voter = getUserByUid(userId);
+      const voter = getUserByUidSync(userId);
       createNotification({
         recipientUid: target.ownerId,
         senderUid: userId,
@@ -2178,7 +2193,7 @@ export function addCommentToTierList(
   // Notificações para menções @handle
   const mentions = extractMentions(text);
   mentions.forEach((h) => {
-    const mentioned = getUserByHandle(h);
+    const mentioned = getUserByHandleSync(h);
     if (mentioned && mentioned.uid !== userUid && mentioned.uid !== tierListOwnerId) {
       createNotification({
         recipientUid: mentioned.uid,
@@ -2312,7 +2327,7 @@ export function addReplyToComment(
   // Notificações para menções @handle
   const mentions = extractMentions(text);
   mentions.forEach((h) => {
-    const mentioned = getUserByHandle(h);
+    const mentioned = getUserByHandleSync(h);
     if (mentioned && mentioned.uid !== userUid && mentioned.uid !== parent.userUid) {
       createNotification({
         recipientUid: mentioned.uid,
@@ -2412,7 +2427,7 @@ export function reactToComment(tierListId, commentId, replyId = null, uid, react
 
       // Notificação de gosto no comentário (se for utilizador diferente)
       if (target.userUid && target.userUid !== uid && target.userUid !== "anon") {
-        const voter = getUserByUid(uid);
+        const voter = getUserByUidSync(uid);
         const stored = getStored(STORAGE_KEY_TIERLISTS, SEED_TIERLISTS);
         const tl = stored.find((l) => l.id === tierListId);
         createNotification({

@@ -460,7 +460,7 @@ export default function Navbar() {
                     {/* Lista de Ações do Menu */}
                     <div className="flex flex-col gap-0.5 py-1">
                       <Link
-                        to={`/profile/${profile?.handle || ""}`}
+                        to={profile?.handle ? `/profile/${profile.handle}` : "/profile"}
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium text-text hover:text-white hover:bg-white/[0.06] transition-all group"
                       >
@@ -756,7 +756,7 @@ export default function Navbar() {
                     </div>
 
                     <Link
-                      to={`/profile/${profile?.handle || ""}`}
+                      to={profile?.handle ? `/profile/${profile.handle}` : "/profile"}
                       onClick={() => setMobileMenuOpen(false)}
                       className="rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 py-1.5 text-[11.5px] font-bold text-white hover:bg-white/[0.12] transition-colors"
                     >

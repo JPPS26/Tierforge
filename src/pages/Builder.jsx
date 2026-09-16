@@ -400,32 +400,36 @@ export default function Builder() {
   useEffect(() => {
     async function loadEditData() {
       if (!editId) return;
+      if (!user) return; // Aguarda que o utilizador autenticado esteja carregado
       try {
-        const data = await getTierListById(editId, user?.uid);
-        if (data) {
-          if (!canEditTierList(data, user?.uid)) {
-            alert("Não tens permissão para editar esta Tier List.");
-            navigate(`/tier-list/${editId}`);
-            return;
-          }
-          setIsEditing(true);
-          setEditListId(data.id);
-          setTitle(data.title || "");
-          setCategory(data.category || "gaming");
-          setSubcategory(data.subcategory || "");
-          setVisibility(data.visibility || "public");
-          if (data.itemDisplayMode) setDisplayMode(data.itemDisplayMode);
-          if (data.tiers && data.tiers.length > 0) setTiers(data.tiers);
-          if (data.items) setItems(data.items);
-          if (data.placements) setPlacements(data.placements);
-          setManualCategoryOverride(true);
+        const data = await getTierListById(editId, user.uid);
+        if (!data) {
+          alert("Tier List não encontrada.");
+          navigate("/explore");
+          return;
         }
+        if (!canEditTierList(data, user.uid)) {
+          alert("Não tens permissão para editar esta Tier List.");
+          navigate(`/tier-list/${editId}`);
+          return;
+        }
+        setIsEditing(true);
+        setEditListId(data.id);
+        setTitle(data.title || "");
+        setCategory(data.category || "gaming");
+        setSubcategory(data.subcategory || "");
+        setVisibility(data.visibility || "public");
+        if (data.itemDisplayMode) setDisplayMode(data.itemDisplayMode);
+        if (data.tiers && data.tiers.length > 0) setTiers(data.tiers);
+        if (data.items) setItems(data.items);
+        if (data.placements) setPlacements(data.placements);
+        setManualCategoryOverride(true);
       } catch (err) {
         console.warn("Could not load tier list for edit:", err);
       }
     }
     loadEditData();
-  }, [editId, user?.uid, navigate]);
+  }, [editId, user, navigate]);
 
   // Carregar Template se for Remix (?remix=...)
   useEffect(() => {

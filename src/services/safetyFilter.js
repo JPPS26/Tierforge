@@ -3,7 +3,7 @@
 
 const BLOCKED_WORDS = new Set([
   // Termos ofensivos e insultos graves em português
-  "caralho", "foda-se", "fodasse", "puta", "puto", "paneleiro", "paneleirice",
+  "caralho", "foda-se", "fodasse", "puta", "paneleiro", "paneleirice",
   "cabrão", "cabrao", "filho da puta", "fdp", "fode-te", "vai-te foder",
   "merda", "bosta", "otário", "otario", "estúpido", "estupido", "idiota",
   "imbecil", "retardado", "cretino", "mongolóide", "mongoloide", "escroto",

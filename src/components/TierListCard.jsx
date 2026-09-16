@@ -15,10 +15,10 @@ const TIER_COLORS = {
 };
 
 function MiniTierPreview({ list }) {
-  const tiers = list.tiers?.slice(0, 4) || [
-    { label: "S", color: TIER_COLORS.S },
-    { label: "A", color: TIER_COLORS.A },
-    { label: "B", color: TIER_COLORS.B },
+  const tiers = list.tiers && list.tiers.length > 0 ? list.tiers.slice(0, 4) : [
+    { id: "t1", label: "S", color: TIER_COLORS.S },
+    { id: "t2", label: "A", color: TIER_COLORS.A },
+    { id: "t3", label: "B", color: TIER_COLORS.B },
   ];
 
   const items = list.items || [];
@@ -27,7 +27,7 @@ function MiniTierPreview({ list }) {
   return (
     <div className="flex w-full flex-col gap-[3px] overflow-hidden rounded-xl bg-surface2/60 p-1.5 border border-white/5">
       {tiers.map((t) => {
-        const tierItems = items.filter((it) => placements[it.id] === t.id);
+        const tierItems = items.filter((it) => t.id && placements[it.id] === t.id);
 
         return (
           <div key={t.id || t.label} className="flex h-[24px] overflow-hidden rounded-md">

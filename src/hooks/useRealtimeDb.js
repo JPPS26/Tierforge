@@ -45,12 +45,12 @@ export function useRealtimeDb(loadFn, deps = []) {
       executeLoad();
     });
 
-    // 3. Heartbeat ao segundo (1000ms) garantindo atualização ao segundo mesmo sem eventos manuais
-    const secondInterval = setInterval(() => {
+    // 3. Heartbeat periódico de segurança (15s) garantindo atualização em background mesmo sem eventos manuais
+    const periodicInterval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         executeLoad();
       }
-    }, 1000);
+    }, 15000);
 
     // 4. Atualização imediata ao alternar de abas ou focar a janela
     const handleVisibilityChange = () => {
@@ -65,7 +65,7 @@ export function useRealtimeDb(loadFn, deps = []) {
     return () => {
       isMounted = false;
       unsubscribe();
-      clearInterval(secondInterval);
+      clearInterval(periodicInterval);
       window.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", executeLoad);
     };

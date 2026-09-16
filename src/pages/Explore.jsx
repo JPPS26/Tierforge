@@ -120,7 +120,7 @@ function CompactTierListRow({ list }) {
       <div className="flex items-center gap-3.5 min-w-0">
         {/* Mini Preview Bar */}
         <div className="flex h-11 w-11 flex-shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/40">
-          {tiers.slice(0, 3).map((tr, idx) => (
+          {(tiers.length > 0 ? tiers.slice(0, 3) : [{ color: "#FF3B5C" }, { color: "#FF9F43" }, { color: "#FFD23F" }]).map((tr, idx) => (
             <div
               key={idx}
               className="flex-1 w-full"
@@ -341,20 +341,26 @@ export default function Explore() {
   const handleSelectCategory = (categoryId) => {
     setCat(categoryId);
     setSelectedSub("");
+    const next = new URLSearchParams(searchParams);
     if (categoryId === "All") {
-      setSearchParams({});
+      next.delete("category");
     } else {
-      setSearchParams({ category: categoryId });
+      next.set("category", categoryId);
     }
+    next.delete("sub");
+    setSearchParams(next);
   };
 
   const handleSelectSubcategory = (subName) => {
     setSelectedSub(subName);
+    const next = new URLSearchParams(searchParams);
     if (subName) {
-      setSearchParams({ category: cat, sub: subName });
+      next.set("category", cat);
+      next.set("sub", subName);
     } else {
-      setSearchParams({ category: cat });
+      next.delete("sub");
     }
+    setSearchParams(next);
   };
 
   const clearAllFilters = () => {

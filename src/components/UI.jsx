@@ -6,19 +6,22 @@ export function colorFor(seed = "x") {
 }
 
 export function Avatar({ name, image, size = 32 }) {
+  const [imgError, setImgError] = React.useState(false);
+  React.useEffect(() => {
+    setImgError(false);
+  }, [image]);
+
   const initial = name?.[0]?.toUpperCase() || "?";
   const color = colorFor(name || "x");
 
-  if (image) {
+  if (image && !imgError) {
     return (
       <img
         src={image}
         alt={name || "Avatar"}
         className="rounded-full object-cover flex-shrink-0 border border-white/10"
         style={{ width: size, height: size }}
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
+        onError={() => setImgError(true)}
       />
     );
   }
