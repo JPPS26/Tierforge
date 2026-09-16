@@ -256,25 +256,25 @@ export default function NotificationsDropdown() {
           setIsOpen((prev) => !prev);
           setSettingsOpen(false);
         }}
-        className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 ${
+        className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 ${
           isOpen
-            ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
+            ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
             : isMuted
-            ? "border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:border-amber-500/50"
-            : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
+            ? "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:border-amber-500/50"
+            : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
         }`}
         title={isMuted ? `Notificações Silenciadas (${getMuteTimeString()})` : "Notificações do Site"}
         aria-label="Abrir notificações"
       >
         {isMuted ? (
-          <BellOff size={16} className="transition-transform hover:rotate-12" />
+          <BellOff size={17} className="transition-transform hover:rotate-12" />
         ) : (
-          <Bell size={16} className="transition-transform hover:rotate-12" />
+          <Bell size={17} className="transition-transform hover:rotate-12" />
         )}
 
         {/* Badge Indicador de Novas Notificações */}
         {unreadCount > 0 && !isMuted && (
-          <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gradient-to-r from-[#7C5CFF] to-[#FF5470] px-1 text-[9.5px] font-black text-white shadow-glow animate-pulse">
+          <span className="absolute -top-1 -right-1 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-[#7C5CFF] to-[#FF5470] px-1 text-[10px] font-black text-white shadow-glow animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -282,7 +282,7 @@ export default function NotificationsDropdown() {
 
       {/* Painel Dropdown Principal */}
       {isOpen && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 sm:w-[410px] overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-80 sm:w-[410px] overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0E0F18] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn">
           {/* Cabeçalho do Painel */}
           <div className="mb-3 flex items-center justify-between border-b border-border/70 px-1 pb-3">
             <div className="flex items-center gap-2.5">

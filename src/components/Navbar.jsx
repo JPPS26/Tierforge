@@ -120,22 +120,22 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090D] backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <div className="mx-auto flex h-[64px] max-w-[1360px] items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6">
-          {/* Lado Esquerdo: Logótipo & Navegação em Barra Island */}
-          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#0A0A10]/95 backdrop-blur-2xl transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-auto flex h-[64px] max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6">
+          {/* Lado Esquerdo: Logótipo & Navegação */}
+          <div className="flex items-center gap-5 lg:gap-7 shrink-0">
             <Link to="/" className="flex flex-shrink-0 items-center gap-2.5 group select-none">
               <TierWorldLogo size={32} showText={true} />
             </Link>
 
-            {/* Links de Navegação Coesos em Barra Island (Desktop) */}
-            <nav className="hidden md:flex items-center gap-1 rounded-2xl border border-white/[0.08] bg-[#141522] p-1 shadow-sm backdrop-blur-md">
+            {/* Links de Navegação em Barra Segmentada (Desktop) */}
+            <nav className="hidden md:flex items-center gap-1 rounded-xl border border-white/[0.08] bg-[#131422] p-1 shadow-sm">
               <Link
                 to="/explore"
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-150 ${
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150 ${
                   isExploreActive
                     ? "bg-accent/20 text-white border border-accent/40 shadow-[0_0_12px_rgba(124,92,255,0.25)]"
-                    : "text-muted hover:text-white hover:bg-white/[0.06] border border-transparent"
+                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
                 }`}
               >
                 <Compass
@@ -149,10 +149,10 @@ export default function Navbar() {
 
               <Link
                 to="/leaderboard"
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-150 ${
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150 ${
                   isLeaderboardActive
                     ? "bg-amber-500/20 text-white border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-                    : "text-muted hover:text-white hover:bg-white/[0.06] border border-transparent"
+                    : "text-muted hover:text-white hover:bg-white/[0.05] border border-transparent"
                 }`}
               >
                 <Trophy
@@ -164,9 +164,9 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Centro: Barra de Pesquisa Omni-Search Proporcional com o Mesmo Layout */}
+          {/* Centro: Barra de Pesquisa Omni-Search Proporcional */}
           <div className="relative hidden max-w-[360px] xl:max-w-[420px] flex-1 lg:block mx-3" ref={searchContainerRef}>
-            <div className="relative flex h-10 items-center rounded-2xl border border-white/[0.08] bg-[#141522] px-3 shadow-sm transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20 focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
+            <div className="relative flex h-10 items-center rounded-xl border border-white/[0.08] bg-[#131422] px-3 shadow-sm transition-all duration-200 hover:border-white/20 focus-within:border-accent/60 focus-within:bg-[#18192A] focus-within:ring-2 focus-within:ring-accent/20 focus-within:shadow-[0_0_20px_rgba(124,92,255,0.2)]">
               <Search size={15} className="pointer-events-none text-mutedDim shrink-0 mr-2.5" />
               <input
                 ref={searchInputRef}
@@ -197,10 +197,10 @@ export default function Navbar() {
 
             {/* Dropdown de Resultados da Pesquisa Omni */}
             {searchOpen && (
-              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn">
+              <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-50 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0E0F18] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn">
                 {q.trim().length < 2 ? (
                   /* Estado Inicial: Sugestões Rápidas & Tópicos Populares */
-                  <div className="p-2">
+                  <div className="p-1.5">
                     <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-mutedDim">
                       <Sparkles size={12} className="text-amber-400" />
                       <span>Sugestões Populares</span>
@@ -221,7 +221,7 @@ export default function Navbar() {
                             setSearchOpen(false);
                             navigate(`/explore?search=${encodeURIComponent(item.label)}`);
                           }}
-                          className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11.5px] font-medium text-muted hover:border-accent/40 hover:bg-surface2 hover:text-white transition-all"
+                          className="rounded-xl border border-white/[0.06] bg-[#131422] px-2.5 py-1 text-[11.5px] font-medium text-muted hover:border-accent/40 hover:bg-[#1A1B2C] hover:text-white transition-all"
                         >
                           #{item.label}
                         </button>
@@ -230,7 +230,7 @@ export default function Navbar() {
                     <Link
                       to="/explore"
                       onClick={() => setSearchOpen(false)}
-                      className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-surface2/50 px-3 py-2 text-[12px] font-semibold text-text hover:bg-surface2 hover:text-accent transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#131422] px-3 py-2 text-[12px] font-semibold text-text hover:bg-[#1A1B2C] hover:text-accent transition-colors"
                     >
                       <span className="flex items-center gap-1.5">
                         <Compass size={13} className="text-accent" />
@@ -271,7 +271,7 @@ export default function Navbar() {
                                 key={c.uid}
                                 to={`/profile/${c.handle}`}
                                 onClick={() => setSearchOpen(false)}
-                                className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors group"
+                                className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-[#131422] transition-colors group"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <Avatar name={c.displayName} image={c.avatar} size={30} />
@@ -308,7 +308,7 @@ export default function Navbar() {
                               key={l.id}
                               to={`/tier-list/${l.id}`}
                               onClick={() => setSearchOpen(false)}
-                              className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-surface2 transition-colors group"
+                              className="flex items-center justify-between rounded-xl px-2.5 py-2 hover:bg-[#131422] transition-colors group"
                             >
                               <div className="truncate pr-2">
                                 <div className="text-[13px] font-bold text-text group-hover:text-white truncate">
@@ -325,7 +325,7 @@ export default function Navbar() {
                       </div>
                     )}
 
-                    {/* Rodapé do Dropdown: Ver mais no Explorar */}
+                    {/* Rodapé do Dropdown */}
                     <div className="border-t border-white/[0.06] pt-1.5 px-1">
                       <button
                         type="button"
@@ -333,7 +333,7 @@ export default function Navbar() {
                           setSearchOpen(false);
                           navigate(`/explore?search=${encodeURIComponent(q.trim())}`);
                         }}
-                        className="flex w-full items-center justify-between rounded-xl p-2 text-[12px] font-medium text-muted hover:bg-white/[0.04] hover:text-white transition-all"
+                        className="flex w-full items-center justify-between rounded-xl p-2 text-[12px] font-medium text-muted hover:bg-[#131422] hover:text-white transition-all"
                       >
                         <span>Ver todos os resultados no Explorar</span>
                         <span className="text-accent font-bold">↵ Enter</span>
@@ -345,50 +345,44 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Lado Direito: Barra de Ações com o Mesmo Layout Coeso */}
-          <div className="flex items-center gap-1.5 rounded-2xl border border-white/[0.08] bg-[#141522] p-1 shadow-sm backdrop-blur-md shrink-0">
-            {/* Botão de Pesquisa Rápida (Mobile/Tablet dentro da barra) */}
+          {/* Lado Direito: Ações (Criar, Notificações, Perfil, Mobile Menu) */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Botão de Pesquisa Rápida (Mobile/Tablet) */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen((prev) => !prev)}
               aria-label="Abrir pesquisa"
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 lg:hidden ${
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 lg:hidden ${
                 mobileSearchOpen
-                  ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
-                  : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
+                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                  : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
               }`}
             >
-              <Search size={15} />
+              <Search size={16} />
             </button>
 
             {/* Botão de Criação Primário com Gradiente */}
             <button
               type="button"
               onClick={() => navigate("/create")}
-              className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-3.5 text-[12.5px] font-bold text-white shadow-[0_0_14px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_20px_rgba(124,92,255,0.55)] active:scale-95 transition-all border border-white/15"
+              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] px-4 text-[13px] font-bold text-white shadow-[0_0_20px_rgba(124,92,255,0.35)] hover:from-[#8B6EFA] hover:to-[#7954F5] hover:shadow-[0_0_26px_rgba(124,92,255,0.55)] active:scale-95 transition-all border border-white/15"
             >
-              <Plus size={15} />
+              <Plus size={16} />
               <span>{t("nav.create")}</span>
             </button>
 
-            {/* Botão de Criação Compacto para Telas Mobile */}
+            {/* Botão Criar Compacto em Telas Mobile Pequenas */}
             <button
               type="button"
               onClick={() => navigate("/create")}
               aria-label={t("nav.create")}
-              className="sm:hidden flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] text-white shadow-[0_0_12px_rgba(124,92,255,0.3)] hover:brightness-110 active:scale-95 transition-all border border-white/15"
+              className="sm:hidden flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#6A46F0] text-white shadow-[0_0_16px_rgba(124,92,255,0.35)] active:scale-95 transition-all border border-white/15"
             >
-              <Plus size={15} />
+              <Plus size={17} />
             </button>
-
-            {/* Separador subtil quando utilizador está com sessão iniciada */}
-            {user && <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />}
 
             {/* Notificações no Próprio Site */}
             {user && <NotificationsDropdown />}
-
-            {/* Separador subtil entre Notificações e Perfil */}
-            {user && <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />}
 
             {/* Menu de Perfil / Iniciar Sessão */}
             {user ? (
@@ -396,10 +390,10 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 ${
+                  className={`relative flex h-10 items-center gap-2 rounded-xl border px-2.5 transition-all duration-200 active:scale-95 ${
                     menuOpen
-                      ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
-                      : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
+                      ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                      : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
                   }`}
                   title={profile?.displayName || user.displayName || "Perfil de utilizador"}
                   aria-label="Menu de utilizador"
@@ -407,19 +401,29 @@ export default function Navbar() {
                   <Avatar
                     name={profile?.displayName || user.email}
                     image={profile?.avatar || user.photoURL}
-                    size={26}
+                    size={28}
+                  />
+                  <span className="hidden xl:inline text-[13px] font-semibold text-white max-w-[100px] truncate">
+                    {profile?.displayName || user.displayName || "Perfil"}
+                  </span>
+                  <ChevronDown
+                    size={13}
+                    className={`text-mutedDim transition-transform duration-200 ${
+                      menuOpen ? "rotate-180 text-accent" : ""
+                    }`}
                   />
                 </button>
 
+                {/* Painel Dropdown de Perfil Moderno e Elegante */}
                 {menuOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] w-72 overflow-hidden rounded-3xl border border-borderStrong bg-[#0F1017] p-3.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn z-50">
+                  <div className="absolute right-0 top-[calc(100%+10px)] w-72 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0E0F18] p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(124,92,255,0.12)] backdrop-blur-2xl animate-fadeIn z-50">
                     {/* Header do Utilizador com XP e Nível */}
-                    <div className="rounded-2xl border border-border/80 bg-[#141522] p-3 mb-2.5">
-                      <div className="flex items-center gap-2.5 mb-2">
+                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 mb-1.5">
+                      <div className="flex items-center gap-3 mb-2.5">
                         <Avatar
                           name={profile?.displayName || user.email}
                           image={profile?.avatar || user.photoURL}
-                          size={36}
+                          size={38}
                         />
                         <div className="min-w-0 flex-1">
                           <div className="text-[13.5px] font-bold text-white truncate leading-tight">
@@ -429,20 +433,22 @@ export default function Navbar() {
                             #{profile?.handle || "jogador"}
                           </div>
                         </div>
+                        <span className="rounded-md bg-accent/15 border border-accent/30 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                          {levelInfo.icon} Lvl {Math.floor((profile?.creatorXp || 0) / 100) + 1}
+                        </span>
                       </div>
 
-                      {/* Nível e Barra de XP */}
-                      <div className="pt-2 border-t border-white/[0.08]">
+                      {/* Barra de XP */}
+                      <div className="pt-2 border-t border-white/[0.06]">
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-bold text-mutedDim flex items-center gap-1">
-                            <span>{levelInfo.icon}</span>
+                          <span className="font-semibold text-mutedDim flex items-center gap-1">
                             <span>{levelInfo.name}</span>
                           </span>
                           <span className="font-mono text-accent font-bold">
                             {profile?.creatorXp || 0} XP
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden">
+                        <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-accent to-[#00E5A3] transition-all duration-500"
                             style={{ width: `${levelInfo.percent}%` }}
@@ -451,23 +457,34 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
+                    {/* Lista de Ações do Menu */}
+                    <div className="flex flex-col gap-0.5 py-1">
                       <Link
                         to={`/profile/${profile?.handle || ""}`}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium text-text hover:text-white hover:bg-white/[0.06] transition-all group"
                       >
-                        <UserIcon size={15} className="text-muted" />
-                        <span>{t("nav.profile")}</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                            <UserIcon size={14} />
+                          </div>
+                          <span>{t("nav.profile")}</span>
+                        </div>
+                        <span className="text-[11px] text-mutedDim group-hover:text-muted transition-colors">→</span>
                       </Link>
 
                       <Link
                         to="/create"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium text-text hover:text-white hover:bg-white/[0.06] transition-all group"
                       >
-                        <Plus size={15} className="text-teal" />
-                        <span>Criar Nova Tier List</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#31D8A8]/15 text-[#31D8A8] group-hover:bg-[#31D8A8] group-hover:text-black transition-colors">
+                            <Plus size={14} />
+                          </div>
+                          <span>Criar Nova Tier List</span>
+                        </div>
+                        <span className="text-[11px] text-mutedDim group-hover:text-muted transition-colors">+</span>
                       </Link>
 
                       <button
@@ -476,53 +493,55 @@ export default function Navbar() {
                           setMenuOpen(false);
                           setEditProfileOpen(true);
                         }}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-[#141522] px-3.5 py-2.5 text-[13px] font-medium text-text hover:border-accent/40 hover:bg-[#1E2034] hover:text-white transition-all text-left"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium text-text hover:text-white hover:bg-white/[0.06] transition-all group text-left w-full"
                       >
-                        <Settings size={15} className="text-muted" />
-                        <span>{t("nav.editProfile")}</span>
-                      </button>
-
-                      <div className="my-1 border-t border-border/50"></div>
-
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 px-3.5 py-2 text-left text-[13px] font-medium text-red-400 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-300 transition-all"
-                      >
-                        <LogOut size={15} />
-                        <span>{t("nav.logout")}</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06] text-muted group-hover:bg-white/20 group-hover:text-white transition-colors">
+                            <Settings size={14} />
+                          </div>
+                          <span>{t("nav.editProfile")}</span>
+                        </div>
                       </button>
                     </div>
+
+                    <div className="my-1 border-t border-white/[0.06]"></div>
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
+                        <LogOut size={14} />
+                      </div>
+                      <span>{t("nav.logout")}</span>
+                    </button>
                   </div>
                 )}
               </div>
             ) : (
-              <>
-                <div className="h-4 w-[1px] bg-white/[0.08] my-auto" />
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12.5px] font-bold text-muted hover:text-white hover:bg-white/[0.08] transition-all active:scale-95"
-                >
-                  <LogIn size={14} className="text-accent" />
-                  <span>{t("nav.login")}</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.1] bg-[#131422] px-4 text-[13px] font-bold text-muted hover:text-white hover:border-white/20 hover:bg-[#1A1B2C] transition-all active:scale-95 shadow-sm"
+              >
+                <LogIn size={15} className="text-accent" />
+                <span>{t("nav.login")}</span>
+              </button>
             )}
 
             {/* Botão do Menu Hambúrguer (Mobile) */}
-            <div className="md:hidden h-4 w-[1px] bg-white/[0.08] my-auto" />
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Menu principal"
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 md:hidden ${
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 md:hidden ${
                 mobileMenuOpen
-                  ? "border border-accent/50 bg-accent/25 text-white shadow-[0_0_12px_rgba(124,92,255,0.35)]"
-                  : "text-muted hover:text-white hover:bg-white/[0.08] border border-transparent"
+                  ? "border-accent bg-accent/20 text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
+                  : "border-white/[0.08] bg-[#131422] text-muted hover:border-white/20 hover:text-white hover:bg-[#1A1B2C]"
               }`}
             >
-              {mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}
+              {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
